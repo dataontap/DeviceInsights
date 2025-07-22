@@ -1,0 +1,138 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Smartphone, Search, Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+interface IMEICheckerProps {
+  onResult: (result: any) => void;
+  onLoading: (loading: boolean) => void;
+}
+
+export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
+  const [imei, setImei] = useState("");
+  const { toast } = useToast();
+
+  const checkIMEIMutation = useMutation({
+    mutationFn: async (data: { imei: string; location?: string }) => {
+      const response = await apiRequest("POST", "/api/v1/check", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      onLoading(false);
+      onResult(data);
+      toast({
+        title: "Device Analyzed Successfully",
+        description: `Found ${data.device.make} ${data.device.model}`,
+      });
+    },
+    onError: (error: any) => {
+      onLoading(false);
+      toast({
+        title: "Analysis Failed",
+        description: error.message || "Failed to analyze device. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!imei.trim()) {
+      toast({
+        title: "IMEI Required",
+        description: "Please enter a valid IMEI number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (imei.length !== 15) {
+      toast({
+        title: "Invalid IMEI",
+        description: "IMEI must be exactly 15 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onLoading(true);
+    
+    // Get user's location if available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = `${position.coords.latitude},${position.coords.longitude}`;
+          checkIMEIMutation.mutate({ imei, location });
+        },
+        () => {
+          // Fallback without location
+          checkIMEIMutation.mutate({ imei });
+        }
+      );
+    } else {
+      checkIMEIMutation.mutate({ imei });
+    }
+  };
+
+  const handleIMEIChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 15);
+    setImei(value);
+  };
+
+  return (
+    <section className="bg-gradient-to-br from-primary to-secondary text-white py-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-6">
+          Check Your Device's AT&T Network Compatibility
+        </h1>
+        <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on AT&T's network.
+        </p>
+        
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+          <form onSubmit={handleSubmit}>
+            <div className="text-left mb-6">
+              <Label htmlFor="imei" className="block text-sm font-medium text-gray-700 mb-2">
+                Device IMEI Number
+              </Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  id="imei"
+                  value={imei}
+                  onChange={handleIMEIChange}
+                  placeholder="Enter 15-digit IMEI number"
+                  className={`w-full text-lg pr-10 ${
+                    imei.length === 15 ? 'border-success' : 'border-gray-300'
+                  }`}
+                  maxLength={15}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <Smartphone className="text-gray-400 w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-2 flex items-center">
+                <Info className="w-4 h-4 mr-1 text-accent" />
+                To find your IMEI, dial <code className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1">*#06#</code> on your device
+              </p>
+            </div>
+            
+            <Button 
+              type="submit"
+              disabled={checkIMEIMutation.isPending || imei.length !== 15}
+              className="w-full bg-primary text-white py-3 px-6 text-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              <Search className="w-5 h-5 mr-2" />
+              {checkIMEIMutation.isPending ? "Analyzing..." : "Check Device Compatibility"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
