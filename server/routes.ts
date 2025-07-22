@@ -5,9 +5,55 @@ import { analyzeIMEI, validateIMEI } from "./services/gemini";
 import { insertImeiSearchSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Simple API key validation middleware
+function validateApiKey(req: any, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  const apiKey = authHeader?.replace('Bearer ', '');
+  
+  // For demo purposes, accept any non-empty API key
+  // In production, you should validate against your API key database
+  if (!apiKey || apiKey.trim() === '') {
+    return res.status(401).json({ error: 'API key required' });
+  }
+  
+  // Store API key for logging/analytics
+  req.apiKey = apiKey;
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // IMEI Analysis endpoint
-  app.post("/api/v1/check", async (req, res) => {
+  // Add CORS headers for API access
+  app.use('/api', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
+  // API Documentation endpoint
+  app.get("/api/v1/docs", (req, res) => {
+    res.json({
+      name: "IMEI Device Checker API",
+      version: "1.0.0",
+      description: "AI-powered IMEI analysis and network compatibility checking",
+      endpoints: {
+        "POST /api/v1/check": "Analyze IMEI device compatibility",
+        "GET /api/v1/stats": "Get usage statistics",
+        "GET /api/v1/export": "Export search data",
+        "GET /api/v1/search/{id}": "Get individual search details",
+        "GET /api/v1/admin/searches": "Get detailed admin search data"
+      },
+      documentation: "See API_DOCUMENTATION.md for complete details"
+    });
+  });
+
+  // IMEI Analysis endpoint (with API key validation for external access)
+  app.post("/api/v1/check", validateApiKey, async (req, res) => {
     try {
       const { imei, location, network } = req.body;
       
@@ -107,8 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export search data
-  app.get("/api/v1/export", async (req, res) => {
+  // Export search data (requires API key)
+  app.get("/api/v1/export", validateApiKey, async (req, res) => {
     try {
       const format = req.query.format as string || 'json';
       const searches = await storage.getImeiSearches(1000);
@@ -152,8 +198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get individual search by ID
-  app.get("/api/v1/search/:id", async (req, res) => {
+  // Get individual search by ID (requires API key)
+  app.get("/api/v1/search/:id", validateApiKey, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const search = await storage.getImeiSearchById(id);
@@ -181,8 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get detailed searches with location data for admin
-  app.get("/api/v1/admin/searches", async (req, res) => {
+  // Get detailed searches with location data for admin (requires API key)
+  app.get("/api/v1/admin/searches", validateApiKey, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const searches = await storage.getImeiSearches(limit);
