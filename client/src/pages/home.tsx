@@ -3,7 +3,6 @@ import Navigation from "@/components/navigation";
 import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
 import AdminDashboard from "@/components/admin-dashboard";
-import APIDocs from "@/components/api-docs";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
@@ -46,8 +45,6 @@ export default function Home() {
       <div id="admin">
         <AdminDashboard />
       </div>
-      
-      <APIDocs />
       
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

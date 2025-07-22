@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Smartphone, Code, CheckCircle, MapPin, ArrowRight, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import APIDocs from "@/components/api-docs";
 
 interface StatsData {
   totalSearches: number;
@@ -260,6 +261,9 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
+      
+      {/* API Documentation Section */}
+      <APIDocs />
     </section>
   );
 }
