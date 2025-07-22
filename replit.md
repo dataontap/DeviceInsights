@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application that allows users to analyze mobile device IMEI numbers to determine device information and network compatibility with any carrier (currently focused on OXIO network). The application uses AI-powered device identification through OpenAI's API (with intelligent fallback system) and provides comprehensive analytics on device searches with location tracking and Google Earth integration.
+This is a full-stack web application that allows users to analyze mobile device IMEI numbers to determine device information and network compatibility with any carrier (currently focused on OXIO network). The application uses AI-powered device identification through Google's Gemini API (with intelligent fallback system) and provides comprehensive analytics on device searches with location tracking and Google Earth integration.
 
 ## User Preferences
 
@@ -26,7 +26,7 @@ The application is built as a monorepo with clear separation between client, ser
 - **Styling**: Tailwind CSS with CSS variables for theming
 - **State Management**: TanStack Query (React Query) for server state
 - **Routing**: Wouter for lightweight client-side routing
-- **AI Integration**: OpenAI API for device identification
+- **AI Integration**: Google Gemini API for device identification
 
 ## Key Components
 
@@ -42,13 +42,13 @@ The application is built as a monorepo with clear separation between client, ser
 - **Theme System**: CSS variables for light/dark mode support
 
 ### Backend Services
-- **IMEI Analysis**: OpenAI integration for device identification
+- **IMEI Analysis**: Google Gemini integration for device identification
 - **Database Operations**: Comprehensive storage layer with analytics
 - **API Routes**: RESTful endpoints for device checking and data export
 - **Session Management**: PostgreSQL session store
 
 ### External Integrations
-- **OpenAI API**: Used for intelligent device identification from IMEI numbers
+- **Google Gemini API**: Used for intelligent device identification from IMEI numbers
 - **Neon Database**: Serverless PostgreSQL hosting
 - **WebSocket Support**: Configured for real-time features
 
@@ -56,7 +56,7 @@ The application is built as a monorepo with clear separation between client, ser
 
 1. **IMEI Input**: User enters IMEI number through the frontend form
 2. **Validation**: Client-side validation using Zod schemas
-3. **AI Analysis**: Server sends IMEI to OpenAI for device identification
+3. **AI Analysis**: Server sends IMEI to Google Gemini for device identification
 4. **Database Storage**: Search results and metadata stored in PostgreSQL
 5. **Response**: Device information and compatibility details returned to client
 6. **Analytics**: Admin dashboard displays aggregated search statistics
@@ -71,8 +71,8 @@ The application is built as a monorepo with clear separation between client, ser
 ## External Dependencies
 
 ### AI Service
-- **OpenAI GPT-4o**: Primary AI model for device identification
-- **Environment Variable**: `OPENAI_API_KEY` required for API access
+- **Google Gemini 2.5 Pro**: Primary AI model for device identification
+- **Environment Variable**: `GEMINI_API_KEY` required for API access
 - **Fallback Handling**: Graceful error handling for API failures
 
 ### Database
@@ -104,7 +104,7 @@ The application is built as a monorepo with clear separation between client, ser
 - **Network Agnostic**: Supports any carrier network (currently OXIO-focused)
 - **Export Functionality**: Data export in multiple formats
 - **Error Handling**: Comprehensive error boundaries and user feedback
-- **AI Fallback System**: Works without OpenAI API using intelligent device database
+- **AI Fallback System**: Works without Gemini API using intelligent device database
 - **Performance**: Optimized queries and caching strategies
 
 ## Recent Changes (January 2024)
@@ -115,6 +115,8 @@ The application is built as a monorepo with clear separation between client, ser
 ✓ Added network parameter support for API flexibility
 ✓ Created intelligent fallback system for AI analysis
 ✓ Enhanced admin dashboard with location mapping features
+✓ Migrated from OpenAI to Google Gemini AI service
 → API endpoints now support network-specific queries
+→ GEMINI_API_KEY environment variable now required
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.

@@ -1,11 +1,9 @@
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || "" 
-});
+// This API key is from Gemini Developer API Key, not vertex AI API Key
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-// Fallback device database for demo purposes when OpenAI is not available
+// Fallback device database for demo purposes when Gemini is not available
 const DEMO_DEVICES: Record<string, DeviceInfo> = {
   // iPhone devices (TAC starting with 01)
   "013456789012345": {
@@ -91,9 +89,9 @@ export interface DeviceInfo {
 
 export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
   try {
-    // Check if OpenAI API key is available, otherwise use fallback
-    if (!process.env.OPENAI_API_KEY) {
-      console.log("OpenAI API key not available, using fallback device database");
+    // Check if Gemini API key is available, otherwise use fallback
+    if (!process.env.GEMINI_API_KEY) {
+      console.log("Gemini API key not available, using fallback device database");
       return getFallbackDeviceInfo(imei);
     }
 
@@ -125,23 +123,54 @@ Focus specifically on ${network} network compatibility in the United States. Be 
 
 If the IMEI cannot be identified or appears invalid, still provide your best analysis based on the TAC portion.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert mobile device analyst specializing in network compatibility and IMEI analysis. Always respond with valid JSON."
+    const systemPrompt = `You are an expert mobile device analyst specializing in network compatibility and IMEI analysis. 
+Analyze the provided IMEI and provide device information and network capabilities.
+Respond with JSON in the exact format requested.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-pro",
+      config: {
+        systemInstruction: systemPrompt,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            make: { type: "string" },
+            model: { type: "string" },
+            year: { type: "number" },
+            modelNumber: { type: "string" },
+            networkCapabilities: {
+              type: "object",
+              properties: {
+                fourG: { type: "boolean" },
+                fiveG: { type: "boolean" },
+                volte: { type: "boolean" },
+                wifiCalling: { type: "string" }
+              },
+              required: ["fourG", "fiveG", "volte", "wifiCalling"]
+            },
+            specifications: {
+              type: "object",
+              properties: {
+                networkBands: { type: "string" },
+                releaseYear: { type: "number" }
+              }
+            }
+          },
+          required: ["make", "model", "networkCapabilities"]
         },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1, // Lower temperature for more consistent results
+      },
+      contents: prompt,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const rawJson = response.text;
+    console.log(`Raw JSON from Gemini: ${rawJson}`);
+
+    if (!rawJson) {
+      throw new Error("Empty response from Gemini model");
+    }
+
+    const result = JSON.parse(rawJson);
     
     // Validate and ensure required fields
     const deviceInfo: DeviceInfo = {
@@ -160,8 +189,9 @@ If the IMEI cannot be identified or appears invalid, still provide your best ana
 
     return deviceInfo;
   } catch (error) {
-    console.error("OpenAI API error:", error);
-    throw new Error(`Failed to analyze IMEI: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("Gemini API error:", error);
+    console.log("Falling back to demo device database");
+    return getFallbackDeviceInfo(imei);
   }
 }
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { analyzeIMEI, validateIMEI } from "./services/openai";
+import { analyzeIMEI, validateIMEI } from "./services/gemini";
 import { insertImeiSearchSchema } from "@shared/schema";
 import { z } from "zod";
 
