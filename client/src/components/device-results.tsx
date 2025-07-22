@@ -69,14 +69,14 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
   const capabilities = [
     {
       title: '4G LTE Data',
-      description: 'Full compatibility with AT&T\'s 4G LTE network',
+      description: 'Full compatibility with OXIO\'s 4G LTE network',
       icon: Signal,
       status: getCapabilityStatus(result.capabilities.fourG),
       details: 'Up to 150 Mbps'
     },
     {
       title: '5G Data',
-      description: 'Compatible with AT&T\'s 5G network',
+      description: 'Compatible with OXIO\'s 5G network',
       icon: Radio,
       status: getCapabilityStatus(result.capabilities.fiveG),
       details: 'Up to 1 Gbps'
@@ -117,7 +117,7 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
           </div>
           
           <div className="p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">AT&T Network Capabilities</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">OXIO Network Capabilities</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {capabilities.map((capability, index) => {
                 const status = getStatusBadge(capability.status);

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application that allows users to analyze mobile device IMEI numbers to determine device information and AT&T network compatibility. The application uses AI-powered device identification through OpenAI's API and provides comprehensive analytics on device searches.
+This is a full-stack web application that allows users to analyze mobile device IMEI numbers to determine device information and network compatibility with any carrier (currently focused on OXIO network). The application uses AI-powered device identification through OpenAI's API (with intelligent fallback system) and provides comprehensive analytics on device searches with location tracking and Google Earth integration.
 
 ## User Preferences
 
@@ -62,9 +62,11 @@ The application is built as a monorepo with clear separation between client, ser
 6. **Analytics**: Admin dashboard displays aggregated search statistics
 
 ### API Endpoints
-- `POST /api/v1/check` - Analyze IMEI and return device information
+- `POST /api/v1/check` - Analyze IMEI and return device information (supports network parameter)
 - `GET /api/v1/stats` - Retrieve analytics dashboard data
 - `GET /api/v1/export` - Export search data in JSON/CSV formats
+- `GET /api/v1/search/{id}` - Get individual search by ID
+- `GET /api/v1/admin/searches` - Get detailed searches with location data for admin dashboard
 
 ## External Dependencies
 
@@ -98,8 +100,21 @@ The application is built as a monorepo with clear separation between client, ser
 ### Key Features
 - **Mobile-Responsive**: Optimized for all device sizes
 - **Real-time Analytics**: Live dashboard with search statistics
+- **Location Tracking**: GPS coordinates and manual location input with Google Earth integration
+- **Network Agnostic**: Supports any carrier network (currently OXIO-focused)
 - **Export Functionality**: Data export in multiple formats
 - **Error Handling**: Comprehensive error boundaries and user feedback
+- **AI Fallback System**: Works without OpenAI API using intelligent device database
 - **Performance**: Optimized queries and caching strategies
+
+## Recent Changes (January 2024)
+
+✓ Updated branding from AT&T to OXIO network compatibility
+✓ Added location sharing and manual location input functionality
+✓ Implemented Google Earth integration for coordinate visualization
+✓ Added network parameter support for API flexibility
+✓ Created intelligent fallback system for AI analysis
+✓ Enhanced admin dashboard with location mapping features
+→ API endpoints now support network-specific queries
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.

@@ -89,13 +89,19 @@ export interface DeviceInfo {
   };
 }
 
-export async function analyzeIMEI(imei: string): Promise<DeviceInfo> {
+export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
   try {
+    // Check if OpenAI API key is available, otherwise use fallback
+    if (!process.env.OPENAI_API_KEY) {
+      console.log("OpenAI API key not available, using fallback device database");
+      return getFallbackDeviceInfo(imei);
+    }
+
     const prompt = `You are a device identification expert with comprehensive knowledge of mobile devices and their network capabilities. 
 
 Analyze the IMEI number: ${imei}
 
-Based on this IMEI, identify the device and provide detailed information about its AT&T network compatibility in the US. Consider the TAC (Type Allocation Code) which is typically the first 8 digits of the IMEI.
+Based on this IMEI, identify the device and provide detailed information about its ${network} network compatibility in the US. Consider the TAC (Type Allocation Code) which is typically the first 8 digits of the IMEI.
 
 Provide a JSON response with the following structure:
 {
@@ -115,7 +121,7 @@ Provide a JSON response with the following structure:
   }
 }
 
-Focus specifically on AT&T network compatibility in the United States. Be accurate about network capabilities - VoLTE and WiFi Calling support can vary even within the same device family based on carrier provisioning.
+Focus specifically on ${network} network compatibility in the United States. Be accurate about network capabilities - VoLTE and WiFi Calling support can vary even within the same device family based on carrier provisioning.
 
 If the IMEI cannot be identified or appears invalid, still provide your best analysis based on the TAC portion.`;
 
@@ -157,6 +163,24 @@ If the IMEI cannot be identified or appears invalid, still provide your best ana
     console.error("OpenAI API error:", error);
     throw new Error(`Failed to analyze IMEI: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+function getFallbackDeviceInfo(imei: string): DeviceInfo {
+  // Try to match exact IMEI first
+  if (DEMO_DEVICES[imei]) {
+    return DEMO_DEVICES[imei];
+  }
+  
+  // Try to match by TAC (first 8 digits)
+  const tac = imei.substring(0, 8);
+  const tacKey = Object.keys(DEMO_DEVICES).find(key => key.startsWith(tac.substring(0, 6)));
+  
+  if (tacKey && DEMO_DEVICES[tacKey]) {
+    return DEMO_DEVICES[tacKey];
+  }
+  
+  // Return default for unknown devices
+  return DEMO_DEVICES["default"];
 }
 
 export function validateIMEI(imei: string): boolean {

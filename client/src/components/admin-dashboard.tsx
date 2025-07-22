@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Code, CheckCircle, MapPin, ArrowRight } from "lucide-react";
+import { Search, Smartphone, Code, CheckCircle, MapPin, ArrowRight, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatsData {
@@ -18,6 +18,30 @@ interface StatsData {
     location: string;
     searches: number;
   }>;
+}
+
+// Helper function to create Google Earth links
+function createGoogleEarthLink(location: string): string | null {
+  // Check if location contains coordinates (latitude,longitude format)
+  const coordsMatch = location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+  if (coordsMatch) {
+    const [, lat, lng] = coordsMatch;
+    return `https://earth.google.com/web/@${lat},${lng},1000a,35y,0h,0t,0r`;
+  }
+  return null;
+}
+
+// Helper function to format location display
+function formatLocationDisplay(location: string): { display: string; coords?: string } {
+  const coordsMatch = location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+  if (coordsMatch) {
+    const [, lat, lng] = coordsMatch;
+    return {
+      display: `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`,
+      coords: location
+    };
+  }
+  return { display: location };
 }
 
 export default function AdminDashboard() {
@@ -178,14 +202,32 @@ export default function AdminDashboard() {
                   stats.locations.map((location, index) => {
                     const maxSearches = Math.max(...stats.locations.map(l => l.searches));
                     const percentage = (location.searches / maxSearches) * 100;
+                    const locationInfo = formatLocationDisplay(location.location);
+                    const googleEarthLink = createGoogleEarthLink(location.location);
                     
                     return (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
+                      <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3 flex-1">
                           <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                             <MapPin className="text-primary w-4 h-4" />
                           </div>
-                          <span className="font-medium text-gray-900">{location.location}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900">{locationInfo.display}</span>
+                            {locationInfo.coords && (
+                              <span className="text-xs text-gray-500">Coordinates</span>
+                            )}
+                          </div>
+                          {googleEarthLink && (
+                            <a 
+                              href={googleEarthLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-blue-700 transition-colors"
+                              title="View in Google Earth"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
                         </div>
                         <div className="flex items-center space-x-3">
                           <div className="w-20 bg-gray-200 rounded-full h-2">

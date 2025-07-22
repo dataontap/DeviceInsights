@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Search, Info } from "lucide-react";
+import { Smartphone, Search, Info, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -14,10 +14,12 @@ interface IMEICheckerProps {
 
 export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [imei, setImei] = useState("");
+  const [manualLocation, setManualLocation] = useState("");
+  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const { toast } = useToast();
 
   const checkIMEIMutation = useMutation({
-    mutationFn: async (data: { imei: string; location?: string }) => {
+    mutationFn: async (data: { imei: string; location?: string; network?: string }) => {
       const response = await apiRequest("POST", "/api/v1/check", data);
       return response.json();
     },
@@ -62,20 +64,22 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
     onLoading(true);
     
-    // Get user's location if available
-    if (navigator.geolocation) {
+    const finalLocation = manualLocation || (useCurrentLocation ? undefined : 'unknown');
+    
+    // Get user's location if they want to use current location
+    if (useCurrentLocation && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = `${position.coords.latitude},${position.coords.longitude}`;
-          checkIMEIMutation.mutate({ imei, location });
+          checkIMEIMutation.mutate({ imei, location, network: "AT&T" });
         },
         () => {
-          // Fallback without location
-          checkIMEIMutation.mutate({ imei });
+          // Fallback to manual location or unknown
+          checkIMEIMutation.mutate({ imei, location: finalLocation, network: "AT&T" });
         }
       );
     } else {
-      checkIMEIMutation.mutate({ imei });
+      checkIMEIMutation.mutate({ imei, location: finalLocation, network: "AT&T" });
     }
   };
 
@@ -88,10 +92,10 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     <section className="bg-gradient-to-br from-primary to-secondary text-white py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-6">
-          Check Your Device's AT&T Network Compatibility
+          Check Your Device's Network Compatibility
         </h1>
         <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-          Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on AT&T's network.
+          Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on any network.
         </p>
         
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
@@ -120,6 +124,54 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 <Info className="w-4 h-4 mr-1 text-accent" />
                 To find your IMEI, dial <code className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1">*#06#</code> on your device
               </p>
+            </div>
+
+            {/* Location Section */}
+            <div className="text-left mb-6 space-y-4">
+              <Label className="block text-sm font-medium text-gray-700">
+                Location (Optional)
+              </Label>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useCurrentLocation"
+                    checked={useCurrentLocation}
+                    onChange={(e) => {
+                      setUseCurrentLocation(e.target.checked);
+                      if (e.target.checked) {
+                        setManualLocation(""); // Clear manual location if using current
+                      }
+                    }}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="useCurrentLocation" className="text-sm text-gray-700 flex items-center">
+                    <MapPin className="w-4 h-4 mr-1 text-primary" />
+                    Use my current location
+                  </label>
+                </div>
+                
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={manualLocation}
+                    onChange={(e) => {
+                      setManualLocation(e.target.value);
+                      if (e.target.value) {
+                        setUseCurrentLocation(false); // Clear current location if typing manually
+                      }
+                    }}
+                    placeholder="Or enter your location (e.g., New York, NY)"
+                    className="w-full text-sm"
+                    disabled={useCurrentLocation}
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-500">
+                  Location helps us provide more accurate network coverage information for your area.
+                </p>
+              </div>
             </div>
             
             <Button 

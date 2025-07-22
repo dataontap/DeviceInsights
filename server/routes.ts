@@ -9,7 +9,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // IMEI Analysis endpoint
   app.post("/api/v1/check", async (req, res) => {
     try {
-      const { imei, location } = req.body;
+      const { imei, location, network } = req.body;
       
       if (!imei) {
         return res.status(400).json({ error: "IMEI is required" });
@@ -25,8 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userAgent = req.get('User-Agent') || 'unknown';
 
       try {
-        // Analyze device using AI
-        const deviceInfo = await analyzeIMEI(imei);
+        // Analyze device using AI with specified network (default AT&T)
+        const targetNetwork = network || "AT&T";
+        const deviceInfo = await analyzeIMEI(imei, targetNetwork);
         
         // Store search in database
         const searchData = {
@@ -177,6 +178,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Search lookup error:", error);
       res.status(500).json({ error: "Failed to fetch search" });
+    }
+  });
+
+  // Get detailed searches with location data for admin
+  app.get("/api/v1/admin/searches", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const searches = await storage.getImeiSearches(limit);
+      
+      res.json({
+        searches: searches.map(search => ({
+          id: search.id,
+          imei: search.imei,
+          device: {
+            make: search.deviceMake,
+            model: search.deviceModel,
+            year: search.deviceYear
+          },
+          location: search.searchLocation,
+          coordinates: search.searchLocation?.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/) ? {
+            lat: parseFloat(search.searchLocation.split(',')[0]),
+            lng: parseFloat(search.searchLocation.split(',')[1])
+          } : null,
+          searchedAt: search.searchedAt,
+          ipAddress: search.ipAddress
+        }))
+      });
+    } catch (error) {
+      console.error("Admin searches error:", error);
+      res.status(500).json({ error: "Failed to fetch searches" });
     }
   });
 
