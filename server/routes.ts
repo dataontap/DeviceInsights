@@ -41,6 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       name: "IMEI Device Checker API",
       version: "1.0.0",
       description: "AI-powered IMEI analysis and network compatibility checking",
+      baseUrl: `${req.protocol}://${req.get('host')}`,
       endpoints: {
         "POST /api/v1/check": "Analyze IMEI device compatibility",
         "GET /api/v1/stats": "Get usage statistics",
@@ -48,7 +49,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "GET /api/v1/search/{id}": "Get individual search details",
         "GET /api/v1/admin/searches": "Get detailed admin search data"
       },
-      documentation: "See API_DOCUMENTATION.md for complete details"
+      authentication: {
+        type: "Bearer Token",
+        header: "Authorization: Bearer YOUR_API_KEY",
+        note: "Include any non-empty string as API key for demo purposes"
+      },
+      examples: {
+        curl: `curl -X POST ${req.protocol}://${req.get('host')}/api/v1/check \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer your-api-key" \\
+  -d '{"imei": "123456789012345", "location": "San Francisco, CA"}'`,
+        javascript: `fetch('${req.protocol}://${req.get('host')}/api/v1/check', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your-api-key'
+  },
+  body: JSON.stringify({
+    imei: '123456789012345',
+    location: 'San Francisco, CA'
+  })
+})`
+      },
+      documentation: "Visit the admin section for complete API documentation"
     });
   });
 
