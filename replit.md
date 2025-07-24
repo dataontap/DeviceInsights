@@ -34,6 +34,7 @@ The application is built as a monorepo with clear separation between client, ser
 - **Users**: Basic user management with username/password
 - **IMEI Searches**: Stores device search history with AI analysis results
 - **API Keys**: Management system for API access control
+- **Blacklisted IMEIs**: Security system for blocking problematic device identifiers
 
 ### Frontend Architecture
 - **Component-based**: Uses Radix UI primitives with custom styling
@@ -158,5 +159,9 @@ The application is built as a monorepo with clear separation between client, ser
 ✓ Created visual TAC analysis section in device results with detailed explanations
 ✓ Enhanced fallback database with real TAC examples and improved device matching
 ✓ Added carrier variant and regional model identification capabilities
+✓ Implemented blacklisted IMEI database system for security and fraud prevention
+✓ Added automatic blacklist checking before device analysis with user-friendly warning messages
+✓ Created test IMEI (111111111111111) for validation with "naughty list" messaging
+✓ Enhanced location-based carrier selection with GPS detection and country-specific defaults
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.

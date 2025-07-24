@@ -1,6 +1,6 @@
-import { imeiSearches, apiKeys, policyAcceptances, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, users, type User, type InsertUser } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -39,6 +39,12 @@ export interface IStorage {
     acceptanceRate: number;
     recentAcceptances: number;
   }>;
+  
+  // Blacklisted IMEIs
+  isImeiBlacklisted(imei: string): Promise<BlacklistedImei | null>;
+  addBlacklistedImei(blacklistedImei: InsertBlacklistedImei): Promise<BlacklistedImei>;
+  removeBlacklistedImei(imei: string): Promise<void>;
+  getBlacklistedImeis(): Promise<BlacklistedImei[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -236,6 +242,40 @@ export class DatabaseStorage implements IStorage {
       acceptanceRate: Math.round(acceptanceRate * 10) / 10,
       recentAcceptances
     };
+  }
+
+  async isImeiBlacklisted(imei: string): Promise<BlacklistedImei | null> {
+    const [result] = await db
+      .select()
+      .from(blacklistedImeis)
+      .where(and(
+        eq(blacklistedImeis.imei, imei),
+        eq(blacklistedImeis.isActive, true)
+      ));
+    return result || null;
+  }
+
+  async addBlacklistedImei(blacklistedImei: InsertBlacklistedImei): Promise<BlacklistedImei> {
+    const [result] = await db
+      .insert(blacklistedImeis)
+      .values(blacklistedImei)
+      .returning();
+    return result;
+  }
+
+  async removeBlacklistedImei(imei: string): Promise<void> {
+    await db
+      .update(blacklistedImeis)
+      .set({ isActive: false })
+      .where(eq(blacklistedImeis.imei, imei));
+  }
+
+  async getBlacklistedImeis(): Promise<BlacklistedImei[]> {
+    return await db
+      .select()
+      .from(blacklistedImeis)
+      .where(eq(blacklistedImeis.isActive, true))
+      .orderBy(desc(blacklistedImeis.blacklistedAt));
   }
 }
 

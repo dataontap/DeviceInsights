@@ -49,7 +49,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         
         if (isUS) {
           // For US, prefer AT&T if available, otherwise use largest
-          const attCarrier = data.carriers.find(c => c.name === "AT&T");
+          const attCarrier = data.carriers.find((c: Carrier) => c.name === "AT&T");
           setSelectedCarrier(attCarrier ? "AT&T" : data.carriers[0].name);
         } else {
           // For other countries, use the largest carrier (first in list)
@@ -83,13 +83,29 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
     onError: (error: any) => {
       onLoading(false);
+      
+      // Handle blacklisted IMEI specifically
+      if (error.response?.status === 403 && error.response?.data?.blacklisted) {
+        toast({
+          title: "Blacklisted Device",
+          description: "It looks like the device IMEI you provided is on the 'naughty list'. Please contact support.",
+          variant: "destructive",
+        });
+        setDeviceResult({ 
+          success: false, 
+          error: error.response.data.message,
+          blacklisted: true 
+        });
+      } else {
+        setDeviceResult({ success: false, error: error.message });
+        toast({
+          title: "Analysis Failed",
+          description: error.message || "Failed to analyze device. Please try again.",
+          variant: "destructive",
+        });
+      }
+      
       setShowPolicy(true);
-      setDeviceResult({ success: false, error: error.message });
-      toast({
-        title: "Analysis Failed",
-        description: error.message || "Failed to analyze device. Please try again.",
-        variant: "destructive",
-      });
     },
   });
 

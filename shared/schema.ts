@@ -55,6 +55,15 @@ export const policyAcceptances = pgTable("policy_acceptances", {
   }>(),
 });
 
+export const blacklistedImeis = pgTable("blacklisted_imeis", {
+  id: serial("id").primaryKey(),
+  imei: text("imei").notNull().unique(),
+  reason: text("reason").notNull(),
+  blacklistedAt: timestamp("blacklisted_at").defaultNow().notNull(),
+  addedBy: text("added_by").notNull().default("system"),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],
@@ -108,6 +117,13 @@ export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances
   deviceInfo: true,
 });
 
+export const insertBlacklistedImeiSchema = createInsertSchema(blacklistedImeis).pick({
+  imei: true,
+  reason: true,
+  addedBy: true,
+  isActive: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -119,5 +135,7 @@ export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertPolicyAcceptance = z.infer<typeof insertPolicyAcceptanceSchema>;
 export type PolicyAcceptance = typeof policyAcceptances.$inferSelect;
+export type InsertBlacklistedImei = z.infer<typeof insertBlacklistedImeiSchema>;
+export type BlacklistedImei = typeof blacklistedImeis.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

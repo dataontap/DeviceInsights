@@ -194,6 +194,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid IMEI format" });
       }
 
+      // Check if IMEI is blacklisted
+      const blacklistedImei = await storage.isImeiBlacklisted(imei);
+      if (blacklistedImei) {
+        return res.status(403).json({ 
+          error: "Blacklisted IMEI",
+          message: "It looks like the device IMEI you provided is on the 'naughty list'. Please contact support.",
+          success: false,
+          blacklisted: true,
+          reason: blacklistedImei.reason
+        });
+      }
+
       // Get client IP and user agent for analytics
       const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
       const userAgent = req.get('User-Agent') || 'unknown';
@@ -316,6 +328,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate IMEI format
       if (!validateIMEI(imei)) {
         return res.status(400).json({ error: "Invalid IMEI format" });
+      }
+
+      // Check if IMEI is blacklisted
+      const blacklistedImei = await storage.isImeiBlacklisted(imei);
+      if (blacklistedImei) {
+        return res.status(403).json({ 
+          error: "Blacklisted IMEI",
+          message: "It looks like the device IMEI you provided is on the 'naughty list'. Please contact support.",
+          success: false,
+          blacklisted: true,
+          reason: blacklistedImei.reason
+        });
       }
 
       // Get client IP and user agent for analytics
