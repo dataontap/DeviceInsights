@@ -89,8 +89,14 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).pick({
 });
 
 export const generateApiKeySchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  name: z.string().min(1, "Please enter a name for your API key"),
+  email: z.string()
+    .email("Please enter a valid email address")
+    .max(254, "Email address is too long")
+    .refine(email => !email.includes('<') && !email.includes('>'), "Invalid email format"),
+  name: z.string()
+    .min(2, "Name must be at least 2 characters long")
+    .max(100, "Name must be less than 100 characters")
+    .refine(name => !/[<>'"&]/.test(name), "Name contains invalid characters"),
 });
 
 export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances).pick({

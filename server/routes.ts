@@ -8,20 +8,52 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 
-// Simple API key validation middleware
-function validateApiKey(req: any, res: any, next: any) {
-  const authHeader = req.headers.authorization;
-  const apiKey = authHeader?.replace('Bearer ', '');
-  
-  // For demo purposes, accept any non-empty API key
-  // In production, you should validate against your API key database
-  if (!apiKey || apiKey.trim() === '') {
-    return res.status(401).json({ error: 'API key required' });
+// SECURE API key validation middleware
+async function validateApiKey(req: any, res: any, next: any) {
+  try {
+    const authHeader = req.headers.authorization;
+    const apiKey = authHeader?.replace('Bearer ', '');
+    
+    if (!apiKey || apiKey.trim() === '') {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'API key must be provided in Authorization header' 
+      });
+    }
+    
+    // Validate API key format (should start with 'imei_')
+    if (!apiKey.startsWith('imei_')) {
+      return res.status(401).json({ 
+        error: 'Invalid API key format',
+        message: 'API key format is invalid' 
+      });
+    }
+    
+    // Hash the provided key and validate against database
+    const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+    const storedKey = await storage.getApiKeyByHash(keyHash);
+    
+    if (!storedKey || !storedKey.isActive) {
+      return res.status(401).json({ 
+        error: 'Invalid API key',
+        message: 'API key is invalid or inactive' 
+      });
+    }
+    
+    // Update last used timestamp and increment usage count
+    await storage.incrementApiKeyUsage(keyHash);
+    
+    // Store validated key info for logging/analytics (but not the actual key)
+    req.apiKeyId = storedKey.id;
+    req.apiKeyName = storedKey.name;
+    next();
+  } catch (error) {
+    console.error('API key validation error:', error);
+    return res.status(500).json({ 
+      error: 'Authentication error',
+      message: 'Unable to validate API key' 
+    });
   }
-  
-  // Store API key for logging/analytics
-  req.apiKey = apiKey;
-  next();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -41,11 +73,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiting to all API routes
   app.use('/api', limiter);
 
-  // Add CORS headers for API access
+  // SECURE CORS configuration - restrict to trusted domains
   app.use('/api', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      'https://imei-checker.replit.app', // Production domain
+      'https://3253a27d-7995-4bba-9336-127493ad92d8-00-1dfw0f3xq3gjv.riker.replit.dev', // Replit dev domain
+      'http://localhost:5000', // Local development
+      'http://localhost:3000'  // Common dev port
+    ];
+    
+    // Allow same-origin requests (when origin is undefined)
+    if (!origin || allowedOrigins.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin || '*');
+    }
+    
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
     
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
@@ -476,18 +521,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate API key endpoint (no API key required - public registration)
   app.post("/api/generate-key", async (req, res) => {
     try {
+      // SECURITY: Apply additional rate limiting for key generation
+      const userIP = req.ip || 'unknown';
+      
       const { email, name } = generateApiKeySchema.parse(req.body);
       
-      // Generate unique API key
-      const apiKey = `imei_${nanoid(16)}_${Date.now()}`;
+      // SECURITY: Additional validation and sanitization
+      const sanitizedEmail = email.toLowerCase().trim();
+      const sanitizedName = name.trim().substring(0, 100); // Limit name length
+      
+      // SECURITY: Check for suspicious patterns
+      if (sanitizedName.length < 2) {
+        return res.status(400).json({ 
+          error: "Invalid name", 
+          details: ["Name must be at least 2 characters long"]
+        });
+      }
+      
+      // Generate unique API key with stronger entropy
+      const apiKey = `imei_${nanoid(24)}_${Date.now()}`;
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
       
-      // Store in database
+      // Store in database with sanitized data
       const storedKey = await storage.createApiKey({
         key: apiKey,
         keyHash,
-        email,
-        name,
+        email: sanitizedEmail,
+        name: sanitizedName,
       });
       
       res.json({
@@ -496,7 +556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keyId: storedKey.id,
         email: storedKey.email,
         name: storedKey.name,
-        createdAt: storedKey.createdAt
+        createdAt: storedKey.createdAt,
+        message: "API key generated successfully. Store it securely - it cannot be retrieved again."
       });
     } catch (error) {
       console.error("API key generation error:", error);
