@@ -159,9 +159,9 @@ export default function APIDocs() {
   ];
 
   const rateLimits = [
-    { tier: "Free Tier", requests: "100 requests/hour" },
-    { tier: "Pro Tier", requests: "1,000 requests/hour" },
-    { tier: "Enterprise", requests: "Unlimited" }
+    { tier: "Free Tier", requests: "100 requests/hour", status: "available", label: "Available in Alpha" },
+    { tier: "Pro Tier", requests: "1,000 requests/hour", status: "coming-soon", label: "Coming Soon" },
+    { tier: "Enterprise", requests: "Unlimited", status: "coming-soon", label: "Coming Soon" }
   ];
 
   return (
@@ -317,9 +317,31 @@ Content-Type: application/json`}
               <CardContent>
                 <div className="space-y-3">
                   {rateLimits.map((limit, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">{limit.tier}</span>
-                      <span className="text-sm text-gray-600">{limit.requests}</span>
+                    <div 
+                      key={index} 
+                      className={`flex justify-between items-center p-3 rounded-lg border-2 ${
+                        limit.status === 'available' 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-yellow-50 border-yellow-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700">{limit.tier}</span>
+                        <Badge 
+                          className={`text-xs font-medium ${
+                            limit.status === 'available' 
+                              ? 'bg-green-500 text-white hover:bg-green-600' 
+                              : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                          }`}
+                        >
+                          {limit.label}
+                        </Badge>
+                      </div>
+                      <span className={`text-sm font-medium ${
+                        limit.status === 'available' ? 'text-green-700' : 'text-yellow-700'
+                      }`}>
+                        {limit.requests}
+                      </span>
                     </div>
                   ))}
                 </div>
