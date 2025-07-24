@@ -196,10 +196,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             make: deviceInfo.make,
             model: deviceInfo.model,
             year: deviceInfo.year,
+            modelNumber: deviceInfo.modelNumber,
             imei: imei
           },
           networkCompatibility: deviceInfo.networkCapabilities,
-          analysis: "Device analysis completed",
+          analysis: deviceInfo.tacAnalysis || "Device analysis completed",
+          specifications: deviceInfo.specifications,
           recommendations: []
         });
       } catch (error) {
@@ -322,6 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           capabilities: deviceInfo.networkCapabilities,
           specifications: deviceInfo.specifications,
+          tacAnalysis: deviceInfo.tacAnalysis,
           searchId: search.id
         });
       } catch (aiError) {

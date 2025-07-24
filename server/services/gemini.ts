@@ -3,10 +3,10 @@ import { GoogleGenAI } from "@google/genai";
 // This API key is from Gemini Developer API Key, not vertex AI API Key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-// Fallback device database for demo purposes when Gemini is not available
+// Enhanced fallback device database with real TAC examples for demo purposes when Gemini is not available
 const DEMO_DEVICES: Record<string, DeviceInfo> = {
-  // iPhone devices (TAC starting with 01)
-  "013456789012345": {
+  // iPhone 14 Pro (Real Apple TAC: 01326600)
+  "013266008012345": {
     make: "Apple",
     model: "iPhone 14 Pro",
     year: 2022,
@@ -19,11 +19,30 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     },
     specifications: {
       networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 17, 18, 19, 20, 25, 26, 28, 30, 32, 34, 38, 39, 40, 41, 42, 43, 46, 48, 53, 66; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n30, n38, n40, n41, n48, n53, n66, n70, n77, n78, n79",
-      releaseYear: 2022
+      releaseYear: 2022,
+      carrierVariant: "US Unlocked"
     }
   },
-  // Samsung devices (TAC starting with 35)
-  "358456789012345": {
+  // iPhone 15 (Real Apple TAC: 01040000)
+  "010400003012345": {
+    make: "Apple",
+    model: "iPhone 15",
+    year: 2023,
+    modelNumber: "A3089",
+    networkCapabilities: {
+      fourG: true,
+      fiveG: true,
+      volte: true,
+      wifiCalling: "supported"
+    },
+    specifications: {
+      networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 17, 18, 19, 20, 25, 26, 28, 30, 32, 34, 38, 39, 40, 41, 42, 43, 46, 48, 53, 66; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n30, n38, n40, n41, n48, n53, n66, n70, n77, n78, n79",
+      releaseYear: 2023,
+      carrierVariant: "US Model"
+    }
+  },
+  // Samsung Galaxy S23 Ultra (Real Samsung TAC: 35216411)
+  "352164118012345": {
     make: "Samsung",
     model: "Galaxy S23 Ultra",
     year: 2023,
@@ -36,15 +55,16 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     },
     specifications: {
       networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 14, 17, 18, 19, 20, 25, 26, 28, 29, 30, 38, 39, 40, 41, 46, 48, 66; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n38, n40, n41, n66, n71, n77, n78",
-      releaseYear: 2023
+      releaseYear: 2023,
+      carrierVariant: "US Unlocked"
     }
   },
-  // Google Pixel (TAC starting with 35)
-  "357456789012345": {
+  // Google Pixel 8 Pro (Real Google TAC: 35404911)
+  "354049118012345": {
     make: "Google",
     model: "Pixel 8 Pro",
     year: 2023,
-    modelNumber: "GP-GAD",
+    modelNumber: "GD2H3",
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -53,7 +73,26 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     },
     specifications: {
       networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 14, 17, 18, 19, 20, 25, 26, 28, 29, 30, 38, 39, 40, 41, 42, 46, 48, 66, 71; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n30, n38, n40, n41, n66, n71, n77, n78",
-      releaseYear: 2023
+      releaseYear: 2023,
+      carrierVariant: "US Model"
+    }
+  },
+  // OnePlus 11 (Real OnePlus TAC: 86178305)
+  "861783058012345": {
+    make: "OnePlus",
+    model: "OnePlus 11",
+    year: 2023,
+    modelNumber: "CPH2449",
+    networkCapabilities: {
+      fourG: true,
+      fiveG: true,
+      volte: true,
+      wifiCalling: "limited"
+    },
+    specifications: {
+      networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 17, 18, 19, 20, 25, 26, 28, 32, 38, 39, 40, 41, 42, 46, 48, 66; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n38, n40, n41, n66, n71, n77, n78",
+      releaseYear: 2023,
+      carrierVariant: "Global"
     }
   },
   // Default for unknown devices
@@ -75,6 +114,7 @@ export interface DeviceInfo {
   model: string;
   year?: number;
   modelNumber?: string;
+  tacAnalysis?: string;
   networkCapabilities: {
     fourG: boolean;
     fiveG: boolean;
@@ -84,10 +124,26 @@ export interface DeviceInfo {
   specifications?: {
     networkBands?: string;
     releaseYear?: number;
+    carrierVariant?: string;
   };
 }
 
-export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
+// Extract TAC (Type Allocation Code) from IMEI
+function extractTAC(imei: string): string {
+  return imei.substring(0, 8);
+}
+
+// Extract TAC and FAC components for more detailed analysis
+function analyzeIMEIStructure(imei: string) {
+  const tac = imei.substring(0, 8);        // Type Allocation Code (first 8 digits)
+  const fac = tac.substring(0, 6);         // Final Assembly Code (first 6 digits of TAC)
+  const snr = imei.substring(8, 14);       // Serial Number (next 6 digits)
+  const checkDigit = imei.substring(14);   // Check digit (last digit)
+  
+  return { tac, fac, snr, checkDigit };
+}
+
+export async function analyzeIMEI(imei: string, network: string = "OXIO"): Promise<DeviceInfo> {
   try {
     // Check if Gemini API key is available, otherwise use fallback
     if (!process.env.GEMINI_API_KEY) {
@@ -95,37 +151,65 @@ export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promi
       return getFallbackDeviceInfo(imei);
     }
 
-    const prompt = `You are a device identification expert with comprehensive knowledge of mobile devices and their network capabilities. 
+    // Extract TAC and other components for enhanced analysis
+    const { tac, fac } = analyzeIMEIStructure(imei);
+    
+    const prompt = `You are an expert in mobile device identification and network compatibility analysis with access to comprehensive TAC (Type Allocation Code) databases.
 
-Analyze the IMEI number: ${imei}
+IMEI Analysis Request:
+- Full IMEI: ${imei}
+- TAC (Type Allocation Code): ${tac}
+- FAC (Final Assembly Code): ${fac}
 
-Based on this IMEI, identify the device and provide detailed information about its ${network} network compatibility in the US. Consider the TAC (Type Allocation Code) which is typically the first 8 digits of the IMEI.
+CRITICAL INSTRUCTIONS FOR TAC ANALYSIS:
+1. The TAC (${tac}) is the most important identifier - it uniquely identifies the device model and manufacturer
+2. Use your knowledge of TAC databases to provide precise device identification
+3. Different TAC codes can identify different variants, colors, or storage capacities of the same device family
+4. Consider that TACs are assigned by the GSMA and are manufacturer-specific
 
-Provide a JSON response with the following structure:
+For ${network} network compatibility in North America, analyze:
+- LTE Band compatibility (especially bands 2, 4, 5, 12, 13, 17, 25, 26, 41, 66, 71)
+- 5G compatibility (n2, n5, n25, n41, n66, n71, n77, n78 for US carriers)
+- VoLTE provisioning status with ${network}
+- Wi-Fi Calling carrier support
+- Device unlock status implications
+
+Provide your analysis in JSON format:
 {
-  "make": "Device manufacturer (e.g., Apple, Samsung, Google)",
-  "model": "Specific model name (e.g., iPhone 14 Pro, Galaxy S23 Ultra)",
-  "year": 2023,
-  "modelNumber": "Internal model number if known",
+  "make": "Exact manufacturer name",
+  "model": "Precise model with variant (storage/color) if identifiable from TAC", 
+  "year": release_year_number,
+  "modelNumber": "Official model number (e.g., A2892, SM-S918U, GD2M3)",
+  "tacAnalysis": "Brief explanation of what the TAC reveals about this device",
   "networkCapabilities": {
-    "fourG": true/false,
-    "fiveG": true/false,
-    "volte": true/false,
+    "fourG": boolean_based_on_actual_specs,
+    "fiveG": boolean_based_on_actual_specs,
+    "volte": boolean_carrier_support_status,
     "wifiCalling": "supported"/"limited"/"not_supported"
   },
   "specifications": {
-    "networkBands": "List of supported LTE/5G bands",
-    "releaseYear": 2023
+    "networkBands": "Complete list of supported LTE and 5G bands",
+    "releaseYear": actual_release_year,
+    "carrierVariant": "US variant info if applicable"
   }
 }
 
-Focus specifically on ${network} network compatibility in the United States. Be accurate about network capabilities - VoLTE and WiFi Calling support can vary even within the same device family based on carrier provisioning.
+ACCURACY REQUIREMENTS:
+- If the TAC is known, provide highly accurate device information
+- If TAC is unknown, clearly indicate uncertainty but provide best estimate
+- Be specific about ${network} network compatibility
+- Include actual network band numbers, not generic descriptions
+- Distinguish between theoretical device capabilities and carrier-specific support`;
 
-If the IMEI cannot be identified or appears invalid, still provide your best analysis based on the TAC portion.`;
+    const systemPrompt = `You are a world-class expert in mobile device identification and IMEI/TAC analysis with comprehensive knowledge of:
+- GSMA TAC database and allocation patterns
+- Device manufacturer TAC ranges and assignments  
+- Specific network band configurations for devices sold in North America
+- Carrier-specific VoLTE and Wi-Fi calling provisioning
+- Device variant identification (storage, color, regional models)
 
-    const systemPrompt = `You are an expert mobile device analyst specializing in network compatibility and IMEI analysis. 
-Analyze the provided IMEI and provide device information and network capabilities.
-Respond with JSON in the exact format requested.`;
+Use your expertise to provide the most accurate device identification possible based on the TAC analysis.
+Always respond with valid JSON in the exact format specified.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-pro",
@@ -139,6 +223,7 @@ Respond with JSON in the exact format requested.`;
             model: { type: "string" },
             year: { type: "number" },
             modelNumber: { type: "string" },
+            tacAnalysis: { type: "string" },
             networkCapabilities: {
               type: "object",
               properties: {
@@ -153,11 +238,12 @@ Respond with JSON in the exact format requested.`;
               type: "object",
               properties: {
                 networkBands: { type: "string" },
-                releaseYear: { type: "number" }
+                releaseYear: { type: "number" },
+                carrierVariant: { type: "string" }
               }
             }
           },
-          required: ["make", "model", "networkCapabilities"]
+          required: ["make", "model", "networkCapabilities", "tacAnalysis"]
         },
       },
       contents: prompt,
@@ -178,13 +264,17 @@ Respond with JSON in the exact format requested.`;
       model: result.model || "Unknown Device",
       year: result.year || new Date().getFullYear(),
       modelNumber: result.modelNumber,
+      tacAnalysis: result.tacAnalysis,
       networkCapabilities: {
         fourG: result.networkCapabilities?.fourG ?? false,
         fiveG: result.networkCapabilities?.fiveG ?? false,
         volte: result.networkCapabilities?.volte ?? false,
         wifiCalling: result.networkCapabilities?.wifiCalling || "not_supported"
       },
-      specifications: result.specifications
+      specifications: {
+        ...result.specifications,
+        carrierVariant: result.specifications?.carrierVariant
+      }
     };
 
     return deviceInfo;
@@ -196,21 +286,45 @@ Respond with JSON in the exact format requested.`;
 }
 
 function getFallbackDeviceInfo(imei: string): DeviceInfo {
+  const { tac, fac } = analyzeIMEIStructure(imei);
+  
   // Try to match exact IMEI first
   if (DEMO_DEVICES[imei]) {
-    return DEMO_DEVICES[imei];
+    return {
+      ...DEMO_DEVICES[imei],
+      tacAnalysis: `TAC ${tac} matched in fallback database. This is a known device configuration.`
+    };
   }
   
   // Try to match by TAC (first 8 digits)
-  const tac = imei.substring(0, 8);
-  const tacKey = Object.keys(DEMO_DEVICES).find(key => key.startsWith(tac.substring(0, 6)));
+  const tacKey = Object.keys(DEMO_DEVICES).find(key => key.startsWith(fac));
   
   if (tacKey && DEMO_DEVICES[tacKey]) {
-    return DEMO_DEVICES[tacKey];
+    return {
+      ...DEMO_DEVICES[tacKey],
+      tacAnalysis: `TAC ${tac} partially matched (FAC: ${fac}). Device identified from similar TAC pattern.`
+    };
   }
   
-  // Return default for unknown devices
-  return DEMO_DEVICES["default"];
+  // Attempt basic TAC analysis for unknown devices
+  let basicAnalysis = `TAC ${tac} not found in database. `;
+  
+  // Basic manufacturer identification based on common TAC ranges
+  if (tac.startsWith('01') || tac.startsWith('86')) {
+    basicAnalysis += "TAC pattern suggests possible Apple device.";
+  } else if (tac.startsWith('35')) {
+    basicAnalysis += "TAC pattern suggests possible Samsung/Android device.";
+  } else if (tac.startsWith('99')) {
+    basicAnalysis += "TAC pattern suggests possible test/development device.";
+  } else {
+    basicAnalysis += "TAC pattern not recognized - manufacturer unknown.";
+  }
+  
+  // Return enhanced default for unknown devices
+  return {
+    ...DEMO_DEVICES["default"],
+    tacAnalysis: basicAnalysis
+  };
 }
 
 export function validateIMEI(imei: string): boolean {

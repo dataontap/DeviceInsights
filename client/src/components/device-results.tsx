@@ -24,7 +24,10 @@ interface DeviceResultsProps {
     specifications?: {
       networkBands?: string;
       releaseYear?: number;
+      carrierVariant?: string;
     };
+    analysis?: string;
+    tacAnalysis?: string;
   };
 }
 
@@ -159,6 +162,26 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
               })}
             </div>
 
+            {/* TAC Analysis Section */}
+            {result.tacAnalysis && (
+              <div className="mt-8 border-t border-gray-200 pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Device Identification Analysis</h4>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span className="text-blue-600 text-sm font-semibold">TAC</span>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <h5 className="text-sm font-medium text-blue-900 mb-1">TAC (Type Allocation Code) Analysis</h5>
+                      <p className="text-sm text-blue-800">{result.tacAnalysis}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {result.specifications && (
               <div className="mt-8 border-t border-gray-200 pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Device Specifications</h4>
@@ -177,6 +200,12 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
                       {result.specifications.networkBands || 'Information not available'}
                     </dd>
                   </div>
+                  {result.specifications.carrierVariant && (
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Carrier Variant</dt>
+                      <dd className="text-sm text-gray-900 mt-1">{result.specifications.carrierVariant}</dd>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
