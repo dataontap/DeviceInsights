@@ -9,7 +9,13 @@ interface DeviceResultsProps {
       modelNumber?: string;
       imei: string;
     };
-    capabilities: {
+    networkCompatibility?: {
+      fourG: boolean;
+      fiveG: boolean;
+      volte: boolean;
+      wifiCalling: string;
+    };
+    capabilities?: {
       fourG: boolean;
       fiveG: boolean;
       volte: boolean;
@@ -23,6 +29,14 @@ interface DeviceResultsProps {
 }
 
 export default function DeviceResults({ result }: DeviceResultsProps) {
+  // Use networkCompatibility if available, fallback to capabilities
+  const deviceCapabilities = result.networkCompatibility || result.capabilities || {
+    fourG: false,
+    fiveG: false,
+    volte: false,
+    wifiCalling: 'not_supported'
+  };
+
   const getCapabilityStatus = (capability: boolean | string) => {
     if (typeof capability === 'boolean') {
       return capability ? 'supported' : 'not_supported';
@@ -66,36 +80,36 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
     }
   };
 
-  const capabilities = [
+  const capabilityList = [
     {
       title: '4G LTE Data',
       description: 'Full compatibility with OXIO\'s 4G LTE network',
       icon: Signal,
-      status: getCapabilityStatus(result.capabilities.fourG),
+      status: getCapabilityStatus(deviceCapabilities.fourG),
       details: 'Up to 150 Mbps'
     },
     {
       title: '5G Data',
       description: 'Compatible with OXIO\'s 5G network',
       icon: Radio,
-      status: getCapabilityStatus(result.capabilities.fiveG),
+      status: getCapabilityStatus(deviceCapabilities.fiveG),
       details: 'Up to 1 Gbps'
     },
     {
       title: 'VoLTE',
       description: 'Voice over LTE for HD calling',
       icon: Phone,
-      status: getCapabilityStatus(result.capabilities.volte),
+      status: getCapabilityStatus(deviceCapabilities.volte),
       details: 'HD Voice'
     },
     {
       title: 'Wi-Fi Calling',
-      description: result.capabilities.wifiCalling === 'limited' 
+      description: deviceCapabilities.wifiCalling === 'limited' 
         ? 'Requires carrier provisioning' 
         : 'Make calls over Wi-Fi',
       icon: Wifi,
-      status: getCapabilityStatus(result.capabilities.wifiCalling),
-      details: result.capabilities.wifiCalling === 'limited' ? 'Contact Carrier' : 'Available'
+      status: getCapabilityStatus(deviceCapabilities.wifiCalling),
+      details: deviceCapabilities.wifiCalling === 'limited' ? 'Contact Carrier' : 'Available'
     }
   ];
 
@@ -119,7 +133,7 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
           <div className="p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">OXIO Network Capabilities</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {capabilities.map((capability, index) => {
+              {capabilityList.map((capability, index) => {
                 const status = getStatusBadge(capability.status);
                 const IconComponent = capability.icon;
                 const StatusIcon = status.icon;
