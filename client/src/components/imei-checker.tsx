@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Search, Info, MapPin, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
@@ -13,13 +14,48 @@ interface IMEICheckerProps {
   onLoading: (loading: boolean) => void;
 }
 
+interface Carrier {
+  name: string;
+  marketShare: string;
+  description: string;
+}
+
 export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [imei, setImei] = useState("");
   const [manualLocation, setManualLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [deviceResult, setDeviceResult] = useState<any>(null);
+  const [carriers, setCarriers] = useState<Carrier[]>([]);
+  const [selectedCarrier, setSelectedCarrier] = useState("AT&T");
+  const [country, setCountry] = useState("United States");
+  const [carriersLoading, setCarriersLoading] = useState(false);
   const { toast } = useToast();
+
+  // Fetch carriers when location changes
+  const fetchCarriersMutation = useMutation({
+    mutationFn: async (location: string) => {
+      const response = await apiRequest("POST", "/api/carriers", { location });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCarriersLoading(false);
+      setCarriers(data.carriers || []);
+      setCountry(data.country || "Unknown");
+      // Set first carrier as default selection
+      if (data.carriers && data.carriers.length > 0) {
+        setSelectedCarrier(data.carriers[0].name);
+      }
+    },
+    onError: (error: any) => {
+      setCarriersLoading(false);
+      console.error("Failed to fetch carriers:", error);
+      // Keep default US/AT&T on error
+      setCarriers([{ name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }]);
+      setCountry("United States");
+      setSelectedCarrier("AT&T");
+    },
+  });
 
   const checkIMEIMutation = useMutation({
     mutationFn: async (data: { imei: string; location?: string; network?: string }) => {
@@ -32,7 +68,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       setShowPolicy(true);
       toast({
         title: "Device Analyzed Successfully",
-        description: `Found ${data.device.make} ${data.device.model}`,
+        description: `Found ${data.device.make} ${data.device.model} (${selectedCarrier} compatibility)`,
       });
     },
     onError: (error: any) => {
@@ -67,6 +103,24 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
   });
 
+  // Initialize carriers with US defaults
+  useEffect(() => {
+    setCarriers([{ name: "AT&T", marketShare: "45.4%", description: "Largest US carrier with nationwide 5G coverage" }]);
+  }, []);
+
+  // Fetch carriers when location changes (debounced)
+  useEffect(() => {
+    const location = useCurrentLocation ? "United States" : manualLocation;
+    if (location && location.length > 2) {
+      const timer = setTimeout(() => {
+        setCarriersLoading(true);
+        fetchCarriersMutation.mutate(location);
+      }, 1000); // 1 second delay to avoid too many API calls
+
+      return () => clearTimeout(timer);
+    }
+  }, [manualLocation, useCurrentLocation]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -97,15 +151,15 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = `${position.coords.latitude},${position.coords.longitude}`;
-          checkIMEIMutation.mutate({ imei, location, network: "OXIO" });
+          checkIMEIMutation.mutate({ imei, location, network: selectedCarrier });
         },
         () => {
           // Fallback to manual location or unknown
-          checkIMEIMutation.mutate({ imei, location: finalLocation, network: "OXIO" });
+          checkIMEIMutation.mutate({ imei, location: finalLocation, network: selectedCarrier });
         }
       );
     } else {
-      checkIMEIMutation.mutate({ imei, location: finalLocation, network: "OXIO" });
+      checkIMEIMutation.mutate({ imei, location: finalLocation, network: selectedCarrier });
     }
   };
 
@@ -209,6 +263,54 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 </p>
               </div>
             </div>
+
+            {/* Carrier Selection Section */}
+            <div className="text-left mb-6">
+              <Label className="block text-sm font-medium text-gray-700 mb-2">
+                <Globe className="w-4 h-4 mr-1 inline text-primary" />
+                Network Carrier for {country}
+              </Label>
+              
+              {carriersLoading ? (
+                <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span className="text-sm text-blue-600">Finding top carriers in your area...</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a carrier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {carriers.map((carrier) => (
+                        <SelectItem key={carrier.name} value={carrier.name}>
+                          <div className="flex items-center space-x-2">
+                            <Radio className="w-4 h-4 text-primary" />
+                            <div>
+                              <div className="font-medium">{carrier.name}</div>
+                              <div className="text-xs text-gray-500">{carrier.marketShare} market share</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        <strong>{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                Defaults to AT&T (US). Carriers automatically detected based on your location.
+              </p>
+            </div>
             
             <Button 
               type="submit"
@@ -216,7 +318,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               className="w-full bg-primary text-white py-3 px-6 text-lg hover:bg-blue-700 disabled:opacity-50"
             >
               <Search className="w-5 h-5 mr-2" />
-              {checkIMEIMutation.isPending ? "Analyzing..." : "Check Device Compatibility"}
+{checkIMEIMutation.isPending ? "Analyzing..." : `Check ${selectedCarrier || 'Network'} Compatibility`}
             </Button>
           </form>
         </div>

@@ -143,7 +143,105 @@ function analyzeIMEIStructure(imei: string) {
   return { tac, fac, snr, checkDigit };
 }
 
-export async function analyzeIMEI(imei: string, network: string = "OXIO"): Promise<DeviceInfo> {
+// Get top 5 carriers for a country/location
+export async function getTopCarriers(location: string): Promise<{ carriers: Array<{name: string, marketShare: string, description: string}>, country: string }> {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      // Fallback carriers for common locations
+      if (location.toLowerCase().includes('us') || location.toLowerCase().includes('united states') || location.toLowerCase().includes('america')) {
+        return {
+          country: "United States",
+          carriers: [
+            { name: "AT&T", marketShare: "45.4%", description: "Largest US carrier with nationwide 5G coverage" },
+            { name: "Verizon", marketShare: "32.8%", description: "Premium network with strong rural coverage" },
+            { name: "T-Mobile", marketShare: "16.7%", description: "Un-carrier with competitive pricing" },
+            { name: "US Cellular", marketShare: "1.2%", description: "Regional carrier serving rural areas" },
+            { name: "Dish Network", marketShare: "0.9%", description: "New 5G network provider" }
+          ]
+        };
+      }
+      // Default fallback
+      return {
+        country: "United States",
+        carriers: [
+          { name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }
+        ]
+      };
+    }
+
+    const prompt = `Based on the location "${location}", identify the country and provide the TOP 5 mobile carriers by customer base/market share.
+
+    For each carrier, provide:
+    - Official company name
+    - Market share percentage (approximate)
+    - Brief description of their network/service
+
+    Focus on major carriers that consumers would typically use, not MVNOs or very small regional carriers.
+
+    Respond with JSON in this exact format:
+    {
+      "country": "Country Name",
+      "carriers": [
+        {
+          "name": "Carrier Name",
+          "marketShare": "XX.X%", 
+          "description": "Brief description"
+        }
+      ]
+    }`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-pro",
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            country: { type: "string" },
+            carriers: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  marketShare: { type: "string" },
+                  description: { type: "string" }
+                },
+                required: ["name", "marketShare", "description"]
+              }
+            }
+          },
+          required: ["country", "carriers"]
+        }
+      },
+      contents: prompt,
+    });
+
+    const result = JSON.parse(response.text || '{}');
+    
+    // Ensure we have valid data
+    if (!result.carriers || !Array.isArray(result.carriers)) {
+      throw new Error("Invalid carriers data");
+    }
+
+    return {
+      country: result.country || "Unknown",
+      carriers: result.carriers.slice(0, 5) // Ensure max 5 carriers
+    };
+
+  } catch (error) {
+    console.error("Error fetching carriers:", error);
+    // Return US default on error
+    return {
+      country: "United States",
+      carriers: [
+        { name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }
+      ]
+    };
+  }
+}
+
+export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
   try {
     // Check if Gemini API key is available, otherwise use fallback
     if (!process.env.GEMINI_API_KEY) {

@@ -151,6 +151,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get top carriers for a location
+  app.post("/api/carriers", async (req, res) => {
+    try {
+      const { location } = req.body;
+      
+      if (!location) {
+        return res.status(400).json({ error: "Location is required" });
+      }
+
+      const { getTopCarriers } = await import("./services/gemini.js");
+      const carriersData = await getTopCarriers(location);
+      
+      res.json({
+        success: true,
+        ...carriersData
+      });
+    } catch (error) {
+      console.error("Carriers fetch error:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch carriers",
+        success: false,
+        country: "United States",
+        carriers: [
+          { name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }
+        ]
+      });
+    }
+  });
+
   // Web interface IMEI check (no API key required)
   app.post("/api/check", async (req, res) => {
     try {
