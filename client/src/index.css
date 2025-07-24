@@ -65,6 +65,15 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
+  /* Input text styling - make input text dark and visible */
+  input {
+    color: hsl(20, 14.3%, 15%) !important; /* Dark gray text for better visibility */
+  }
+
+  .dark input {
+    color: hsl(0, 0%, 85%) !important; /* Light gray text for dark mode */
+  }
+
   input::placeholder {
     color: hsl(var(--muted-foreground));
     opacity: 1;
