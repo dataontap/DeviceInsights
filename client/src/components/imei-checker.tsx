@@ -279,17 +279,17 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               ) : (
                 <div className="space-y-3">
                   <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a carrier" />
+                    <SelectTrigger className="w-full text-gray-700 dark:text-gray-200">
+                      <SelectValue placeholder="Select a carrier" className="text-gray-700 dark:text-gray-200" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800">
                       {carriers.map((carrier) => (
-                        <SelectItem key={carrier.name} value={carrier.name}>
+                        <SelectItem key={carrier.name} value={carrier.name} className="text-gray-700 dark:text-gray-200 focus:text-gray-900 dark:focus:text-white">
                           <div className="flex items-center space-x-2">
                             <Radio className="w-4 h-4 text-primary" />
                             <div>
-                              <div className="font-medium">{carrier.name}</div>
-                              <div className="text-xs text-gray-500">{carrier.marketShare} market share</div>
+                              <div className="font-medium text-gray-800 dark:text-gray-100">{carrier.name}</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">{carrier.marketShare} market share</div>
                             </div>
                           </div>
                         </SelectItem>
@@ -298,9 +298,9 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                   </Select>
                   
                   {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        <strong>{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <p className="text-sm text-gray-700 dark:text-gray-200">
+                        <strong className="text-gray-800 dark:text-gray-100">{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
                       </p>
                     </div>
                   )}
