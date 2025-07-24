@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Smartphone, Search, Info, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import NetworkPolicy from "./network-policy";
 
 interface IMEICheckerProps {
   onResult: (result: any) => void;
@@ -16,6 +17,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [imei, setImei] = useState("");
   const [manualLocation, setManualLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [deviceResult, setDeviceResult] = useState<any>(null);
   const { toast } = useToast();
 
   const checkIMEIMutation = useMutation({
@@ -25,7 +28,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
     onSuccess: (data) => {
       onLoading(false);
-      onResult(data);
+      setDeviceResult(data);
+      setShowPolicy(true);
       toast({
         title: "Device Analyzed Successfully",
         description: `Found ${data.device.make} ${data.device.model}`,
@@ -33,9 +37,31 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
     onError: (error: any) => {
       onLoading(false);
+      setShowPolicy(true);
+      setDeviceResult({ success: false, error: error.message });
       toast({
         title: "Analysis Failed",
         description: error.message || "Failed to analyze device. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const policyAcceptanceMutation = useMutation({
+    mutationFn: async (data: { accepted: boolean; searchId?: number; deviceInfo?: any }) => {
+      const response = await apiRequest("POST", "/api/v1/policy/accept", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Policy Recorded",
+        description: "Your preference has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Recording Failed",
+        description: "Failed to record policy acceptance.",
         variant: "destructive",
       });
     },
@@ -185,6 +211,44 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           </form>
         </div>
       </div>
+
+      {/* Network Policy Modal */}
+      {showPolicy && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <NetworkPolicy
+              onAccept={(accepted) => {
+                const isSuccess = deviceResult?.success !== false;
+                const deviceInfo = deviceResult?.device ? {
+                  make: deviceResult.device.make,
+                  model: deviceResult.device.model,
+                  compatible: isSuccess
+                } : undefined;
+
+                policyAcceptanceMutation.mutate({
+                  accepted,
+                  searchId: deviceResult?.searchId,
+                  deviceInfo
+                });
+
+                setShowPolicy(false);
+                
+                if (accepted) {
+                  onResult(deviceResult);
+                } else {
+                  toast({
+                    title: "Analysis Declined",
+                    description: "You must accept the policy to view results.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              isSuccess={deviceResult?.success !== false}
+              deviceInfo={deviceResult?.device}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

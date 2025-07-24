@@ -38,8 +38,33 @@ export const apiKeys = pgTable("api_keys", {
   isActive: boolean("is_active").default(true),
 });
 
-export const imeiSearchesRelations = relations(imeiSearches, ({ many }) => ({
-  // Future relations can be added here
+export const policyAcceptances = pgTable("policy_acceptances", {
+  id: serial("id").primaryKey(),
+  searchId: integer("search_id").references(() => imeiSearches.id),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent"),
+  policyVersion: text("policy_version").notNull().default("v1.0"),
+  accepted: boolean("accepted").notNull(),
+  acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+  deviceInfo: jsonb("device_info").$type<{
+    make?: string;
+    model?: string;
+    compatible?: boolean;
+  }>(),
+});
+
+export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
+  policyAcceptance: one(policyAcceptances, {
+    fields: [imeiSearches.id],
+    references: [policyAcceptances.searchId],
+  }),
+}));
+
+export const policyAcceptancesRelations = relations(policyAcceptances, ({ one }) => ({
+  search: one(imeiSearches, {
+    fields: [policyAcceptances.searchId],
+    references: [imeiSearches.id],
+  }),
 }));
 
 export const insertImeiSearchSchema = createInsertSchema(imeiSearches).pick({
@@ -59,15 +84,25 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).pick({
   name: true,
 });
 
-export type InsertImeiSearch = z.infer<typeof insertImeiSearchSchema>;
-export type ImeiSearch = typeof imeiSearches.$inferSelect;
-export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
-export type ApiKey = typeof apiKeys.$inferSelect;
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances).pick({
+  searchId: true,
+  ipAddress: true,
+  userAgent: true,
+  policyVersion: true,
+  accepted: true,
+  deviceInfo: true,
+});
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
+
+export type InsertImeiSearch = z.infer<typeof insertImeiSearchSchema>;
+export type ImeiSearch = typeof imeiSearches.$inferSelect;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertPolicyAcceptance = z.infer<typeof insertPolicyAcceptanceSchema>;
+export type PolicyAcceptance = typeof policyAcceptances.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;

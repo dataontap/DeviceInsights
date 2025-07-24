@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, users, type User, type InsertUser } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, users, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql } from "drizzle-orm";
 
@@ -30,6 +30,15 @@ export interface IStorage {
   createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
   getApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
   incrementApiKeyUsage(keyHash: string): Promise<void>;
+  
+  // Policy Acceptances
+  createPolicyAcceptance(acceptance: InsertPolicyAcceptance): Promise<PolicyAcceptance>;
+  getPolicyAcceptancesBySearch(searchId: number): Promise<PolicyAcceptance[]>;
+  getPolicyComplianceStats(): Promise<{
+    totalAcceptances: number;
+    acceptanceRate: number;
+    recentAcceptances: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -173,6 +182,60 @@ export class DatabaseStorage implements IStorage {
         lastUsed: new Date()
       })
       .where(eq(apiKeys.keyHash, keyHash));
+  }
+
+  async createPolicyAcceptance(acceptance: InsertPolicyAcceptance): Promise<PolicyAcceptance> {
+    const [result] = await db
+      .insert(policyAcceptances)
+      .values({
+        searchId: acceptance.searchId || null,
+        ipAddress: acceptance.ipAddress,
+        userAgent: acceptance.userAgent || null,
+        policyVersion: acceptance.policyVersion || "v1.0",
+        accepted: acceptance.accepted,
+        deviceInfo: acceptance.deviceInfo as any || null,
+      })
+      .returning();
+    return result;
+  }
+
+  async getPolicyAcceptancesBySearch(searchId: number): Promise<PolicyAcceptance[]> {
+    return await db
+      .select()
+      .from(policyAcceptances)
+      .where(eq(policyAcceptances.searchId, searchId))
+      .orderBy(desc(policyAcceptances.acceptedAt));
+  }
+
+  async getPolicyComplianceStats(): Promise<{
+    totalAcceptances: number;
+    acceptanceRate: number;
+    recentAcceptances: number;
+  }> {
+    const totalAcceptancesResult = await db
+      .select({ count: count() })
+      .from(policyAcceptances);
+
+    const acceptedResult = await db
+      .select({ count: count() })
+      .from(policyAcceptances)
+      .where(eq(policyAcceptances.accepted, true));
+
+    const recentAcceptancesResult = await db
+      .select({ count: count() })
+      .from(policyAcceptances)
+      .where(sql`accepted_at >= NOW() - INTERVAL '30 days'`);
+
+    const totalAcceptances = totalAcceptancesResult[0]?.count || 0;
+    const acceptedCount = acceptedResult[0]?.count || 0;
+    const recentAcceptances = recentAcceptancesResult[0]?.count || 0;
+    const acceptanceRate = totalAcceptances > 0 ? (acceptedCount / totalAcceptances) * 100 : 0;
+
+    return {
+      totalAcceptances,
+      acceptanceRate: Math.round(acceptanceRate * 10) / 10,
+      recentAcceptances
+    };
   }
 }
 

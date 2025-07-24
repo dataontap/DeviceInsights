@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { analyzeIMEI, validateIMEI } from "./services/gemini";
-import { insertImeiSearchSchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Simple API key validation middleware
@@ -277,6 +277,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Admin searches error:", error);
       res.status(500).json({ error: "Failed to fetch searches" });
+    }
+  });
+
+  // Policy acceptance endpoint (requires API key)
+  app.post("/api/v1/policy/accept", validateApiKey, async (req, res) => {
+    try {
+      const validationSchema = z.object({
+        searchId: z.number().optional(),
+        accepted: z.boolean(),
+        deviceInfo: z.object({
+          make: z.string().optional(),
+          model: z.string().optional(),
+          compatible: z.boolean().optional(),
+        }).optional(),
+      });
+      
+      const { searchId, accepted, deviceInfo } = validationSchema.parse(req.body);
+      
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+      
+      const policyData = {
+        searchId: searchId || null,
+        ipAddress,
+        userAgent,
+        policyVersion: "v1.0",
+        accepted,
+        deviceInfo: deviceInfo || null,
+      };
+      
+      const acceptance = await storage.createPolicyAcceptance(policyData);
+      
+      res.json({
+        success: true,
+        acceptanceId: acceptance.id,
+        accepted: acceptance.accepted,
+        timestamp: acceptance.acceptedAt
+      });
+    } catch (error) {
+      console.error("Policy acceptance error:", error);
+      res.status(500).json({ error: "Failed to record policy acceptance" });
+    }
+  });
+
+  // Get policy compliance statistics (requires API key)
+  app.get("/api/v1/policy/stats", validateApiKey, async (req, res) => {
+    try {
+      const stats = await storage.getPolicyComplianceStats();
+      
+      res.json({
+        compliance: {
+          totalAcceptances: stats.totalAcceptances,
+          acceptanceRate: stats.acceptanceRate,
+          recentAcceptances: stats.recentAcceptances
+        },
+        policyVersion: "v1.0",
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Policy stats error:", error);
+      res.status(500).json({ error: "Failed to fetch policy statistics" });
     }
   });
 
