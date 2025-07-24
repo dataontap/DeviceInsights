@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Search, Info, MapPin } from "lucide-react";
+import { Smartphone, Search, Info, MapPin, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
@@ -120,9 +120,19 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         <h1 className="text-4xl md:text-5xl font-bold mb-6">
           Check Your Device's Network Compatibility
         </h1>
-        <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+        <p className="text-xl text-blue-100 mb-6 max-w-2xl mx-auto">
           Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on any network.
         </p>
+        
+        {/* Alpha Service Banner */}
+        <div className="mb-8 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 justify-center">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <p className="text-sm font-medium text-orange-800">
+              ⚠️ Alpha Service - Results are tentative and experimental. Use with caution.
+            </p>
+          </div>
+        </div>
         
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
           <form onSubmit={handleSubmit}>

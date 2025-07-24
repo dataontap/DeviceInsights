@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { analyzeIMEI, validateIMEI } from "./services/gemini";
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema } from "@shared/schema";
@@ -22,6 +23,22 @@ function validateApiKey(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Rate limiting: 100 requests per hour for Alpha service
+  const limiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+      error: "Rate limit exceeded",
+      message: "Too many requests from this IP. Please try again later.",
+      details: "This Alpha service is limited to 100 requests per hour per IP address."
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  });
+
+  // Apply rate limiting to all API routes
+  app.use('/api', limiter);
+
   // Add CORS headers for API access
   app.use('/api', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -39,9 +56,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/docs", (req, res) => {
     res.json({
       name: "IMEI Device Checker API",
-      version: "1.0.0",
-      description: "AI-powered IMEI analysis and network compatibility checking",
+      version: "1.0.0-alpha",
+      status: "ALPHA - Use with caution",
+      description: "AI-powered IMEI analysis and network compatibility checking (Alpha version)",
+      disclaimer: "⚠️ ALPHA VERSION: This service is in early testing phase. Results are tentative and should be treated with caution. Use at your own discretion.",
       baseUrl: `${req.protocol}://${req.get('host')}`,
+      rateLimits: {
+        perHour: 100,
+        note: "100 requests per hour per IP address"
+      },
       endpoints: {
         "POST /api/v1/check": "Analyze IMEI device compatibility",
         "GET /api/v1/stats": "Get usage statistics",
@@ -52,7 +75,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       authentication: {
         type: "Bearer Token",
         header: "Authorization: Bearer YOUR_API_KEY",
-        note: "Include any non-empty string as API key for demo purposes"
+        note: "Include any non-empty string as API key for Alpha testing purposes"
+      },
+      important: {
+        alphaWarning: "This is an Alpha service. All results are tentative and experimental.",
+        dataAccuracy: "Device compatibility information may not be 100% accurate.",
+        useAtOwnRisk: "Users acknowledge they use this service at their own discretion."
       },
       examples: {
         curl: `curl -X POST ${req.protocol}://${req.get('host')}/api/v1/check \\

@@ -100,6 +100,22 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Alpha Service Warning */}
+        <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+            <div>
+              <p className="font-medium text-orange-800 dark:text-orange-200 text-sm">
+                ⚠️ ALPHA SERVICE NOTICE
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
+                This service is in early testing phase. All results are tentative and experimental. 
+                Device compatibility information may not be 100% accurate. Use at your own discretion.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {getNetworkStatusMessage()}
         {getCapabilityBadges()}
         
@@ -161,7 +177,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               htmlFor="policy-accept" 
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              I have read and agree to the OXIO Network Policy and Terms of Service
+              I acknowledge this is an Alpha service and agree to the OXIO Network Policy and Terms of Service
             </label>
           </div>
           
@@ -185,7 +201,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
 
         <div className="text-xs text-muted-foreground border-t pt-3">
           <p>
-            Last updated: January 2025. For questions about this policy, contact OXIO support at support@oxio.ca
+            Last updated: January 2025. Alpha version - Use with caution. For questions about this policy, contact OXIO support at support@oxio.ca
           </p>
         </div>
       </CardContent>

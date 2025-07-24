@@ -125,9 +125,14 @@ The application is built as a monorepo with clear separation between client, ser
 ✓ Added policy compliance database schema with user consent recording
 ✓ Created policy modal component for both successful and unsuccessful device analysis
 ✓ Integrated policy acceptance API endpoints with Bearer token authentication
-→ All API endpoints now require Bearer token authentication
-→ API documentation available at `/api/v1/docs` endpoint
-→ Policy acceptance tracked in database for compliance requirements
-→ Network policy displayed for all device analysis results
+✓ Established rate limiting of 100 requests per hour per IP address for Alpha service
+✓ Updated all user-facing content to reflect Alpha status with appropriate disclaimers
+✓ Added Alpha service warnings throughout the interface and policy modal
+✓ Separated web interface endpoints from external API endpoints for authentication
+→ Rate limiting: 100 requests/hour per IP for all API endpoints
+→ Alpha service disclaimers displayed prominently across the interface
+→ Web interface: Authentication-free for user-friendly browser access
+→ External APIs: Bearer token required for enterprise integrations
+→ All results labeled as tentative and experimental for Alpha phase
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.
