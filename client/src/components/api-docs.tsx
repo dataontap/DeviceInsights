@@ -322,7 +322,7 @@ Content-Type: application/json`}
                       className={`flex justify-between items-center p-3 rounded-lg border-2 ${
                         limit.status === 'available' 
                           ? 'bg-green-50 border-green-200' 
-                          : 'bg-yellow-50 border-yellow-200'
+                          : 'bg-purple-50 border-purple-200'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -331,14 +331,14 @@ Content-Type: application/json`}
                           className={`text-xs font-medium ${
                             limit.status === 'available' 
                               ? 'bg-green-500 text-white hover:bg-green-600' 
-                              : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                              : 'bg-purple-500 text-white hover:bg-purple-600'
                           }`}
                         >
                           {limit.label}
                         </Badge>
                       </div>
                       <span className={`text-sm font-medium ${
-                        limit.status === 'available' ? 'text-green-700' : 'text-yellow-700'
+                        limit.status === 'available' ? 'text-green-700' : 'text-purple-700'
                       }`}>
                         {limit.requests}
                       </span>
