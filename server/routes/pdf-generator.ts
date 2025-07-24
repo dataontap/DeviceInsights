@@ -565,11 +565,23 @@ export function registerPDFRoutes(app: Express) {
 
       const browser = await puppeteer.launch({
         headless: true,
+        executablePath: '/nix/store/chromium-*/bin/chromium',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--no-zygote',
+          '--single-process'
         ]
       });
 
