@@ -57,16 +57,26 @@ export default function PolicyPDFDownload() {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <div className="flex gap-3">
-          <Button onClick={togglePolicy} className="flex-1">
-            <FileText className="w-4 h-4 mr-2" />
-            {showFullPolicy ? 'Hide Policy' : 'View Policy'}
-            {showFullPolicy ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
-          </Button>
-          <Button onClick={handleDownloadPDF} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Download PDF
-          </Button>
+        {/* Primary action - View Policy inline */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100">Complete Policy Document</h3>
+          </div>
+          <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+            This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition to OXIO.
+          </p>
+          <div className="flex gap-3">
+            <Button onClick={togglePolicy} className="flex-1 bg-blue-600 hover:bg-blue-700">
+              <FileText className="w-4 h-4 mr-2" />
+              {showFullPolicy ? 'Hide Policy' : 'View Full Policy Online'}
+              {showFullPolicy ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+            </Button>
+            <Button onClick={handleDownloadPDF} variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50">
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </div>
         </div>
 
         {showFullPolicy && (
