@@ -129,7 +129,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           <div className="flex items-center gap-2 justify-center">
             <AlertTriangle className="h-4 w-4 text-orange-600" />
             <p className="text-sm font-medium text-orange-800">
-              ⚠️ Alpha Service - Results are tentative and experimental. Use with caution.
+              Alpha Service - Results are tentative and experimental. Use with caution.
             </p>
           </div>
         </div>
