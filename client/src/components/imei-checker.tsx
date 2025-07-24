@@ -23,7 +23,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
   const checkIMEIMutation = useMutation({
     mutationFn: async (data: { imei: string; location?: string; network?: string }) => {
-      const response = await apiRequest("POST", "/api/v1/check", data);
+      const response = await apiRequest("POST", "/api/check", data);
       return response.json();
     },
     onSuccess: (data) => {
@@ -49,7 +49,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
   const policyAcceptanceMutation = useMutation({
     mutationFn: async (data: { accepted: boolean; searchId?: number; deviceInfo?: any }) => {
-      const response = await apiRequest("POST", "/api/v1/policy/accept", data);
+      const response = await apiRequest("POST", "/api/policy/accept", data);
       return response.json();
     },
     onSuccess: () => {
@@ -97,15 +97,15 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = `${position.coords.latitude},${position.coords.longitude}`;
-          checkIMEIMutation.mutate({ imei, location, network: "AT&T" });
+          checkIMEIMutation.mutate({ imei, location, network: "OXIO" });
         },
         () => {
           // Fallback to manual location or unknown
-          checkIMEIMutation.mutate({ imei, location: finalLocation, network: "AT&T" });
+          checkIMEIMutation.mutate({ imei, location: finalLocation, network: "OXIO" });
         }
       );
     } else {
-      checkIMEIMutation.mutate({ imei, location: finalLocation, network: "AT&T" });
+      checkIMEIMutation.mutate({ imei, location: finalLocation, network: "OXIO" });
     }
   };
 

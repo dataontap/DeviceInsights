@@ -75,7 +75,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // IMEI Analysis endpoint (with API key validation for external access)
+  // Web interface IMEI check (no API key required)
+  app.post("/api/check", async (req, res) => {
+    try {
+      const { imei, location, network } = req.body;
+      
+      if (!imei) {
+        return res.status(400).json({ error: "IMEI is required" });
+      }
+
+      // Validate IMEI format
+      if (!validateIMEI(imei)) {
+        return res.status(400).json({ error: "Invalid IMEI format" });
+      }
+
+      // Get client IP and user agent for analytics
+      const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+
+      try {
+        // Analyze device using AI with specified network (default OXIO)
+        const targetNetwork = network || "OXIO";
+        const deviceInfo = await analyzeIMEI(imei, targetNetwork);
+        
+        // Store search in database
+        const searchData = {
+          imei,
+          deviceMake: deviceInfo.make,
+          deviceModel: deviceInfo.model,
+          deviceYear: deviceInfo.year,
+          networkCapabilities: deviceInfo.networkCapabilities,
+          aiResponse: deviceInfo as any,
+          searchLocation: location || 'unknown',
+          ipAddress,
+          userAgent,
+        };
+
+        const search = await storage.createImeiSearch(searchData);
+
+        res.json({
+          success: true,
+          searchId: search.id,
+          device: {
+            make: deviceInfo.make,
+            model: deviceInfo.model,
+            year: deviceInfo.year,
+            imei: imei
+          },
+          networkCompatibility: deviceInfo.networkCapabilities,
+          analysis: "Device analysis completed",
+          recommendations: []
+        });
+      } catch (error) {
+        console.error("AI Analysis failed:", error);
+        
+        // Store failed search for analytics
+        const searchData = {
+          imei,
+          deviceMake: "unknown",
+          deviceModel: "unknown", 
+          deviceYear: null,
+          networkCapabilities: null,
+          aiResponse: { error: error instanceof Error ? error.message : "Unknown error" } as any,
+          searchLocation: location || 'unknown',
+          ipAddress,
+          userAgent,
+        };
+
+        const search = await storage.createImeiSearch(searchData);
+
+        res.status(500).json({
+          error: "Device analysis failed",
+          details: error instanceof Error ? error.message : "Unknown error",
+          searchId: search.id
+        });
+      }
+    } catch (error) {
+      console.error("IMEI check error:", error);
+      res.status(500).json({ error: "Failed to process IMEI check" });
+    }
+  });
+
+  // Web interface policy acceptance (no API key required)
+  app.post("/api/policy/accept", async (req, res) => {
+    try {
+      const validationSchema = z.object({
+        searchId: z.number().optional(),
+        accepted: z.boolean(),
+        deviceInfo: z.object({
+          make: z.string().optional(),
+          model: z.string().optional(),
+          compatible: z.boolean().optional(),
+        }).optional(),
+      });
+      
+      const { searchId, accepted, deviceInfo } = validationSchema.parse(req.body);
+      
+      const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+      
+      const policyData = {
+        searchId: searchId || null,
+        ipAddress,
+        userAgent,
+        policyVersion: "v1.0",
+        accepted,
+        deviceInfo: deviceInfo || null,
+      };
+      
+      const acceptance = await storage.createPolicyAcceptance(policyData);
+      
+      res.json({
+        success: true,
+        acceptanceId: acceptance.id,
+        accepted: acceptance.accepted,
+        timestamp: acceptance.acceptedAt
+      });
+    } catch (error) {
+      console.error("Policy acceptance error:", error);
+      res.status(500).json({ error: "Failed to record policy acceptance" });
+    }
+  });
+
+  // IMEI Analysis endpoint (with API key validation for external access)  
   app.post("/api/v1/check", validateApiKey, async (req, res) => {
     try {
       const { imei, location, network } = req.body;
