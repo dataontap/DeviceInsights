@@ -2,11 +2,18 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Copy, Download, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function APIDocs() {
   const [apiKey, setApiKey] = useState("");
+  const [email, setEmail] = useState("");
+  const [keyName, setKeyName] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const copyToClipboard = (text: string) => {
@@ -17,13 +24,52 @@ export default function APIDocs() {
     });
   };
 
-  const generateApiKey = () => {
-    const key = `imei_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
-    setApiKey(key);
-    toast({
-      title: "API Key Generated",
-      description: "Your new API key has been generated",
-    });
+  const generateApiKeyMutation = useMutation({
+    mutationFn: async (data: { email: string; name: string }) => {
+      const response = await fetch('/api/generate-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      if (!response.ok) {
+        throw result;
+      }
+      return result;
+    },
+    onSuccess: (data) => {
+      setApiKey(data.apiKey);
+      toast({
+        title: "API Key Generated Successfully",
+        description: `Your new API key has been created and saved to our database.`,
+      });
+      setIsGenerating(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Generate API Key",
+        description: error.details ? error.details.join(", ") : "Please check your email and name fields.",
+        variant: "destructive",
+      });
+      setIsGenerating(false);
+    },
+  });
+
+  const handleGenerateApiKey = () => {
+    if (!email || !keyName) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both email and name for your API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsGenerating(true);
+    generateApiKeyMutation.mutate({ email, name: keyName });
   };
 
   const downloadExport = async (format: 'json' | 'csv') => {
@@ -201,15 +247,64 @@ Content-Type: application/json`}
                     </pre>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-4">
+                  {/* API Key Generation Form */}
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="mt-1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="keyName" className="text-sm font-medium text-gray-700">
+                        API Key Name *
+                      </Label>
+                      <Input
+                        id="keyName"
+                        type="text"
+                        placeholder="My Project API Key"
+                        value={keyName}
+                        onChange={(e) => setKeyName(e.target.value)}
+                        className="mt-1"
+                        required
+                      />
+                    </div>
+                  </div>
+
                   {apiKey && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-3">
                       <p className="text-sm text-blue-800 font-medium">Your API Key:</p>
                       <code className="text-sm text-blue-900 break-all">{apiKey}</code>
+                      <div className="mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(apiKey)}
+                          className="h-8 px-2 text-blue-700 hover:bg-blue-100"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy Key
+                        </Button>
+                      </div>
                     </div>
                   )}
-                  <Button onClick={generateApiKey} className="bg-primary text-white hover:bg-blue-700">
-                    Generate API Key
+                  
+                  <Button 
+                    onClick={handleGenerateApiKey} 
+                    disabled={isGenerating || generateApiKeyMutation.isPending}
+                    className="bg-primary text-white hover:bg-blue-700 w-full"
+                  >
+                    <Key className="w-4 h-4 mr-2" />
+                    {isGenerating || generateApiKeyMutation.isPending ? "Generating..." : "Generate API Key"}
                   </Button>
                 </div>
               </CardContent>

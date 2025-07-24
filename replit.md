@@ -129,10 +129,16 @@ The application is built as a monorepo with clear separation between client, ser
 ✓ Updated all user-facing content to reflect Alpha status with appropriate disclaimers
 ✓ Added Alpha service warnings throughout the interface and policy modal
 ✓ Separated web interface endpoints from external API endpoints for authentication
+✓ Fixed database WebSocket connection issues by switching to HTTP adapter
+✓ Implemented API key generation system with email validation and database storage
+✓ Added user-friendly API key generation form with email and name requirements
+✓ Created secure API key generation endpoint (/api/generate-key) with proper validation
+✓ Updated database schema to include email field for API key management
 → Rate limiting: 100 requests/hour per IP for all API endpoints
 → Alpha service disclaimers displayed prominently across the interface
 → Web interface: Authentication-free for user-friendly browser access
 → External APIs: Bearer token required for enterprise integrations
 → All results labeled as tentative and experimental for Alpha phase
+→ API key generation: Requires valid email and name, generates unique keys with database storage
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.

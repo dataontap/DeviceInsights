@@ -3,8 +3,10 @@ import { createServer, type Server } from "http";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { analyzeIMEI, validateIMEI } from "./services/gemini";
-import { insertImeiSearchSchema, insertPolicyAcceptanceSchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema } from "@shared/schema";
 import { z } from "zod";
+import { nanoid } from "nanoid";
+import crypto from "crypto";
 
 // Simple API key validation middleware
 function validateApiKey(req: any, res: any, next: any) {
@@ -468,6 +470,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Policy acceptance error:", error);
       res.status(500).json({ error: "Failed to record policy acceptance" });
+    }
+  });
+
+  // Generate API key endpoint (no API key required - public registration)
+  app.post("/api/generate-key", async (req, res) => {
+    try {
+      const { email, name } = generateApiKeySchema.parse(req.body);
+      
+      // Generate unique API key
+      const apiKey = `imei_${nanoid(16)}_${Date.now()}`;
+      const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+      
+      // Store in database
+      const storedKey = await storage.createApiKey({
+        key: apiKey,
+        keyHash,
+        email,
+        name,
+      });
+      
+      res.json({
+        success: true,
+        apiKey: apiKey,
+        keyId: storedKey.id,
+        email: storedKey.email,
+        name: storedKey.name,
+        createdAt: storedKey.createdAt
+      });
+    } catch (error) {
+      console.error("API key generation error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors.map(e => e.message)
+        });
+      }
+      res.status(500).json({ error: "Failed to generate API key" });
     }
   });
 

@@ -31,6 +31,8 @@ export const imeiSearches = pgTable("imei_searches", {
 export const apiKeys = pgTable("api_keys", {
   id: serial("id").primaryKey(),
   keyHash: text("key_hash").notNull().unique(),
+  key: text("key").notNull().unique(),
+  email: text("email").notNull(),
   name: text("name").notNull(),
   requestCount: integer("request_count").default(0),
   lastUsed: timestamp("last_used"),
@@ -81,7 +83,14 @@ export const insertImeiSearchSchema = createInsertSchema(imeiSearches).pick({
 
 export const insertApiKeySchema = createInsertSchema(apiKeys).pick({
   keyHash: true,
+  key: true,
+  email: true,
   name: true,
+});
+
+export const generateApiKeySchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(1, "Please enter a name for your API key"),
 });
 
 export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances).pick({
