@@ -42,9 +42,19 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       setCarriersLoading(false);
       setCarriers(data.carriers || []);
       setCountry(data.country || "Unknown");
-      // Set first carrier as default selection
+      
+      // Auto-select appropriate default carrier
       if (data.carriers && data.carriers.length > 0) {
-        setSelectedCarrier(data.carriers[0].name);
+        const isUS = data.country === "United States" || data.country === "US";
+        
+        if (isUS) {
+          // For US, prefer AT&T if available, otherwise use largest
+          const attCarrier = data.carriers.find(c => c.name === "AT&T");
+          setSelectedCarrier(attCarrier ? "AT&T" : data.carriers[0].name);
+        } else {
+          // For other countries, use the largest carrier (first in list)
+          setSelectedCarrier(data.carriers[0].name);
+        }
       }
     },
     onError: (error: any) => {
@@ -108,13 +118,63 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     setCarriers([{ name: "AT&T", marketShare: "45.4%", description: "Largest US carrier with nationwide 5G coverage" }]);
   }, []);
 
-  // Fetch carriers when location changes (debounced)
+  // Handle location changes and carrier fetching
   useEffect(() => {
-    const location = useCurrentLocation ? "United States" : manualLocation;
-    if (location && location.length > 2) {
+    if (useCurrentLocation) {
+      // When using current location, get GPS coordinates first
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Use reverse geocoding to determine country
+            try {
+              setCarriersLoading(true);
+              const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+              const geoData = await geoResponse.json();
+              const detectedCountry = geoData.countryName || "United States";
+              
+              setCountry(detectedCountry);
+              fetchCarriersMutation.mutate(detectedCountry);
+            } catch (error) {
+              // Fallback to US if geolocation fails
+              setCountry("United States");
+              fetchCarriersMutation.mutate("United States");
+            }
+          },
+          () => {
+            // Fallback to US if geolocation permission denied
+            setCountry("United States");
+            setCarriersLoading(true);
+            fetchCarriersMutation.mutate("United States");
+          }
+        );
+      }
+    } else if (manualLocation && manualLocation.length > 2) {
+      // For manual location, extract/detect country and fetch carriers
       const timer = setTimeout(() => {
         setCarriersLoading(true);
-        fetchCarriersMutation.mutate(location);
+        // Update country based on manual location
+        const locationParts = manualLocation.split(',');
+        const potentialCountry = locationParts[locationParts.length - 1].trim();
+        
+        // If it looks like a country name or if location contains specific countries
+        if (manualLocation.toLowerCase().includes('lithuania')) {
+          setCountry('Lithuania');
+          fetchCarriersMutation.mutate('Lithuania');
+        } else if (manualLocation.toLowerCase().includes('canada')) {
+          setCountry('Canada');
+          fetchCarriersMutation.mutate('Canada');
+        } else if (manualLocation.toLowerCase().includes('uk') || manualLocation.toLowerCase().includes('united kingdom') || manualLocation.toLowerCase().includes('england')) {
+          setCountry('United Kingdom');
+          fetchCarriersMutation.mutate('United Kingdom');
+        } else {
+          // Default to extracting country or assume US
+          const country = potentialCountry.length > 15 ? "United States" : potentialCountry;
+          setCountry(country);
+          fetchCarriersMutation.mutate(country);
+        }
       }, 1000); // 1 second delay to avoid too many API calls
 
       return () => clearTimeout(timer);
@@ -144,21 +204,25 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
     onLoading(true);
     
-    const finalLocation = manualLocation || (useCurrentLocation ? undefined : 'unknown');
+    // Determine final location for IMEI check
+    let finalLocation = "";
     
-    // Get user's location if they want to use current location
     if (useCurrentLocation && navigator.geolocation) {
+      // Use GPS coordinates for current location
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const location = `${position.coords.latitude},${position.coords.longitude}`;
           checkIMEIMutation.mutate({ imei, location, network: selectedCarrier });
         },
         () => {
-          // Fallback to manual location or unknown
+          // Fallback to manual location or country name
+          finalLocation = manualLocation || country || 'unknown';
           checkIMEIMutation.mutate({ imei, location: finalLocation, network: selectedCarrier });
         }
       );
     } else {
+      // Use manual location or detected country
+      finalLocation = manualLocation || country || 'unknown';
       checkIMEIMutation.mutate({ imei, location: finalLocation, network: selectedCarrier });
     }
   };
