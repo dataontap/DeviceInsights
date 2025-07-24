@@ -3,6 +3,7 @@ import Navigation from "@/components/navigation";
 import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
 import AdminDashboard from "@/components/admin-dashboard";
+import PolicyPDFDownload from "@/components/policy-pdf-download";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
@@ -41,6 +42,21 @@ export default function Home() {
       )}
       
       {result && !isLoading && <DeviceResults result={result} />}
+      
+      {/* Policy PDF Download Section */}
+      <section className="py-12 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Device Compatibility Policy
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number to OXIO.
+            </p>
+          </div>
+          <PolicyPDFDownload />
+        </div>
+      </section>
       
       <div id="admin">
         <AdminDashboard />

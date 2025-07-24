@@ -7,6 +7,7 @@ import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySch
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+import { registerPDFRoutes } from "./routes/pdf-generator";
 
 // SECURE API key validation middleware
 async function validateApiKey(req: any, res: any, next: any) {
@@ -590,6 +591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch policy statistics" });
     }
   });
+
+  // Register PDF generation routes
+  registerPDFRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
