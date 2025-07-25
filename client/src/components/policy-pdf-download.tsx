@@ -242,8 +242,8 @@ export default function PolicyPDFDownload() {
                 <h3 className="text-xl font-semibold mb-4">Need Help?</h3>
                 <div className="space-y-2 text-blue-600 dark:text-blue-400 font-medium">
                   <div>📞 1-800-OXIO-HELP</div>
-                  <div>📧 support@oxio.ca</div>
-                  <div>💬 Live chat at oxio.ca</div>
+                  <div>📧 support@oxio.com</div>
+                  <div>💬 Live chat at oxio.com</div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                   Support hours: Monday-Friday 8AM-8PM EST, Weekend 10AM-6PM EST
@@ -256,7 +256,7 @@ export default function PolicyPDFDownload() {
                 <p>Version 2.0 | Effective January 2025</p>
                 <p>© 2025 OXIO Inc. All rights reserved.</p>
                 <p className="mt-2">
-                  This document is subject to change. Please visit oxio.ca for the most current version.
+                  This document is subject to change. Please visit oxio.com for the most current version.
                 </p>
               </div>
             </div>

@@ -41,7 +41,7 @@ export default function Home() {
         </section>
       )}
       
-      {result && !isLoading && result.success !== false && <DeviceResults result={result} />}
+      {result && !isLoading && (result as any)?.success !== false && <DeviceResults result={result} />}
       
       {/* Policy PDF Download Section */}
       <section className="py-12 bg-white">

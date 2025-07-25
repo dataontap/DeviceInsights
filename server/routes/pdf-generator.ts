@@ -343,7 +343,7 @@ export function registerPDFRoutes(app: Express) {
             <div class="checklist-item">
                 <div class="checkbox"></div>
                 <div>
-                    <strong>Device Compatibility:</strong> Verify your device supports the required network bands and features using our online compatibility checker at oxio.ca/compatibility
+                    <strong>Device Compatibility:</strong> Verify your device supports the required network bands and features using our online compatibility checker at oxio.com/compatibility
                 </div>
             </div>
             
@@ -531,7 +531,7 @@ export function registerPDFRoutes(app: Express) {
         <div class="info-box">
             <div class="info-title">How to Use the Compatibility Checker</div>
             <ol style="margin-left: 1.5rem; margin-top: 1rem;">
-                <li>Visit <strong>oxio.ca/compatibility</strong></li>
+                <li>Visit <strong>oxio.com/compatibility</strong></li>
                 <li>Enter your device's 15-digit IMEI number (dial *#06# on your device)</li>
                 <li>Review the detailed compatibility report</li>
                 <li>Contact our support team if you have questions about the results</li>
@@ -543,8 +543,8 @@ export function registerPDFRoutes(app: Express) {
             <p>Our technical support team is available to assist with device compatibility questions and unlock guidance.</p>
             <div class="contact-info">
                 📞 1-800-OXIO-HELP<br>
-                📧 support@oxio.ca<br>
-                💬 Live chat at oxio.ca
+                📧 support@oxio.com<br>
+                💬 Live chat at oxio.com
             </div>
             <p style="margin-top: 1rem; font-size: 0.9rem; color: #6B7280;">
                 Support hours: Monday-Friday 8AM-8PM EST, Weekend 10AM-6PM EST
@@ -556,7 +556,7 @@ export function registerPDFRoutes(app: Express) {
             <p>Version 2.0 | Effective January 2025</p>
             <p>© 2025 OXIO Inc. All rights reserved.</p>
             <p style="margin-top: 1rem;">
-                This document is subject to change. Please visit oxio.ca for the most current version.
+                This document is subject to change. Please visit oxio.com for the most current version.
             </p>
         </div>
     </div>
