@@ -45,11 +45,11 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       setCarriersLoading(false);
       setCarriers(data.carriers || []);
       setCountry(data.country || "Unknown");
-      
+
       // Auto-select appropriate default carrier
       if (data.carriers && data.carriers.length > 0) {
         const isUS = data.country === "United States" || data.country === "US";
-        
+
         if (isUS) {
           // For US, prefer AT&T if available, otherwise use largest
           const attCarrier = data.carriers.find((c: Carrier) => c.name === "AT&T");
@@ -86,7 +86,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
     onError: (error: any) => {
       onLoading(false);
-      
+
       // Handle blacklisted IMEI specifically
       if (error.response?.status === 403 && error.response?.data?.blacklisted) {
         setBlacklistInfo({
@@ -145,14 +145,14 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           async (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            
+
             // Use reverse geocoding to determine country
             try {
               setCarriersLoading(true);
               const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
               const geoData = await geoResponse.json();
               const detectedCountry = geoData.countryName || "United States";
-              
+
               setCountry(detectedCountry);
               fetchCarriersMutation.mutate(detectedCountry);
             } catch (error) {
@@ -176,7 +176,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         // Update country based on manual location
         const locationParts = manualLocation.split(',');
         const potentialCountry = locationParts[locationParts.length - 1].trim();
-        
+
         // If it looks like a country name or if location contains specific countries
         if (manualLocation.toLowerCase().includes('lithuania')) {
           setCountry('Lithuania');
@@ -201,7 +201,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!imei.trim()) {
       toast({
         title: "IMEI Required",
@@ -221,10 +221,10 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     }
 
     onLoading(true);
-    
+
     // Determine final location for IMEI check
     let finalLocation = "";
-    
+
     if (useCurrentLocation && navigator.geolocation) {
       // Use GPS coordinates for current location
       navigator.geolocation.getCurrentPosition(
@@ -259,17 +259,20 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         <p className="text-xl text-blue-100 mb-6 max-w-2xl mx-auto">
           Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on any network.
         </p>
-        
+
         {/* Alpha Service Banner */}
-        <div className="mb-8 p-3 bg-orange-50 border border-orange-200 rounded-lg max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 justify-center">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <p className="text-sm font-medium text-orange-800">
-              Alpha Service - Results are tentative and experimental. Use with caution.
-            </p>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 mb-6 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-100 p-2 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-amber-900 font-semibold text-sm">⚠️ ALPHA SERVICE</div>
+                <div className="text-amber-800 text-sm">Results are tentative and experimental. Use with caution.</div>
+              </div>
+            </div>
           </div>
-        </div>
-        
+
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
           <form onSubmit={handleSubmit}>
             <div className="text-left mb-6">
@@ -303,7 +306,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               <Label className="block text-sm font-medium text-gray-700">
                 Location (Optional)
               </Label>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
@@ -323,7 +326,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                     Use my current location
                   </label>
                 </div>
-                
+
                 <div className="relative">
                   <Input
                     type="text"
@@ -339,7 +342,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                     disabled={useCurrentLocation}
                   />
                 </div>
-                
+
                 <p className="text-xs text-gray-500">
                   Location helps us provide more accurate network coverage information for your area.
                 </p>
@@ -352,7 +355,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 <Globe className="w-4 h-4 mr-1 inline text-primary" />
                 Network Carrier for {country}
               </Label>
-              
+
               {carriersLoading ? (
                 <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -378,7 +381,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
                     <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                       <p className="text-sm text-gray-700 dark:text-gray-200">
@@ -388,10 +391,10 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                   )}
                 </div>
               )}
-              
-              
+
+
             </div>
-            
+
             <Button 
               type="submit"
               disabled={checkIMEIMutation.isPending || imei.length !== 15}
@@ -424,7 +427,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 });
 
                 setShowPolicy(false);
-                
+
                 if (accepted) {
                   onResult(deviceResult);
                 } else {

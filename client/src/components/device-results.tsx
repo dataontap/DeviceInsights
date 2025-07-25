@@ -32,6 +32,12 @@ interface DeviceResultsProps {
 }
 
 export default function DeviceResults({ result }: DeviceResultsProps) {
+  const deviceInfo = result?.device;
+
+  if (!deviceInfo) {
+    return null;
+  }
+
   // Use networkCompatibility if available, fallback to capabilities
   const deviceCapabilities = result.networkCompatibility || result.capabilities || {
     fourG: false,
@@ -123,16 +129,16 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
           <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">{result.device.make} {result.device.model}</h2>
-                <p className="text-blue-100">{result.device.make} Inc.</p>
+                <h2 className="text-2xl font-bold">{deviceInfo.make} {deviceInfo.model}</h2>
+                <p className="text-blue-100">{deviceInfo.make} Inc.</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-blue-100">IMEI</p>
-                <p className="text-lg font-mono">{result.device.imei}</p>
+                <p className="text-lg font-mono">{deviceInfo.imei}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">OXIO Network Capabilities</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -140,7 +146,7 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
                 const status = getStatusBadge(capability.status);
                 const IconComponent = capability.icon;
                 const StatusIcon = status.icon;
-                
+
                 return (
                   <div key={index} className={`${status.bgColor} border ${status.borderColor} rounded-lg p-4`}>
                     <div className="flex items-center justify-between mb-3">
