@@ -70,10 +70,10 @@ export default function Home() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm">📱</span>
                 </div>
-                <span className="text-xl font-semibold text-white">IMEI Checker</span>
+                <span className="text-xl font-semibold text-white">Network Services</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
-                The most accurate IMEI checker for AT&T network compatibility. 
+                Network services availability for OXIO carrier compatibility. 
                 Powered by AI for instant device identification.
               </p>
             </div>
@@ -100,7 +100,7 @@ export default function Home() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">© 2024 IMEI Checker. All rights reserved.</p>
+            <p className="text-gray-400">© 2024 Network Services. All rights reserved.</p>
           </div>
         </div>
       </footer>
