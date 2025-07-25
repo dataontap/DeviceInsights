@@ -69,12 +69,15 @@ export default function PolicyPDFDownload() {
           <div className="flex gap-3">
             <Button onClick={togglePolicy} className="flex-1 bg-blue-600 hover:bg-blue-700">
               <FileText className="w-4 h-4 mr-2" />
-              {showFullPolicy ? 'Hide Policy' : 'View Full Policy Online'}
+              <span className="hidden sm:inline">{showFullPolicy ? 'Hide Policy' : 'View Full Policy Online'}</span>
+              <span className="sm:hidden">{showFullPolicy ? 'Hide' : 'View Policy'}</span>
               {showFullPolicy ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
             </Button>
-            <Button onClick={handleDownloadPDF} variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50">
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
+            <Button onClick={handleDownloadPDF} variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50 px-3 sm:px-4">
+              <Download className="w-4 h-4" />
+              <span className="ml-1 sm:ml-2">
+                <span className="hidden sm:inline">Download </span>PDF
+              </span>
             </Button>
           </div>
         </div>
