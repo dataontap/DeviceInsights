@@ -389,9 +389,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 </div>
               )}
               
-              <p className="text-xs text-gray-500 mt-2">
-                Defaults to AT&T (US). Carriers automatically detected based on your location.
-              </p>
+              
             </div>
             
             <Button 
