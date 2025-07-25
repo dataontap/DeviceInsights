@@ -8,6 +8,7 @@ import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio } from "l
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
+import BlacklistDrawer from "./blacklist-drawer";
 
 interface IMEICheckerProps {
   onResult: (result: any) => void;
@@ -30,6 +31,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [selectedCarrier, setSelectedCarrier] = useState("AT&T");
   const [country, setCountry] = useState("United States");
   const [carriersLoading, setCarriersLoading] = useState(false);
+  const [showBlacklistDrawer, setShowBlacklistDrawer] = useState(false);
+  const [blacklistInfo, setBlacklistInfo] = useState<{imei?: string; reason?: string}>({});
   const { toast } = useToast();
 
   // Fetch carriers when location changes
@@ -86,11 +89,11 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       
       // Handle blacklisted IMEI specifically
       if (error.response?.status === 403 && error.response?.data?.blacklisted) {
-        toast({
-          title: "Blacklisted Device",
-          description: "It looks like the device IMEI you provided is on the 'naughty list'. Please contact support.",
-          variant: "destructive",
+        setBlacklistInfo({
+          imei: imei,
+          reason: error.response.data.reason || "Security flagged device"
         });
+        setShowBlacklistDrawer(true);
         setDeviceResult({ 
           success: false, 
           error: error.response.data.message,
@@ -103,9 +106,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           description: error.message || "Failed to analyze device. Please try again.",
           variant: "destructive",
         });
+        setShowPolicy(true);
       }
-      
-      setShowPolicy(true);
     },
   });
 
@@ -441,6 +443,21 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           </div>
         </div>
       )}
+
+      {/* Blacklist Drawer */}
+      <BlacklistDrawer
+        open={showBlacklistDrawer}
+        onOpenChange={(open) => {
+          setShowBlacklistDrawer(open);
+          if (!open) {
+            // Reset form when drawer is closed
+            setImei("");
+            setBlacklistInfo({});
+          }
+        }}
+        imei={blacklistInfo.imei}
+        reason={blacklistInfo.reason}
+      />
     </section>
   );
 }
