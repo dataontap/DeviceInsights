@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Code, CheckCircle, MapPin, ArrowRight, ExternalLink } from "lucide-react";
+import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import APIDocs from "@/components/api-docs";
 
@@ -15,35 +15,9 @@ interface StatsData {
     manufacturer: string;
     searches: number;
   }>;
-  locations: Array<{
-    location: string;
-    searches: number;
-  }>;
 }
 
-// Helper function to create Google Earth links
-function createGoogleEarthLink(location: string): string | null {
-  // Check if location contains coordinates (latitude,longitude format)
-  const coordsMatch = location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-  if (coordsMatch) {
-    const [, lat, lng] = coordsMatch;
-    return `https://earth.google.com/web/@${lat},${lng},1000a,35y,0h,0t,0r`;
-  }
-  return null;
-}
 
-// Helper function to format location display
-function formatLocationDisplay(location: string): { display: string; coords?: string } {
-  const coordsMatch = location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-  if (coordsMatch) {
-    const [, lat, lng] = coordsMatch;
-    return {
-      display: `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`,
-      coords: location
-    };
-  }
-  return { display: location };
-}
 
 export default function AdminDashboard() {
   const { data: stats, isLoading, error } = useQuery<StatsData>({
@@ -155,9 +129,8 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* Charts and Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Popular Devices */}
+        {/* Popular Devices Chart */}
+        <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">Most Searched Devices</CardTitle>
@@ -188,74 +161,6 @@ export default function AdminDashboard() {
                     <p>No device data available yet</p>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Geographic Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Search Locations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {stats?.locations?.length ? (
-                  stats.locations.map((location, index) => {
-                    const maxSearches = Math.max(...stats.locations.map(l => l.searches));
-                    const percentage = (location.searches / maxSearches) * 100;
-                    const locationInfo = formatLocationDisplay(location.location);
-                    const googleEarthLink = createGoogleEarthLink(location.location);
-                    
-                    return (
-                      <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3 flex-1">
-                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                            <MapPin className="text-primary w-4 h-4" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gray-900">{locationInfo.display}</span>
-                            {locationInfo.coords && (
-                              <span className="text-xs text-gray-500">Coordinates</span>
-                            )}
-                          </div>
-                          {googleEarthLink && (
-                            <a 
-                              href={googleEarthLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:text-blue-700 transition-colors"
-                              title="View in Google Earth"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full" 
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 w-12 text-right">
-                            {location.searches.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No location data available yet</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <Button variant="link" className="text-primary hover:text-blue-700 p-0">
-                  View Full Geographic Report <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
               </div>
             </CardContent>
           </Card>

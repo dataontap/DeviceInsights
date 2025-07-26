@@ -407,7 +407,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await storage.getSearchStatistics();
       const popularDevices = await storage.getPopularDevices(5);
-      const locationData = await storage.getSearchesByLocation();
       
       res.json({
         totalSearches: stats.totalSearches,
@@ -418,10 +417,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: `${device.deviceMake} ${device.deviceModel}`,
           manufacturer: device.deviceMake,
           searches: device.searchCount
-        })),
-        locations: locationData.map(loc => ({
-          location: loc.location,
-          searches: loc.searchCount
         }))
       });
     } catch (error) {
