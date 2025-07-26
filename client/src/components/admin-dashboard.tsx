@@ -205,7 +205,7 @@ export default function AdminDashboard() {
                     const percentage = (location.searches / maxSearches) * 100;
                     const locationInfo = formatLocationDisplay(location.location);
                     const googleEarthLink = createGoogleEarthLink(location.location);
-
+                    
                     return (
                       <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
                         <div className="flex items-center space-x-3 flex-1">
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-
+              
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <Button variant="link" className="text-primary hover:text-blue-700 p-0">
                   View Full Geographic Report <ArrowRight className="w-4 h-4 ml-1" />
@@ -261,7 +261,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
-
+      
       {/* API Documentation Section */}
       <APIDocs />
     </section>

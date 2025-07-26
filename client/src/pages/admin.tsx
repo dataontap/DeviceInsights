@@ -14,7 +14,7 @@ export default function Admin() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Smartphone className="text-white w-4 h-4" />
               </div>
-              <span className="text-xl font-semibold text-blue-900">Network Services Availability</span>
+              <span className="text-xl font-semibold text-blue-900">IMEI Checker Admin</span>
             </div>
             
             <div className="flex items-center space-x-4">
