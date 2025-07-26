@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -45,6 +45,24 @@ export interface IStorage {
   addBlacklistedImei(blacklistedImei: InsertBlacklistedImei): Promise<BlacklistedImei>;
   removeBlacklistedImei(imei: string): Promise<void>;
   getBlacklistedImeis(): Promise<BlacklistedImei[]>;
+  
+  // Carrier Cache
+  getCachedCarriers(country: string): Promise<{
+    country: string;
+    carriers: Array<{
+      name: string;
+      marketShare: string;
+      description: string;
+    }>;
+  } | null>;
+  setCachedCarriers(country: string, carriersData: {
+    country: string;
+    carriers: Array<{
+      name: string;
+      marketShare: string;
+      description: string;
+    }>;
+  }, hoursToExpire?: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -276,6 +294,77 @@ export class DatabaseStorage implements IStorage {
       .from(blacklistedImeis)
       .where(eq(blacklistedImeis.isActive, true))
       .orderBy(desc(blacklistedImeis.blacklistedAt));
+  }
+
+  async getCachedCarriers(country: string): Promise<{
+    country: string;
+    carriers: Array<{
+      name: string;
+      marketShare: string;
+      description: string;
+    }>;
+  } | null> {
+    const [result] = await db
+      .select()
+      .from(carrierCache)
+      .where(and(
+        eq(carrierCache.country, country),
+        sql`expires_at > NOW()`
+      ));
+    
+    return result?.carriersData || null;
+  }
+
+  async setCachedCarriers(
+    country: string, 
+    carriersData: {
+      country: string;
+      carriers: Array<{
+        name: string;
+        marketShare: string;
+        description: string;
+      }>;
+    }, 
+    hoursToExpire: number = 24
+  ): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + hoursToExpire);
+
+      console.log(`Caching carriers for country: ${country}`);
+
+      // Check if entry exists first
+      const [existing] = await db
+        .select()
+        .from(carrierCache)
+        .where(eq(carrierCache.country, country));
+
+      if (existing) {
+        // Update existing entry
+        await db
+          .update(carrierCache)
+          .set({
+            carriersData,
+            cachedAt: new Date(),
+            expiresAt
+          })
+          .where(eq(carrierCache.country, country));
+        console.log(`Updated cache for country: ${country}`);
+      } else {
+        // Insert new entry
+        await db
+          .insert(carrierCache)
+          .values({
+            country,
+            carriersData,
+            expiresAt
+          });
+        console.log(`Inserted new cache entry for country: ${country}`);
+      }
+    } catch (error) {
+      console.error(`Error caching carriers for ${country}:`, error);
+      throw error;
+    }
   }
 }
 

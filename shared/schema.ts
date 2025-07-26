@@ -64,6 +64,21 @@ export const blacklistedImeis = pgTable("blacklisted_imeis", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
+export const carrierCache = pgTable("carrier_cache", {
+  id: serial("id").primaryKey(),
+  country: text("country").notNull().unique(),
+  carriersData: jsonb("carriers_data").$type<{
+    country: string;
+    carriers: Array<{
+      name: string;
+      marketShare: string;
+      description: string;
+    }>;
+  }>(),
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],

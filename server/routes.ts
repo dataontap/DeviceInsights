@@ -57,6 +57,59 @@ async function validateApiKey(req: any, res: any, next: any) {
   }
 }
 
+// Extract country from location for caching purposes
+function extractCountryFromLocation(location: string): string {
+  const normalized = location.toLowerCase().trim();
+  
+  // Handle coordinate-based locations
+  if (/^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(normalized)) {
+    return "GPS_COORDINATES"; // Generic cache key for GPS coordinates
+  }
+  
+  // Common country patterns
+  const countryMappings: { [key: string]: string } = {
+    'united states': 'United States',
+    'usa': 'United States',
+    'us': 'United States',
+    'canada': 'Canada',
+    'ca': 'Canada',
+    'united kingdom': 'United Kingdom',
+    'uk': 'United Kingdom',
+    'gb': 'United Kingdom',
+    'australia': 'Australia',
+    'au': 'Australia',
+    'germany': 'Germany',
+    'de': 'Germany',
+    'france': 'France',
+    'fr': 'France',
+    'japan': 'Japan',
+    'jp': 'Japan',
+    'mexico': 'Mexico',
+    'mx': 'Mexico',
+    'brazil': 'Brazil',
+    'br': 'Brazil',
+    'india': 'India',
+    'in': 'India',
+    'china': 'China',
+    'cn': 'China'
+  };
+  
+  // Check for exact country matches first
+  if (countryMappings[normalized]) {
+    return countryMappings[normalized];
+  }
+  
+  // Check if location contains country names
+  for (const [pattern, country] of Object.entries(countryMappings)) {
+    if (normalized.includes(pattern)) {
+      return country;
+    }
+  }
+  
+  // Default fallback
+  return 'Unknown';
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Rate limiting: 100 requests per hour for Alpha service
   const limiter = rateLimit({
@@ -160,12 +213,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Location is required" });
       }
 
+      // Extract country from location for caching
+      const country = extractCountryFromLocation(location);
+      
+      // Check cache first
+      const cachedData = await storage.getCachedCarriers(country);
+      if (cachedData) {
+        console.log(`Cache hit for country: ${country}`);
+        return res.json({
+          success: true,
+          ...cachedData,
+          cached: true
+        });
+      }
+
+      // Cache miss - fetch from LLM
+      console.log(`Cache miss for country: ${country}, fetching from LLM`);
       const { getTopCarriers } = await import("./services/gemini.js");
       const carriersData = await getTopCarriers(location);
       
+      // Cache the result for 24 hours
+      await storage.setCachedCarriers(country, carriersData, 24);
+      
       res.json({
         success: true,
-        ...carriersData
+        ...carriersData,
+        cached: false
       });
     } catch (error) {
       console.error("Carriers fetch error:", error);
