@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import APIDocs from "@/components/api-docs";
+import RecentSearches from "@/components/recent-searches";
 
 interface StatsData {
   totalSearches: number;
@@ -129,8 +130,9 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* Popular Devices Chart */}
-        <div className="max-w-2xl mx-auto">
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {/* Popular Devices Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">Most Searched Devices</CardTitle>
@@ -164,6 +166,9 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Recent Searches */}
+          <RecentSearches popularDevices={stats?.popularDevices || []} />
         </div>
       </div>
       

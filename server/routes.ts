@@ -303,6 +303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const search = await storage.createImeiSearch(searchData);
 
+        // Check if this is a popular device
+        const isPopular = await storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || '');
+
         res.json({
           success: true,
           searchId: search.id,
@@ -311,7 +314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             model: deviceInfo.model,
             year: deviceInfo.year,
             modelNumber: deviceInfo.modelNumber,
-            imei: imei
+            imei: imei,
+            isPopular: isPopular
           },
           networkCompatibility: deviceInfo.networkCapabilities,
           analysis: deviceInfo.tacAnalysis || "Device analysis completed",
@@ -439,6 +443,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const search = await storage.createImeiSearch(searchData);
 
+        // Check if this is a popular device
+        const isPopular = await storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || '');
+
         res.json({
           success: true,
           device: {
@@ -446,7 +453,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             model: deviceInfo.model,
             year: deviceInfo.year,
             modelNumber: deviceInfo.modelNumber,
-            imei: imei
+            imei: imei,
+            isPopular: isPopular
           },
           capabilities: deviceInfo.networkCapabilities,
           specifications: deviceInfo.specifications,
@@ -569,6 +577,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Search lookup error:", error);
       res.status(500).json({ error: "Failed to fetch search" });
+    }
+  });
+
+  // Get recent valid searches (excluding unknowns) - no authentication required
+  app.get("/api/v1/recent-searches", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const searches = await storage.getRecentValidSearches(limit);
+      
+      res.json({
+        searches: searches.map(search => ({
+          id: search.id,
+          device: {
+            make: search.deviceMake,
+            model: search.deviceModel,
+            year: search.deviceYear
+          },
+          searchedAt: search.searchedAt
+        }))
+      });
+    } catch (error) {
+      console.error("Recent searches error:", error);
+      res.status(500).json({ error: "Failed to fetch recent searches" });
     }
   });
 

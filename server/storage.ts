@@ -10,6 +10,7 @@ export interface IStorage {
   // IMEI searches
   createImeiSearch(search: InsertImeiSearch): Promise<ImeiSearch>;
   getImeiSearches(limit?: number): Promise<ImeiSearch[]>;
+  getRecentValidSearches(limit?: number): Promise<ImeiSearch[]>;
   getImeiSearchById(id: number): Promise<ImeiSearch | undefined>;
   getSearchStatistics(): Promise<{
     totalSearches: number;
@@ -21,6 +22,7 @@ export interface IStorage {
     deviceModel: string;
     searchCount: number;
   }>>;
+  isPopularDevice(deviceMake: string, deviceModel: string): Promise<boolean>;
   getSearchesByLocation(): Promise<Array<{
     location: string;
     searchCount: number;
@@ -100,6 +102,15 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  async getRecentValidSearches(limit = 50): Promise<ImeiSearch[]> {
+    return await db
+      .select()
+      .from(imeiSearches)
+      .where(sql`device_make IS NOT NULL AND device_model IS NOT NULL AND device_make != 'Unknown' AND device_model != 'Unknown' AND device_model NOT LIKE '%Unknown%'`)
+      .orderBy(desc(imeiSearches.searchedAt))
+      .limit(limit);
+  }
+
   async getImeiSearchById(id: number): Promise<ImeiSearch | undefined> {
     const [search] = await db
       .select()
@@ -153,7 +164,7 @@ export class DatabaseStorage implements IStorage {
         searchCount: count()
       })
       .from(imeiSearches)
-      .where(sql`device_make IS NOT NULL AND device_model IS NOT NULL`)
+      .where(sql`device_make IS NOT NULL AND device_model IS NOT NULL AND device_make != 'Unknown' AND device_model != 'Unknown' AND device_model NOT LIKE '%Unknown%'`)
       .groupBy(imeiSearches.deviceMake, imeiSearches.deviceModel)
       .orderBy(desc(count()))
       .limit(limit) as Array<{
@@ -161,6 +172,14 @@ export class DatabaseStorage implements IStorage {
         deviceModel: string;
         searchCount: number;
       }>;
+  }
+
+  async isPopularDevice(deviceMake: string, deviceModel: string): Promise<boolean> {
+    const popularDevices = await this.getPopularDevices(20); // Check top 20 popular devices
+    return popularDevices.some(device => 
+      device.deviceMake?.toLowerCase() === deviceMake?.toLowerCase() && 
+      device.deviceModel?.toLowerCase() === deviceModel?.toLowerCase()
+    );
   }
 
   async getSearchesByLocation(): Promise<Array<{
