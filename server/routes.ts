@@ -602,6 +602,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public map data endpoint (no authentication required)
+  app.get("/api/map/searches", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const searches = await storage.getImeiSearches(limit);
+      
+      res.json({
+        searches: searches.map(search => ({
+          id: search.id,
+          location: search.searchLocation,
+          deviceMake: search.deviceMake,
+          deviceModel: search.deviceModel,
+          searchedAt: search.searchedAt,
+          coordinates: search.searchLocation?.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/) ? {
+            lat: parseFloat(search.searchLocation.split(',')[0]),
+            lng: parseFloat(search.searchLocation.split(',')[1])
+          } : null
+        }))
+      });
+    } catch (error) {
+      console.error("Map searches error:", error);
+      res.status(500).json({ error: "Failed to fetch map data" });
+    }
+  });
+
   // Policy acceptance endpoint (requires API key)
   app.post("/api/v1/policy/accept", validateApiKey, async (req, res) => {
     try {

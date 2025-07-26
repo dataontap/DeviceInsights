@@ -4,6 +4,7 @@ import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
 import AdminDashboard from "@/components/admin-dashboard";
 import PolicyPDFDownload from "@/components/policy-pdf-download";
+import LiveWorldMap from "@/components/live-world-map";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
@@ -61,6 +62,9 @@ export default function Home() {
       <div id="admin">
         <AdminDashboard />
       </div>
+      
+      {/* Live World Map */}
+      <LiveWorldMap />
       
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
