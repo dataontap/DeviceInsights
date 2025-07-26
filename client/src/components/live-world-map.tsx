@@ -29,7 +29,7 @@ export default function LiveWorldMap() {
 
   // Fetch recent searches every 5 seconds
   const { data: searches } = useQuery<{ searches: SearchLocation[] }>({
-    queryKey: ['/api/map/searches?limit=50'],
+    queryKey: ['/api/map/searches?limit=100'],
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
   });
@@ -162,7 +162,7 @@ export default function LiveWorldMap() {
               ref={mapRef}
               viewBox="0 0 800 400"
               className="absolute inset-0 w-full h-full"
-              style={{ background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)' }}
+              style={{ background: 'linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)' }}
             >
               {/* World Map Outline (Simplified) */}
               <defs>
@@ -175,35 +175,54 @@ export default function LiveWorldMap() {
                 </filter>
               </defs>
               
-              {/* Continents (Simplified shapes) */}
-              <g fill="#94a3b8" stroke="#64748b" strokeWidth="1" opacity="0.8">
-                {/* North America */}
-                <path d="M50 80 L280 80 L300 120 L280 200 L200 220 L120 200 L80 160 L50 120 Z" />
+              {/* Enhanced World Map with detailed coastlines */}
+              <g fill="#475569" stroke="#334155" strokeWidth="0.6" opacity="0.85">
+                {/* North America - more detailed */}
+                <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" />
                 
-                {/* South America */}
-                <path d="M200 220 L280 240 L300 320 L250 380 L200 360 L180 300 L200 220 Z" />
+                {/* South America - more natural shape */}
+                <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" />
                 
-                {/* Europe */}
-                <path d="M350 80 L450 80 L460 140 L400 160 L350 140 L350 80 Z" />
+                {/* Europe - detailed coastlines */}
+                <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" />
                 
-                {/* Africa */}
-                <path d="M380 160 L480 160 L500 240 L480 340 L420 360 L380 320 L380 160 Z" />
+                {/* Africa - realistic outline */}
+                <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" />
                 
-                {/* Asia */}
-                <path d="M450 80 L720 80 L750 120 L700 200 L650 180 L580 160 L520 140 L450 100 L450 80 Z" />
+                {/* Asia - vast continent */}
+                <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" />
                 
-                {/* Australia */}
-                <path d="M620 280 L720 280 L740 320 L700 340 L620 340 L620 280 Z" />
+                {/* Australia and Oceania */}
+                <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" />
+                
+                {/* Additional island chains and details */}
+                <ellipse cx="580" cy="180" rx="12" ry="8" opacity="0.8" /> {/* Japan */}
+                <circle cx="460" cy="130" r="4" opacity="0.8" /> {/* UK */}
+                <ellipse cx="350" cy="270" rx="3" ry="8" opacity="0.7" /> {/* Madagascar */}
+                <circle cx="720" cy="200" r="4" opacity="0.7" /> {/* Philippines */}
+                <ellipse cx="680" cy="350" rx="8" ry="4" opacity="0.8" /> {/* New Zealand */}
+                
+                {/* Major island chains */}
+                <circle cx="600" cy="220" r="2" opacity="0.6" /> {/* Indonesia */}
+                <circle cx="610" cy="225" r="2" opacity="0.6" />
+                <circle cx="620" cy="230" r="2" opacity="0.6" />
+                <circle cx="400" cy="250" r="2" opacity="0.6" /> {/* Caribbean */}
+                <circle cx="405" cy="255" r="1.5" opacity="0.6" />
+                <circle cx="410" cy="260" r="1.5" opacity="0.6" />
               </g>
 
-              {/* Grid lines */}
-              <g stroke="#cbd5e1" strokeWidth="0.5" opacity="0.3">
-                {Array.from({ length: 9 }, (_, i) => (
-                  <line key={`v-${i}`} x1={i * 100} y1="0" x2={i * 100} y2="400" />
+              {/* Subtle latitude/longitude grid */}
+              <g stroke="#94a3b8" strokeWidth="0.3" opacity="0.2">
+                {/* Longitude lines */}
+                {Array.from({ length: 13 }, (_, i) => (
+                  <line key={`lng-${i}`} x1={i * 66.67} y1="0" x2={i * 66.67} y2="400" strokeDasharray="2,4" />
                 ))}
-                {Array.from({ length: 5 }, (_, i) => (
-                  <line key={`h-${i}`} x1="0" y1={i * 100} x2="800" y2={i * 100} />
+                {/* Latitude lines */}
+                {Array.from({ length: 7 }, (_, i) => (
+                  <line key={`lat-${i}`} x1="0" y1={i * 66.67} x2="800" y2={i * 66.67} strokeDasharray="2,4" />
                 ))}
+                {/* Equator (more prominent) */}
+                <line x1="0" y1="200" x2="800" y2="200" stroke="#64748b" strokeWidth="0.5" opacity="0.4" />
               </g>
 
               {/* Animated Search Dots */}
@@ -237,8 +256,8 @@ export default function LiveWorldMap() {
                 );
               })}
 
-              {/* Static dots for existing searches */}
-              {searches?.searches?.slice(0, 20).map((search: SearchLocation, index: number) => {
+              {/* Static dots for existing searches - show last 100 */}
+              {searches?.searches?.slice(0, 100).map((search: SearchLocation, index: number) => {
                 const coords = getMapCoordinates(search.location || 'unknown');
                 if (!coords) return null;
 
@@ -269,10 +288,6 @@ export default function LiveWorldMap() {
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-slate-500 rounded-full opacity-60"></div>
               <span>Previous Searches</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
-              <span>Continents</span>
             </div>
           </div>
         </div>

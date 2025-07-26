@@ -605,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public map data endpoint (no authentication required)
   app.get("/api/map/searches", async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 50;
+      const limit = parseInt(req.query.limit as string) || 100;
       const searches = await storage.getImeiSearches(limit);
       
       res.json({
