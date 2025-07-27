@@ -168,10 +168,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       endpoints: {
         "POST /api/v1/check": "Analyze IMEI device compatibility",
-        "GET /api/v1/stats": "Get usage statistics",
-        "GET /api/v1/export": "Export search data",
-        "GET /api/v1/search/{id}": "Get individual search details",
-        "GET /api/v1/admin/searches": "Get detailed admin search data"
+        "GET /api/v1/stats": "Get your API key's usage statistics",
+        "GET /api/v1/export": "Export your search data only",
+        "GET /api/v1/search/{id}": "Get individual search details (your searches only)",
+        "GET /api/v1/my/searches": "Get your detailed search data with location info"
       },
       authentication: {
         type: "Bearer Token",
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const targetNetwork = network || "AT&T";
         const deviceInfo = await analyzeIMEI(imei, targetNetwork);
         
-        // Store search in database
+        // Store search in database with API key association
         const searchData = {
           imei,
           deviceMake: deviceInfo.make,
@@ -439,6 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
+          apiKeyId: req.apiKeyId, // Associate with the API key
         };
 
         const search = await storage.createImeiSearch(searchData);
@@ -464,12 +465,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (aiError) {
         console.error("AI Analysis error:", aiError);
         
-        // Store failed search
+        // Store failed search with API key association
         await storage.createImeiSearch({
           imei,
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
+          apiKeyId: req.apiKeyId,
         });
 
         res.status(500).json({ 
@@ -483,17 +485,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get search statistics
-  app.get("/api/v1/stats", async (req, res) => {
+  // Get search statistics (API key specific for authenticated requests)
+  app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {
-      const stats = await storage.getSearchStatistics();
-      const popularDevices = await storage.getPopularDevices(5);
+      // Get stats only for this API key
+      const stats = await storage.getSearchStatisticsByApiKey(req.apiKeyId);
+      const popularDevices = await storage.getPopularDevicesByApiKey(req.apiKeyId, 5);
       
       res.json({
         totalSearches: stats.totalSearches,
         uniqueDevices: stats.uniqueDevices,
         successRate: stats.successRate,
-        apiCalls: stats.totalSearches, // For now, same as total searches
+        apiCalls: stats.totalSearches,
         popularDevices: popularDevices.map(device => ({
           name: `${device.deviceMake} ${device.deviceModel}`,
           manufacturer: device.deviceMake,
@@ -506,11 +509,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export search data (requires API key)
+  // Export search data (requires API key - only returns data for this API key)
   app.get("/api/v1/export", validateApiKey, async (req, res) => {
     try {
       const format = req.query.format as string || 'json';
-      const searches = await storage.getImeiSearches(1000);
+      const limit = parseInt(req.query.limit as string) || 1000;
+      
+      // Only get searches for this specific API key
+      const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
       
       if (format === 'csv') {
         const csvData = [
@@ -528,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ].join('\n');
         
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=imei_searches.csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=my_imei_searches.csv');
         res.send(csvData);
       } else {
         res.json({
@@ -542,7 +548,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
             location: search.searchLocation,
             searchedAt: search.searchedAt
-          }))
+          })),
+          apiKeyName: req.apiKeyName,
+          totalCount: searches.length
         });
       }
     } catch (error) {
@@ -551,14 +559,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get individual search by ID (requires API key)
+  // Get individual search by ID (requires API key - only returns data owned by this API key)
   app.get("/api/v1/search/:id", validateApiKey, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const search = await storage.getImeiSearchById(id);
+      
+      // Get search and verify it belongs to this API key
+      const search = await storage.getImeiSearchByIdAndApiKey(id, req.apiKeyId);
       
       if (!search) {
-        return res.status(404).json({ error: "Search not found" });
+        return res.status(404).json({ 
+          error: "Search not found", 
+          message: "Search does not exist or you do not have access to it" 
+        });
       }
       
       res.json({
@@ -603,11 +616,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get detailed searches with location data for admin (requires API key)
-  app.get("/api/v1/admin/searches", validateApiKey, async (req, res) => {
+  // Get user's own searches with detailed data (requires API key)
+  app.get("/api/v1/my/searches", validateApiKey, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      const searches = await storage.getImeiSearches(limit);
+      
+      // Only get searches for this specific API key
+      const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
       
       res.json({
         searches: searches.map(search => ({
@@ -625,11 +640,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } : null,
           searchedAt: search.searchedAt,
           ipAddress: search.ipAddress
-        }))
+        })),
+        apiKeyName: req.apiKeyName,
+        totalCount: searches.length
       });
     } catch (error) {
-      console.error("Admin searches error:", error);
-      res.status(500).json({ error: "Failed to fetch searches" });
+      console.error("My searches error:", error);
+      res.status(500).json({ error: "Failed to fetch your searches" });
     }
   });
 

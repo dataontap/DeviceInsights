@@ -25,6 +25,7 @@ export const imeiSearches = pgTable("imei_searches", {
   searchLocation: text("search_location"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
+  apiKeyId: integer("api_key_id").references(() => apiKeys.id),
   searchedAt: timestamp("searched_at").defaultNow().notNull(),
 });
 
@@ -103,6 +104,7 @@ export const insertImeiSearchSchema = createInsertSchema(imeiSearches).pick({
   searchLocation: true,
   ipAddress: true,
   userAgent: true,
+  apiKeyId: true,
 });
 
 export const insertApiKeySchema = createInsertSchema(apiKeys).pick({

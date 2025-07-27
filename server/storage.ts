@@ -28,6 +28,20 @@ export interface IStorage {
     searchCount: number;
   }>>;
   
+  // API key specific methods
+  getImeiSearchesByApiKey(apiKeyId: number, limit?: number): Promise<ImeiSearch[]>;
+  getImeiSearchByIdAndApiKey(id: number, apiKeyId: number): Promise<ImeiSearch | undefined>;
+  getSearchStatisticsByApiKey(apiKeyId: number): Promise<{
+    totalSearches: number;
+    uniqueDevices: number;
+    successRate: number;
+  }>;
+  getPopularDevicesByApiKey(apiKeyId: number, limit?: number): Promise<Array<{
+    deviceMake: string;
+    deviceModel: string;
+    searchCount: number;
+  }>>;
+  
   // API Keys
   createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
   getApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
@@ -384,6 +398,92 @@ export class DatabaseStorage implements IStorage {
       console.error(`Error caching carriers for ${country}:`, error);
       throw error;
     }
+  }
+
+  // API Key specific isolation methods
+  async getImeiSearchesByApiKey(apiKeyId: number, limit = 100): Promise<ImeiSearch[]> {
+    return await db
+      .select()
+      .from(imeiSearches)
+      .where(eq(imeiSearches.apiKeyId, apiKeyId))
+      .orderBy(desc(imeiSearches.searchedAt))
+      .limit(limit);
+  }
+
+  async getImeiSearchByIdAndApiKey(id: number, apiKeyId: number): Promise<ImeiSearch | undefined> {
+    const [search] = await db
+      .select()
+      .from(imeiSearches)
+      .where(and(
+        eq(imeiSearches.id, id),
+        eq(imeiSearches.apiKeyId, apiKeyId)
+      ));
+    return search || undefined;
+  }
+
+  async getSearchStatisticsByApiKey(apiKeyId: number): Promise<{
+    totalSearches: number;
+    uniqueDevices: number;
+    successRate: number;
+  }> {
+    const [totalSearchesResult] = await db
+      .select({ count: count() })
+      .from(imeiSearches)
+      .where(eq(imeiSearches.apiKeyId, apiKeyId));
+
+    const [uniqueDevicesResult] = await db
+      .select({ 
+        count: sql<number>`COUNT(DISTINCT CONCAT(device_make, ' ', device_model))` 
+      })
+      .from(imeiSearches)
+      .where(and(
+        eq(imeiSearches.apiKeyId, apiKeyId),
+        sql`device_make IS NOT NULL AND device_model IS NOT NULL`
+      ));
+
+    const [successfulSearchesResult] = await db
+      .select({ count: count() })
+      .from(imeiSearches)
+      .where(and(
+        eq(imeiSearches.apiKeyId, apiKeyId),
+        sql`device_make IS NOT NULL AND device_model IS NOT NULL`
+      ));
+
+    const totalSearches = totalSearchesResult.count;
+    const uniqueDevices = uniqueDevicesResult.count;
+    const successfulSearches = successfulSearchesResult.count;
+    const successRate = totalSearches > 0 ? (successfulSearches / totalSearches) * 100 : 0;
+
+    return {
+      totalSearches,
+      uniqueDevices,
+      successRate: Math.round(successRate * 10) / 10
+    };
+  }
+
+  async getPopularDevicesByApiKey(apiKeyId: number, limit = 10): Promise<Array<{
+    deviceMake: string;
+    deviceModel: string;
+    searchCount: number;
+  }>> {
+    return await db
+      .select({
+        deviceMake: imeiSearches.deviceMake,
+        deviceModel: imeiSearches.deviceModel,
+        searchCount: count()
+      })
+      .from(imeiSearches)
+      .where(and(
+        eq(imeiSearches.apiKeyId, apiKeyId),
+        sql`device_make IS NOT NULL AND device_model IS NOT NULL AND device_make != 'Unknown' AND device_model != 'Unknown' AND device_model NOT LIKE '%Unknown%'`
+      ))
+      .groupBy(imeiSearches.deviceMake, imeiSearches.deviceModel)
+      .orderBy(desc(count()))
+      .limit(limit) as Array<{
+        deviceMake: string;
+        deviceModel: string;
+        searchCount: number;
+      }>;
   }
 }
 
