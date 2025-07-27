@@ -65,6 +65,23 @@ export const blacklistedImeis = pgTable("blacklisted_imeis", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
+export const loginTokens = pgTable("login_tokens", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const adminSessions = pgTable("admin_sessions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  sessionToken: text("session_token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const carrierCache = pgTable("carrier_cache", {
   id: serial("id").primaryKey(),
   country: text("country").notNull().unique(),
@@ -146,6 +163,24 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const insertLoginTokenSchema = createInsertSchema(loginTokens).pick({
+  email: true,
+  token: true,
+  expiresAt: true,
+});
+
+export const insertAdminSessionSchema = createInsertSchema(adminSessions).pick({
+  email: true,
+  sessionToken: true,
+  expiresAt: true,
+});
+
+export const magicLinkRequestSchema = z.object({
+  email: z.string()
+    .email("Please enter a valid email address")
+    .max(254, "Email address is too long"),
+});
+
 export type InsertImeiSearch = z.infer<typeof insertImeiSearchSchema>;
 export type ImeiSearch = typeof imeiSearches.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
@@ -156,3 +191,7 @@ export type InsertBlacklistedImei = z.infer<typeof insertBlacklistedImeiSchema>;
 export type BlacklistedImei = typeof blacklistedImeis.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertLoginToken = z.infer<typeof insertLoginTokenSchema>;
+export type LoginToken = typeof loginTokens.$inferSelect;
+export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
+export type AdminSession = typeof adminSessions.$inferSelect;

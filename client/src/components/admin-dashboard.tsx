@@ -20,7 +20,11 @@ interface StatsData {
 
 
 
-export default function AdminDashboard() {
+interface AdminDashboardProps {
+  sessionToken: string;
+}
+
+export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
   const { data: stats, isLoading, error } = useQuery<StatsData>({
     queryKey: ['/api/v1/stats'],
   });

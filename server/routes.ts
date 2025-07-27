@@ -1,16 +1,23 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
+
+// Extend Express Request interface
+interface AuthenticatedRequest extends Request {
+  apiKeyId?: number;
+  apiKeyName?: string;
+  adminEmail?: string;
+}
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { analyzeIMEI, validateIMEI } from "./services/gemini";
-import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 import { registerPDFRoutes } from "./routes/pdf-generator";
 
 // SECURE API key validation middleware
-async function validateApiKey(req: any, res: any, next: any) {
+async function validateApiKey(req: AuthenticatedRequest, res: any, next: any) {
   try {
     const authHeader = req.headers.authorization;
     const apiKey = authHeader?.replace('Bearer ', '');
@@ -788,6 +795,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch policy statistics" });
     }
   });
+
+  // Admin Authentication Routes
+  app.post("/api/admin/request-login", async (req, res) => {
+    try {
+      const { email } = magicLinkRequestSchema.parse(req.body);
+      
+      // Check if email has an API key (is registered)
+      const apiKey = await storage.getApiKeyByEmail(email);
+      if (!apiKey) {
+        return res.status(404).json({ 
+          error: "Email not found",
+          message: "This email is not registered. Please generate an API key first." 
+        });
+      }
+      
+      // Generate login token
+      const token = nanoid(32);
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      await storage.createLoginToken({
+        email,
+        token,
+        expiresAt
+      });
+      
+      // For now, log the magic link (in production, send via email)
+      const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
+      console.log(`🔐 Magic link for ${email}: ${magicLink}`);
+      
+      res.json({ 
+        success: true,
+        message: "Magic link sent to your email",
+        devNote: `Check console for magic link: ${magicLink}`
+      });
+    } catch (error) {
+      console.error("Magic link request error:", error);
+      res.status(400).json({ 
+        error: "Invalid request",
+        message: error instanceof Error ? error.message : "Failed to send magic link" 
+      });
+    }
+  });
+
+  app.post("/api/admin/verify-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ 
+          error: "Token required",
+          message: "Login token is required" 
+        });
+      }
+      
+      // Verify login token
+      const loginToken = await storage.getLoginTokenByToken(token);
+      if (!loginToken || loginToken.used) {
+        return res.status(401).json({ 
+          error: "Invalid token",
+          message: "Login token is invalid or has expired" 
+        });
+      }
+      
+      // Mark token as used
+      await storage.useLoginToken(token);
+      
+      // Create admin session
+      const sessionToken = nanoid(32);
+      const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await storage.createAdminSession({
+        email: loginToken.email,
+        sessionToken,
+        expiresAt: sessionExpiresAt
+      });
+      
+      res.json({ 
+        success: true,
+        sessionToken,
+        email: loginToken.email 
+      });
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res.status(500).json({ 
+        error: "Verification failed",
+        message: "Failed to verify login token" 
+      });
+    }
+  });
+
+  app.post("/api/admin/logout", async (req, res) => {
+    try {
+      const { sessionToken } = req.body;
+      
+      if (sessionToken) {
+        await storage.deleteAdminSession(sessionToken);
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ 
+        error: "Logout failed",
+        message: "Failed to logout" 
+      });
+    }
+  });
+
+  // Admin session validation middleware
+  async function validateAdminSession(req: AuthenticatedRequest, res: any, next: any) {
+    try {
+      const sessionToken = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-session-token'];
+      
+      if (!sessionToken) {
+        return res.status(401).json({ 
+          error: "Authentication required",
+          message: "Admin session token required" 
+        });
+      }
+      
+      const session = await storage.getAdminSessionByToken(sessionToken as string);
+      if (!session) {
+        return res.status(401).json({ 
+          error: "Invalid session",
+          message: "Admin session is invalid or expired" 
+        });
+      }
+      
+      req.adminEmail = session.email;
+      next();
+    } catch (error) {
+      console.error("Session validation error:", error);
+      return res.status(500).json({ 
+        error: "Authentication error",
+        message: "Failed to validate session" 
+      });
+    }
+  }
 
   // Register PDF generation routes
   registerPDFRoutes(app);

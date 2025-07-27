@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -79,6 +79,15 @@ export interface IStorage {
       description: string;
     }>;
   }, hoursToExpire?: number): Promise<void>;
+  
+  // Login Tokens & Admin Sessions
+  createLoginToken(token: InsertLoginToken): Promise<LoginToken>;
+  getLoginTokenByToken(token: string): Promise<LoginToken | undefined>;
+  useLoginToken(token: string): Promise<void>;
+  createAdminSession(session: InsertAdminSession): Promise<AdminSession>;
+  getAdminSessionByToken(sessionToken: string): Promise<AdminSession | undefined>;
+  deleteAdminSession(sessionToken: string): Promise<void>;
+  getApiKeyByEmail(email: string): Promise<ApiKey | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -484,6 +493,67 @@ export class DatabaseStorage implements IStorage {
         deviceModel: string;
         searchCount: number;
       }>;
+  }
+
+  // Login Tokens & Admin Sessions implementation
+  async createLoginToken(token: InsertLoginToken): Promise<LoginToken> {
+    const [result] = await db
+      .insert(loginTokens)
+      .values(token)
+      .returning();
+    return result;
+  }
+
+  async getLoginTokenByToken(token: string): Promise<LoginToken | undefined> {
+    const [result] = await db
+      .select()
+      .from(loginTokens)
+      .where(and(
+        eq(loginTokens.token, token),
+        eq(loginTokens.used, false),
+        sql`expires_at > NOW()`
+      ));
+    return result || undefined;
+  }
+
+  async useLoginToken(token: string): Promise<void> {
+    await db
+      .update(loginTokens)
+      .set({ used: true })
+      .where(eq(loginTokens.token, token));
+  }
+
+  async createAdminSession(session: InsertAdminSession): Promise<AdminSession> {
+    const [result] = await db
+      .insert(adminSessions)
+      .values(session)
+      .returning();
+    return result;
+  }
+
+  async getAdminSessionByToken(sessionToken: string): Promise<AdminSession | undefined> {
+    const [result] = await db
+      .select()
+      .from(adminSessions)
+      .where(and(
+        eq(adminSessions.sessionToken, sessionToken),
+        sql`expires_at > NOW()`
+      ));
+    return result || undefined;
+  }
+
+  async deleteAdminSession(sessionToken: string): Promise<void> {
+    await db
+      .delete(adminSessions)
+      .where(eq(adminSessions.sessionToken, sessionToken));
+  }
+
+  async getApiKeyByEmail(email: string): Promise<ApiKey | undefined> {
+    const [result] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.email, email));
+    return result || undefined;
   }
 }
 
