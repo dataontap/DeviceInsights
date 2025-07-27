@@ -461,50 +461,65 @@ export async function generateWorldMapSVG(): Promise<string> {
   return getAccurateWorldMapSVG();
 }
 
-// Accurate world map SVG paths based on real geographic data
+// More accurate and recognizable world map SVG paths
 function getAccurateWorldMapSVG(): string {
   return `
-    <!-- North America - More accurate shape -->
-    <path d="M60 80 L90 75 L120 78 L150 82 L180 88 L210 95 L240 105 L270 115 L290 130 L300 150 L295 170 L285 190 L270 210 L250 225 L225 235 L200 240 L175 238 L150 235 L125 230 L100 220 L80 205 L65 185 L55 165 L50 145 L52 125 L55 105 L58 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- North America with realistic shape -->
+    <path d="M50 120 L80 110 L120 105 L160 110 L200 115 L240 120 L280 130 L300 140 L315 155 L320 175 L315 195 L300 215 L280 230 L250 240 L220 245 L190 240 L160 235 L130 225 L100 210 L75 190 L55 170 L45 150 L40 130 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
+    
+    <!-- Canada - distinctive northern extension -->
+    <path d="M80 80 L150 70 L220 75 L280 85 L320 95 L340 110 L350 130 L340 145 L320 155 L300 140 L280 130 L240 120 L200 115 L160 110 L120 105 L80 110 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
+    
+    <!-- Alaska -->
+    <path d="M30 90 L50 85 L70 90 L75 105 L70 120 L50 125 L30 120 L25 105 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
     <!-- Greenland -->
-    <path d="M320 50 L350 45 L375 50 L390 60 L400 75 L405 95 L400 115 L390 130 L375 140 L350 145 L325 140 L305 130 L295 115 L290 95 L295 75 L305 60 L315 50 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <path d="M320 40 L360 35 L380 45 L390 65 L385 85 L375 100 L360 105 L340 100 L325 85 L315 65 L318 45 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- South America - Distinctive shape -->
-    <path d="M240 260 L260 265 L275 270 L285 280 L290 295 L288 315 L285 335 L280 355 L272 375 L260 390 L245 395 L230 390 L218 380 L210 365 L205 350 L203 335 L205 320 L210 305 L218 290 L228 275 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- South America with characteristic shape -->
+    <path d="M230 250 L250 255 L270 265 L285 280 L290 300 L288 320 L285 340 L280 360 L270 380 L255 395 L240 400 L225 395 L210 385 L200 370 L195 355 L193 340 L195 325 L200 310 L210 295 L220 280 L228 265 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Europe - More detailed -->
-    <path d="M380 100 L400 95 L420 98 L440 105 L460 115 L470 130 L465 145 L455 160 L440 170 L420 175 L400 172 L385 165 L375 150 L370 135 L372 120 L375 105 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Europe with more detail -->
+    <path d="M380 100 L420 95 L450 100 L470 110 L485 125 L480 140 L470 155 L450 165 L420 170 L400 165 L385 155 L375 140 L370 125 L375 110 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
     <!-- United Kingdom -->
-    <path d="M365 110 L375 108 L385 112 L388 120 L385 128 L378 132 L370 130 L365 125 L363 118 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <path d="M360 110 L375 108 L385 115 L388 125 L385 135 L375 140 L365 138 L360 130 L358 120 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Africa - Recognizable outline -->
-    <path d="M380 175 L400 178 L420 182 L440 188 L460 195 L475 205 L485 220 L490 240 L492 260 L490 280 L485 300 L478 320 L468 340 L455 355 L440 365 L420 370 L400 368 L385 365 L375 355 L370 340 L368 320 L370 300 L375 280 L378 260 L380 240 L382 220 L384 200 L382 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Scandinavia -->
+    <path d="M420 80 L440 75 L455 85 L460 100 L455 115 L445 125 L430 120 L420 105 L418 90 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
+    
+    <!-- Africa with distinctive outline -->
+    <path d="M380 170 L420 175 L450 180 L480 190 L500 205 L510 225 L515 245 L518 265 L515 285 L510 305 L500 325 L485 345 L465 360 L440 370 L410 372 L385 370 L365 365 L350 355 L345 340 L342 320 L345 300 L350 280 L355 260 L360 240 L365 220 L370 200 L375 180 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
     <!-- Madagascar -->
-    <path d="M495 315 L505 318 L510 325 L508 340 L505 350 L500 355 L495 352 L490 345 L488 335 L490 325 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <path d="M520 320 L535 325 L540 340 L535 355 L525 365 L515 360 L510 345 L512 330 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Asia - Large and detailed -->
-    <path d="M470 70 L500 75 L530 80 L560 85 L590 90 L620 95 L650 100 L680 105 L710 110 L740 118 L760 130 L770 145 L765 165 L755 185 L740 200 L720 210 L695 215 L670 218 L645 215 L620 210 L595 205 L570 200 L545 195 L520 188 L500 180 L485 165 L475 150 L470 135 L468 120 L470 105 L472 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Asia - vast continent -->
+    <path d="M485 80 L520 85 L560 90 L600 95 L640 100 L680 105 L720 110 L750 120 L770 135 L775 155 L770 175 L760 195 L745 210 L725 220 L700 225 L670 228 L640 225 L610 220 L580 215 L550 210 L520 200 L495 185 L480 165 L475 145 L470 125 L475 105 L480 90 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- India subcontinent -->
-    <path d="M530 195 L545 198 L555 205 L560 215 L558 230 L552 242 L542 250 L530 248 L520 242 L515 230 L518 215 L525 205 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- India - triangular peninsula -->
+    <path d="M540 200 L565 205 L580 220 L585 240 L580 260 L570 275 L555 285 L540 280 L525 270 L520 255 L522 240 L527 225 L535 210 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- China -->
-    <path d="M580 120 L610 125 L635 130 L655 135 L670 142 L675 155 L670 170 L655 175 L635 172 L610 168 L585 165 L570 155 L568 140 L572 130 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- China - large landmass -->
+    <path d="M580 130 L620 135 L650 140 L675 148 L690 160 L685 180 L675 195 L655 200 L630 195 L605 190 L585 182 L570 165 L568 148 L575 135 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Japan -->
-    <path d="M695 150 L705 148 L715 152 L718 162 L715 172 L708 180 L700 182 L692 178 L688 168 L690 158 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Japan - island chain -->
+    <path d="M720 155 L735 153 L745 160 L748 175 L745 190 L735 200 L720 195 L710 185 L708 170 L712 160 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Australia - Characteristic shape -->
-    <path d="M640 300 L665 305 L690 310 L715 318 L730 330 L735 345 L730 360 L720 370 L705 375 L685 372 L660 368 L640 363 L625 355 L620 340 L625 325 L632 315 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Australia - distinctive shape -->
+    <path d="M650 310 L680 315 L710 320 L735 330 L750 345 L755 365 L750 380 L735 390 L710 395 L680 390 L650 385 L625 375 L610 360 L608 345 L615 330 L630 320 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
     <!-- New Zealand -->
-    <path d="M750 340 L760 342 L765 350 L762 358 L755 360 L748 358 L745 350 L747 342 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <path d="M760 355 L775 358 L780 370 L775 382 L760 385 L745 382 L740 370 L745 358 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
     
-    <!-- Indonesia -->
-    <path d="M600 250 L620 252 L640 255 L660 258 L675 262 L680 268 L675 275 L660 272 L640 270 L620 268 L600 265 L590 260 L592 255 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Indonesia archipelago -->
+    <path d="M610 260 L640 265 L670 270 L700 275 L720 280 L725 290 L720 300 L700 295 L670 290 L640 285 L610 280 L590 275 L588 265 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
+    
+    <!-- Philippines -->
+    <path d="M680 240 L690 242 L695 252 L690 262 L680 260 L675 250 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
+    
+    <!-- UK Ireland -->
+    <path d="M340 115 L350 113 L355 123 L350 133 L340 131 L335 123 Z" fill="#2e7d32" stroke="#1b5e20" stroke-width="0.8" opacity="0.9"/>
   `;
 }
 
