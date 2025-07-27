@@ -42,17 +42,17 @@ async function updateApiKeys() {
     `;
     console.log(`Updated key #2 (ID: ${existingKeys[1].id}) to aa@dotmobile.app`);
     
-    // Update key #3 to aakstinas@oxio.io
+    // Update key #3 to aakstinas+test@oxio.io
     await sql`
       UPDATE api_keys 
-      SET email = 'aakstinas@oxio.io', name = 'Aakstinas OXIO'
+      SET email = 'aakstinas+test@oxio.io', name = 'Aakstinas OXIO Test'
       WHERE id = ${existingKeys[2].id}
     `;
-    console.log(`Updated key #3 (ID: ${existingKeys[2].id}) to aakstinas@oxio.io`);
+    console.log(`Updated key #3 (ID: ${existingKeys[2].id}) to aakstinas+test@oxio.io`);
     
     // Verify updates
     const updatedKeys = await sql`
-      SELECT id, email, name, created_at 
+      SELECT id, email, name, created_at, key
       FROM api_keys 
       ORDER BY id 
       LIMIT 3
@@ -61,6 +61,7 @@ async function updateApiKeys() {
     console.log('\nUpdated API keys:');
     updatedKeys.forEach((key, index) => {
       console.log(`#${index + 1}: ${key.email} (${key.name}) - ID: ${key.id}`);
+      console.log(`    API Key: ${key.key}`);
     });
     
     console.log('\nAPI keys updated successfully!');
