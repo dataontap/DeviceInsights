@@ -4,6 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Set environment variables for client
+process.env.VITE_GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
 // Configure trust proxy for rate limiting to work correctly
 app.set('trust proxy', 1);
 
