@@ -95,9 +95,15 @@ export default function LiveWorldMap() {
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     console.log('Google Maps API Key available:', !!apiKey);
+    console.log('API Key value (first 10 chars):', apiKey ? apiKey.substring(0, 10) + '...' : 'undefined');
 
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is not set');
+      return;
+    }
+
+    if (apiKey === 'undefined' || apiKey === 'null') {
+      console.error('VITE_GOOGLE_MAPS_API_KEY has invalid value:', apiKey);
       return;
     }
 

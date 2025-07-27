@@ -7,6 +7,9 @@ const app = express();
 // Set environment variables for client - ensure it's available before Vite starts
 if (process.env.GOOGLE_MAPS_API_KEY) {
   process.env.VITE_GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+  console.log('Google Maps API key set for client:', process.env.GOOGLE_MAPS_API_KEY ? 'YES' : 'NO');
+} else {
+  console.error('GOOGLE_MAPS_API_KEY environment variable is not set');
 }
 
 // Configure trust proxy for rate limiting to work correctly
