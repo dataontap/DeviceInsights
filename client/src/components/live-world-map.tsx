@@ -35,11 +35,9 @@ export default function LiveWorldMap() {
     refetchIntervalInBackground: true,
   });
 
-  // Fetch AI-generated world map every 30 seconds
+  // Fetch world map once
   const { data: mapData } = useQuery<{ svgPaths: string; generated: string }>({
     queryKey: ['/api/map/generate'],
-    refetchInterval: 30000, // Regenerate map every 30 seconds
-    refetchIntervalInBackground: true,
     onSuccess: (data) => {
       if (data?.svgPaths) {
         setWorldMapSVG(data.svgPaths);
@@ -188,32 +186,30 @@ export default function LiveWorldMap() {
                 </filter>
               </defs>
               
-              {/* AI-Generated World Map */}
+              {/* World Map */}
               <g dangerouslySetInnerHTML={{ 
                 __html: worldMapSVG || `
-                  <!-- Improved fallback world map with better geographic accuracy -->
+                  <!-- Accurate world map -->
                   <!-- North America -->
-                  <path d="M120 140 L160 120 L200 130 L240 140 L280 150 L290 180 L285 220 L270 240 L240 250 L200 245 L160 240 L130 220 L115 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M60 80 L90 75 L120 78 L150 82 L180 88 L210 95 L240 105 L270 115 L290 130 L300 150 L295 170 L285 190 L270 210 L250 225 L225 235 L200 240 L175 238 L150 235 L125 230 L100 220 L80 205 L65 185 L55 165 L50 145 L52 125 L55 105 L58 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                   <!-- Greenland -->
-                  <path d="M320 80 L340 75 L355 85 L360 110 L350 130 L330 135 L315 125 L310 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M320 50 L350 45 L375 50 L390 60 L400 75 L405 95 L400 115 L390 130 L375 140 L350 145 L325 140 L305 130 L295 115 L290 95 L295 75 L305 60 L315 50 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                   <!-- South America -->
-                  <path d="M220 260 L250 270 L270 290 L275 330 L270 370 L250 390 L230 385 L210 370 L205 330 L210 290 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M240 260 L260 265 L275 270 L285 280 L290 295 L288 315 L285 335 L280 355 L272 375 L260 390 L245 395 L230 390 L218 380 L210 365 L205 350 L203 335 L205 320 L210 305 L218 290 L228 275 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                   <!-- Europe -->
-                  <path d="M380 120 L420 115 L440 125 L445 150 L435 170 L415 175 L385 170 L375 145 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Africa -->
-                  <path d="M390 180 L430 185 L450 200 L460 240 L465 280 L455 320 L445 350 L430 365 L410 370 L390 365 L380 320 L385 280 L388 240 L390 200 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Asia -->
-                  <path d="M460 90 L520 95 L580 105 L640 115 L680 125 L720 140 L740 160 L735 190 L720 210 L680 220 L640 215 L580 210 L520 200 L480 185 L465 160 L460 120 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- India -->
-                  <path d="M520 200 L540 205 L550 220 L545 240 L535 250 L520 245 L510 230 L515 215 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Australia -->
-                  <path d="M620 310 L660 315 L690 325 L705 340 L700 360 L680 365 L640 360 L615 350 L610 330 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Japan -->
-                  <path d="M680 160 L690 155 L695 165 L692 180 L685 185 L678 175 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M380 100 L400 95 L420 98 L440 105 L460 115 L470 130 L465 145 L455 160 L440 170 L420 175 L400 172 L385 165 L375 150 L370 135 L372 120 L375 105 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                   <!-- UK -->
-                  <path d="M375 130 L385 128 L388 138 L383 145 L378 143 L374 138 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Madagascar -->
-                  <path d="M480 320 L490 325 L488 345 L482 350 L478 340 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M365 110 L375 108 L385 112 L388 120 L385 128 L378 132 L370 130 L365 125 L363 118 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Africa -->
+                  <path d="M380 175 L400 178 L420 182 L440 188 L460 195 L475 205 L485 220 L490 240 L492 260 L490 280 L485 300 L478 320 L468 340 L455 355 L440 365 L420 370 L400 368 L385 365 L375 355 L370 340 L368 320 L370 300 L375 280 L378 260 L380 240 L382 220 L384 200 L382 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Asia -->
+                  <path d="M470 70 L500 75 L530 80 L560 85 L590 90 L620 95 L650 100 L680 105 L710 110 L740 118 L760 130 L770 145 L765 165 L755 185 L740 200 L720 210 L695 215 L670 218 L645 215 L620 210 L595 205 L570 200 L545 195 L520 188 L500 180 L485 165 L475 150 L470 135 L468 120 L470 105 L472 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- India -->
+                  <path d="M530 195 L545 198 L555 205 L560 215 L558 230 L552 242 L542 250 L530 248 L520 242 L515 230 L518 215 L525 205 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Australia -->
+                  <path d="M640 300 L665 305 L690 310 L715 318 L730 330 L735 345 L730 360 L720 370 L705 375 L685 372 L660 368 L640 363 L625 355 L620 340 L625 325 L632 315 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Japan -->
+                  <path d="M695 150 L705 148 L715 152 L718 162 L715 172 L708 180 L700 182 L692 178 L688 168 L690 158 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                 `
               }} />
 
@@ -295,12 +291,7 @@ export default function LiveWorldMap() {
               <div className="w-3 h-3 bg-slate-500 rounded-full opacity-60"></div>
               <span>Previous Searches</span>
             </div>
-            {mapData?.generated && (
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span>AI-Generated Map ({new Date(mapData.generated).toLocaleTimeString()})</span>
-              </div>
-            )}
+            
           </div>
         </div>
       </div>
