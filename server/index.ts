@@ -39,7 +39,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      
+
       // SECURITY: Only log non-sensitive response data for successful requests
       if (capturedJsonResponse && res.statusCode < 400) {
         // Log only safe fields, exclude sensitive data like API keys
@@ -48,7 +48,7 @@ app.use((req, res, next) => {
         if (capturedJsonResponse.device) safeResponse.device = capturedJsonResponse.device;
         if (capturedJsonResponse.searchId) safeResponse.searchId = capturedJsonResponse.searchId;
         if (capturedJsonResponse.totalSearches !== undefined) safeResponse.totalSearches = capturedJsonResponse.totalSearches;
-        
+
         if (Object.keys(safeResponse).length > 0) {
           logLine += ` :: ${JSON.stringify(safeResponse)}`;
         }
@@ -71,20 +71,20 @@ app.use((req, res, next) => {
   // SECURITY: Improved error handling - don't leak internal details
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    
+
     // Log detailed error for debugging (server-side only)
     console.error(`Error ${status} on ${req.method} ${req.path}:`, {
       message: err.message,
       stack: err.stack,
       timestamp: new Date().toISOString()
     });
-    
+
     // Send sanitized error response to client
     const response: any = {
       error: status >= 500 ? "Internal Server Error" : err.message || "Request failed",
       status: status
     };
-    
+
     // Only include error details for client errors (400-499), not server errors
     if (status < 500 && err.details) {
       response.details = err.details;
