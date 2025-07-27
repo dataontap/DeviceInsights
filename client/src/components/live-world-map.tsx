@@ -117,77 +117,129 @@ export default function LiveWorldMap() {
     renderer.setClearColor(0x000000, 0); // Transparent background
     container.appendChild(renderer.domElement);
 
-    // Create base plane
-    const geometry = new THREE.PlaneGeometry(10, 5, 32, 16);
-    const material = new THREE.MeshBasicMaterial({ 
-      color: 0x2e7d32, 
-      wireframe: false, 
+    // Create ocean base (flat plane)
+    const oceanGeometry = new THREE.PlaneGeometry(12, 6);
+    const oceanMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x4a90e2, 
       transparent: true, 
-      opacity: 0.3 
+      opacity: 0.4 
     });
-    const plane = new THREE.Mesh(geometry, material);
-    plane.rotation.x = -Math.PI / 2;
-    scene.add(plane);
+    const ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
+    ocean.rotation.x = -Math.PI / 2;
+    ocean.position.y = -0.1;
+    scene.add(ocean);
 
-    // Add continent shapes with extrusion
-    const extrudeSettings = { depth: 0.3, bevelEnabled: false };
+    // Extrusion settings for continents
+    const extrudeSettings = { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 };
+    const continentMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x2e7d32, 
+      transparent: true, 
+      opacity: 0.8 
+    });
 
-    // North America
+    // North America (more accurate shape)
     const northAmericaShape = new THREE.Shape();
-    northAmericaShape.moveTo(-4, 1);
-    northAmericaShape.lineTo(-2, 2);
-    northAmericaShape.lineTo(-1, 1.5);
-    northAmericaShape.lineTo(-2, 0.5);
-    northAmericaShape.lineTo(-3.5, 0);
+    northAmericaShape.moveTo(-4.5, 2.0);  // Alaska area
+    northAmericaShape.lineTo(-3.8, 2.2);  // Northern Canada
+    northAmericaShape.lineTo(-2.5, 2.0);  // Hudson Bay area
+    northAmericaShape.lineTo(-1.8, 1.5);  // Eastern Canada
+    northAmericaShape.lineTo(-1.5, 0.8);  // US East Coast
+    northAmericaShape.lineTo(-1.8, 0.2);  // Florida
+    northAmericaShape.lineTo(-2.5, 0.0);  // Gulf of Mexico
+    northAmericaShape.lineTo(-3.2, 0.5);  // Texas/Mexico border
+    northAmericaShape.lineTo(-4.0, 1.0);  // California
+    northAmericaShape.lineTo(-4.8, 1.8);  // Pacific Northwest
+    northAmericaShape.closePath();
     const northAmericaGeometry = new THREE.ExtrudeGeometry(northAmericaShape, extrudeSettings);
-    const continentMaterial = new THREE.MeshBasicMaterial({ color: 0x2e7d32, transparent: true, opacity: 0.7 });
     const northAmerica = new THREE.Mesh(northAmericaGeometry, continentMaterial);
     scene.add(northAmerica);
 
-    // Africa
-    const africaShape = new THREE.Shape();
-    africaShape.moveTo(0, 0.5);
-    africaShape.lineTo(1, 1);
-    africaShape.lineTo(1.5, 0);
-    africaShape.lineTo(1, -1.5);
-    africaShape.lineTo(0.5, -1);
-    const africaGeometry = new THREE.ExtrudeGeometry(africaShape, extrudeSettings);
-    const africa = new THREE.Mesh(africaGeometry, continentMaterial);
-    scene.add(africa);
-
-    // Asia
-    const asiaShape = new THREE.Shape();
-    asiaShape.moveTo(2, 1);
-    asiaShape.lineTo(4, 1.5);
-    asiaShape.lineTo(4.5, 0);
-    asiaShape.lineTo(3.5, -0.5);
-    asiaShape.lineTo(2.5, 0);
-    const asiaGeometry = new THREE.ExtrudeGeometry(asiaShape, extrudeSettings);
-    const asia = new THREE.Mesh(asiaGeometry, continentMaterial);
-    scene.add(asia);
-
-    // Australia
-    const australiaShape = new THREE.Shape();
-    australiaShape.moveTo(3.5, -1.5);
-    australiaShape.lineTo(4, -1);
-    australiaShape.lineTo(4.5, -1.5);
-    australiaShape.lineTo(4, -2);
-    const australiaGeometry = new THREE.ExtrudeGeometry(australiaShape, extrudeSettings);
-    const australia = new THREE.Mesh(australiaGeometry, continentMaterial);
-    scene.add(australia);
-
-    // South America
+    // South America (distinctive elongated shape)
     const southAmericaShape = new THREE.Shape();
-    southAmericaShape.moveTo(-2, -0.5);
-    southAmericaShape.lineTo(-1.5, 0);
-    southAmericaShape.lineTo(-1, -1);
-    southAmericaShape.lineTo(-1.5, -2);
+    southAmericaShape.moveTo(-2.2, -0.2);  // Colombia/Venezuela
+    southAmericaShape.lineTo(-1.5, -0.5);  // Brazil northeast
+    southAmericaShape.lineTo(-1.3, -1.2);  // Brazil east coast
+    southAmericaShape.lineTo(-1.5, -1.8);  // Brazil south
+    southAmericaShape.lineTo(-1.8, -2.3);  // Argentina east
+    southAmericaShape.lineTo(-2.0, -2.5);  // Argentina south
+    southAmericaShape.lineTo(-2.5, -2.4);  // Chile
+    southAmericaShape.lineTo(-2.8, -1.8);  // Peru
+    southAmericaShape.lineTo(-2.6, -1.0);  // Ecuador
+    southAmericaShape.lineTo(-2.4, -0.4);  // Colombia west
+    southAmericaShape.closePath();
     const southAmericaGeometry = new THREE.ExtrudeGeometry(southAmericaShape, extrudeSettings);
     const southAmerica = new THREE.Mesh(southAmericaGeometry, continentMaterial);
     scene.add(southAmerica);
 
-    // Camera position
-    camera.position.set(0, 3, 3);
+    // Europe (smaller, detailed shape)
+    const europeShape = new THREE.Shape();
+    europeShape.moveTo(0.8, 1.8);   // Scandinavia north
+    europeShape.lineTo(1.2, 1.6);   // Scandinavia east
+    europeShape.lineTo(1.0, 1.3);   // Baltic states
+    europeShape.lineTo(1.4, 1.0);   // Eastern Europe
+    europeShape.lineTo(1.2, 0.7);   // Balkans
+    europeShape.lineTo(0.8, 0.8);   // Italy
+    europeShape.lineTo(0.5, 1.0);   // France
+    europeShape.lineTo(0.3, 1.2);   // UK area
+    europeShape.lineTo(0.6, 1.5);   // Northern Europe
+    europeShape.closePath();
+    const europeGeometry = new THREE.ExtrudeGeometry(europeShape, extrudeSettings);
+    const europe = new THREE.Mesh(europeGeometry, continentMaterial);
+    scene.add(europe);
+
+    // Africa (distinctive triangular shape)
+    const africaShape = new THREE.Shape();
+    africaShape.moveTo(0.8, 0.8);    // North Africa west
+    africaShape.lineTo(1.8, 0.6);    // North Africa east
+    africaShape.lineTo(2.0, 0.0);    // Horn of Africa
+    africaShape.lineTo(1.9, -0.8);   // East Africa
+    africaShape.lineTo(1.6, -1.5);   // Southern Africa east
+    africaShape.lineTo(1.2, -1.7);   // South Africa
+    africaShape.lineTo(0.8, -1.5);   // Southern Africa west
+    africaShape.lineTo(0.6, -0.8);   // West Africa south
+    africaShape.lineTo(0.4, 0.0);    // West Africa north
+    africaShape.lineTo(0.6, 0.6);    // Northwest Africa
+    africaShape.closePath();
+    const africaGeometry = new THREE.ExtrudeGeometry(africaShape, extrudeSettings);
+    const africa = new THREE.Mesh(africaGeometry, continentMaterial);
+    scene.add(africa);
+
+    // Asia (large, complex shape)
+    const asiaShape = new THREE.Shape();
+    asiaShape.moveTo(2.0, 2.2);      // Siberia north
+    asiaShape.lineTo(4.5, 1.8);      // Far East Russia
+    asiaShape.lineTo(4.8, 1.4);      // Kamchatka
+    asiaShape.lineTo(4.6, 1.0);      // Japan area
+    asiaShape.lineTo(4.2, 0.6);      // Korea/China east
+    asiaShape.lineTo(3.8, 0.2);      // Southeast Asia
+    asiaShape.lineTo(3.4, -0.2);     // Indonesia area
+    asiaShape.lineTo(3.0, 0.0);      // India southeast
+    asiaShape.lineTo(2.6, 0.4);      // India west
+    asiaShape.lineTo(2.2, 0.8);      // Middle East
+    asiaShape.lineTo(2.0, 1.2);      // Central Asia
+    asiaShape.lineTo(1.8, 1.6);      // Western Asia
+    asiaShape.closePath();
+    const asiaGeometry = new THREE.ExtrudeGeometry(asiaShape, extrudeSettings);
+    const asia = new THREE.Mesh(asiaGeometry, continentMaterial);
+    scene.add(asia);
+
+    // Australia (compact oval shape)
+    const australiaShape = new THREE.Shape();
+    australiaShape.moveTo(4.0, -1.4);
+    australiaShape.lineTo(4.6, -1.5);
+    australiaShape.lineTo(4.8, -1.8);
+    australiaShape.lineTo(4.6, -2.1);
+    australiaShape.lineTo(4.0, -2.2);
+    australiaShape.lineTo(3.6, -2.0);
+    australiaShape.lineTo(3.5, -1.7);
+    australiaShape.lineTo(3.7, -1.5);
+    australiaShape.closePath();
+    const australiaGeometry = new THREE.ExtrudeGeometry(australiaShape, extrudeSettings);
+    const australia = new THREE.Mesh(australiaGeometry, continentMaterial);
+    scene.add(australia);
+
+    // Static camera position - top-down view
+    camera.position.set(0, 5, 2);
     camera.lookAt(0, 0, 0);
 
     // Store references
@@ -195,22 +247,8 @@ export default function LiveWorldMap() {
     rendererRef.current = renderer;
     cameraRef.current = camera;
 
-    // Animation loop
-    let animationId: number;
-    const animate = () => {
-      animationId = requestAnimationFrame(animate);
-      
-      // Slow rotation
-      plane.rotation.z += 0.002;
-      northAmerica.rotation.y += 0.002;
-      africa.rotation.y += 0.002;
-      asia.rotation.y += 0.002;
-      australia.rotation.y += 0.002;
-      southAmerica.rotation.y += 0.002;
-      
-      renderer.render(scene, camera);
-    };
-    animate();
+    // Static render (no animation)
+    renderer.render(scene, camera);
 
     // Handle resize
     const handleResize = () => {
@@ -221,6 +259,7 @@ export default function LiveWorldMap() {
       camera.aspect = newWidth / newHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(newWidth, newHeight);
+      renderer.render(scene, camera);
       
       // Update SVG viewBox to match
       if (svgRef.current) {
@@ -232,7 +271,6 @@ export default function LiveWorldMap() {
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationId);
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
