@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import APIDocs from "@/components/api-docs";
+
 import RecentSearches from "@/components/recent-searches";
 
 interface StatsData {
@@ -175,9 +175,6 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
           <RecentSearches popularDevices={stats?.popularDevices || []} />
         </div>
       </div>
-      
-      {/* API Documentation Section */}
-      <APIDocs />
     </section>
   );
 }

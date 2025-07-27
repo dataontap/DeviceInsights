@@ -5,6 +5,7 @@ import DeviceResults from "@/components/device-results";
 import AdminDashboard from "@/components/admin-dashboard";
 import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
+import APIDocs from "@/components/api-docs";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
@@ -43,6 +44,9 @@ export default function Home() {
       )}
       
       {result && !isLoading && (result as any)?.success !== false && <DeviceResults result={result} />}
+      
+      {/* API Documentation Section */}
+      <APIDocs />
       
       {/* Policy PDF Download Section */}
       <section className="py-12 bg-white">
