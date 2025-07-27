@@ -1,5 +1,7 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import * as THREE from 'three';
 
 interface SearchLocation {
   id: number;
@@ -25,24 +27,17 @@ interface AnimatedDot {
 export default function LiveWorldMap() {
   const [animatedDots, setAnimatedDots] = useState<AnimatedDot[]>([]);
   const [lastSearchId, setLastSearchId] = useState<number>(0);
-  const [worldMapSVG, setWorldMapSVG] = useState<string>('');
-  const mapRef = useRef<SVGSVGElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const threeSceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   // Fetch recent searches every 5 seconds
   const { data: searches } = useQuery<{ searches: SearchLocation[] }>({
     queryKey: ['/api/map/searches?limit=100'],
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
-  });
-
-  // Fetch world map once
-  const { data: mapData } = useQuery<{ svgPaths: string; generated: string }>({
-    queryKey: ['/api/map/generate'],
-    onSuccess: (data) => {
-      if (data?.svgPaths) {
-        setWorldMapSVG(data.svgPaths);
-      }
-    }
   });
 
   // Convert location string to map coordinates
@@ -53,37 +48,37 @@ export default function LiveWorldMap() {
       const lat = parseFloat(coordMatch[1]);
       const lng = parseFloat(coordMatch[2]);
       
-      // Convert lat/lng to SVG coordinates (800x400 map)
-      const x = ((lng + 180) / 360) * 800;
-      const y = ((90 - lat) / 180) * 400;
-      return { x: Math.max(0, Math.min(800, x)), y: Math.max(0, Math.min(400, y)) };
+      // Convert lat/lng to normalized coordinates (0-1 range)
+      const x = (lng + 180) / 360;
+      const y = (90 - lat) / 180;
+      return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
     }
 
-    // Approximate coordinates for major countries/cities
+    // Approximate normalized coordinates for major countries/cities
     const locationMap: { [key: string]: { x: number; y: number } } = {
-      'united states': { x: 200, y: 180 },
-      'usa': { x: 200, y: 180 },
-      'canada': { x: 180, y: 120 },
-      'united kingdom': { x: 400, y: 140 },
-      'uk': { x: 400, y: 140 },
-      'germany': { x: 420, y: 150 },
-      'france': { x: 410, y: 160 },
-      'australia': { x: 650, y: 300 },
-      'japan': { x: 680, y: 170 },
-      'china': { x: 600, y: 180 },
-      'india': { x: 550, y: 200 },
-      'brazil': { x: 280, y: 280 },
-      'mexico': { x: 180, y: 200 },
-      'russia': { x: 500, y: 120 },
-      'south africa': { x: 460, y: 320 },
-      'new york': { x: 220, y: 170 },
-      'california': { x: 160, y: 180 },
-      'london': { x: 400, y: 140 },
-      'paris': { x: 410, y: 160 },
-      'tokyo': { x: 680, y: 170 },
-      'sydney': { x: 670, y: 320 },
-      'toronto': { x: 200, y: 130 },
-      'vancouver': { x: 150, y: 120 },
+      'united states': { x: 0.25, y: 0.45 },
+      'usa': { x: 0.25, y: 0.45 },
+      'canada': { x: 0.225, y: 0.3 },
+      'united kingdom': { x: 0.5, y: 0.35 },
+      'uk': { x: 0.5, y: 0.35 },
+      'germany': { x: 0.525, y: 0.375 },
+      'france': { x: 0.5125, y: 0.4 },
+      'australia': { x: 0.8125, y: 0.75 },
+      'japan': { x: 0.85, y: 0.425 },
+      'china': { x: 0.75, y: 0.45 },
+      'india': { x: 0.6875, y: 0.5 },
+      'brazil': { x: 0.35, y: 0.7 },
+      'mexico': { x: 0.225, y: 0.5 },
+      'russia': { x: 0.625, y: 0.3 },
+      'south africa': { x: 0.575, y: 0.8 },
+      'new york': { x: 0.275, y: 0.425 },
+      'california': { x: 0.2, y: 0.45 },
+      'london': { x: 0.5, y: 0.35 },
+      'paris': { x: 0.5125, y: 0.4 },
+      'tokyo': { x: 0.85, y: 0.425 },
+      'sydney': { x: 0.8375, y: 0.8 },
+      'toronto': { x: 0.25, y: 0.325 },
+      'vancouver': { x: 0.1875, y: 0.3 },
     };
 
     const normalized = location.toLowerCase().trim();
@@ -101,8 +96,149 @@ export default function LiveWorldMap() {
     }
     
     // Default to center if unknown
-    return { x: 400, y: 200 };
+    return { x: 0.5, y: 0.5 };
   };
+
+  // Initialize Three.js scene
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const container = mapRef.current;
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    
+    renderer.setSize(width, height);
+    renderer.setClearColor(0x000000, 0); // Transparent background
+    container.appendChild(renderer.domElement);
+
+    // Create base plane
+    const geometry = new THREE.PlaneGeometry(10, 5, 32, 16);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: 0x2e7d32, 
+      wireframe: false, 
+      transparent: true, 
+      opacity: 0.3 
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.rotation.x = -Math.PI / 2;
+    scene.add(plane);
+
+    // Add continent shapes with extrusion
+    const extrudeSettings = { depth: 0.3, bevelEnabled: false };
+
+    // North America
+    const northAmericaShape = new THREE.Shape();
+    northAmericaShape.moveTo(-4, 1);
+    northAmericaShape.lineTo(-2, 2);
+    northAmericaShape.lineTo(-1, 1.5);
+    northAmericaShape.lineTo(-2, 0.5);
+    northAmericaShape.lineTo(-3.5, 0);
+    const northAmericaGeometry = new THREE.ExtrudeGeometry(northAmericaShape, extrudeSettings);
+    const continentMaterial = new THREE.MeshBasicMaterial({ color: 0x2e7d32, transparent: true, opacity: 0.7 });
+    const northAmerica = new THREE.Mesh(northAmericaGeometry, continentMaterial);
+    scene.add(northAmerica);
+
+    // Africa
+    const africaShape = new THREE.Shape();
+    africaShape.moveTo(0, 0.5);
+    africaShape.lineTo(1, 1);
+    africaShape.lineTo(1.5, 0);
+    africaShape.lineTo(1, -1.5);
+    africaShape.lineTo(0.5, -1);
+    const africaGeometry = new THREE.ExtrudeGeometry(africaShape, extrudeSettings);
+    const africa = new THREE.Mesh(africaGeometry, continentMaterial);
+    scene.add(africa);
+
+    // Asia
+    const asiaShape = new THREE.Shape();
+    asiaShape.moveTo(2, 1);
+    asiaShape.lineTo(4, 1.5);
+    asiaShape.lineTo(4.5, 0);
+    asiaShape.lineTo(3.5, -0.5);
+    asiaShape.lineTo(2.5, 0);
+    const asiaGeometry = new THREE.ExtrudeGeometry(asiaShape, extrudeSettings);
+    const asia = new THREE.Mesh(asiaGeometry, continentMaterial);
+    scene.add(asia);
+
+    // Australia
+    const australiaShape = new THREE.Shape();
+    australiaShape.moveTo(3.5, -1.5);
+    australiaShape.lineTo(4, -1);
+    australiaShape.lineTo(4.5, -1.5);
+    australiaShape.lineTo(4, -2);
+    const australiaGeometry = new THREE.ExtrudeGeometry(australiaShape, extrudeSettings);
+    const australia = new THREE.Mesh(australiaGeometry, continentMaterial);
+    scene.add(australia);
+
+    // South America
+    const southAmericaShape = new THREE.Shape();
+    southAmericaShape.moveTo(-2, -0.5);
+    southAmericaShape.lineTo(-1.5, 0);
+    southAmericaShape.lineTo(-1, -1);
+    southAmericaShape.lineTo(-1.5, -2);
+    const southAmericaGeometry = new THREE.ExtrudeGeometry(southAmericaShape, extrudeSettings);
+    const southAmerica = new THREE.Mesh(southAmericaGeometry, continentMaterial);
+    scene.add(southAmerica);
+
+    // Camera position
+    camera.position.set(0, 3, 3);
+    camera.lookAt(0, 0, 0);
+
+    // Store references
+    threeSceneRef.current = scene;
+    rendererRef.current = renderer;
+    cameraRef.current = camera;
+
+    // Animation loop
+    let animationId: number;
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      
+      // Slow rotation
+      plane.rotation.z += 0.002;
+      northAmerica.rotation.y += 0.002;
+      africa.rotation.y += 0.002;
+      asia.rotation.y += 0.002;
+      australia.rotation.y += 0.002;
+      southAmerica.rotation.y += 0.002;
+      
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    // Handle resize
+    const handleResize = () => {
+      const newRect = container.getBoundingClientRect();
+      const newWidth = newRect.width;
+      const newHeight = newRect.height;
+      
+      camera.aspect = newWidth / newHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newWidth, newHeight);
+      
+      // Update SVG viewBox to match
+      if (svgRef.current) {
+        svgRef.current.setAttribute('viewBox', `0 0 ${newWidth} ${newHeight}`);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationId);
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+    };
+  }, []);
 
   // Process new searches and add animations
   useEffect(() => {
@@ -169,13 +305,21 @@ export default function LiveWorldMap() {
 
         <div className="bg-white rounded-2xl shadow-xl p-8 overflow-hidden">
           <div className="relative w-full" style={{ paddingBottom: '50%' }}>
-            <svg
+            {/* Three.js 3D Map Container */}
+            <div 
               ref={mapRef}
-              viewBox="0 0 800 400"
               className="absolute inset-0 w-full h-full"
               style={{ background: 'linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%)' }}
+            />
+            
+            {/* SVG Overlay for dots and interactions */}
+            <svg
+              ref={svgRef}
+              viewBox="0 0 800 400"
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ zIndex: 10 }}
             >
-              {/* World Map Outline (Simplified) */}
+              {/* Defs for effects */}
               <defs>
                 <filter id="glow">
                   <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -185,35 +329,8 @@ export default function LiveWorldMap() {
                   </feMerge>
                 </filter>
               </defs>
-              
-              {/* World Map */}
-              <g dangerouslySetInnerHTML={{ 
-                __html: worldMapSVG || `
-                  <!-- Accurate world map -->
-                  <!-- North America -->
-                  <path d="M60 80 L90 75 L120 78 L150 82 L180 88 L210 95 L240 105 L270 115 L290 130 L300 150 L295 170 L285 190 L270 210 L250 225 L225 235 L200 240 L175 238 L150 235 L125 230 L100 220 L80 205 L65 185 L55 165 L50 145 L52 125 L55 105 L58 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Greenland -->
-                  <path d="M320 50 L350 45 L375 50 L390 60 L400 75 L405 95 L400 115 L390 130 L375 140 L350 145 L325 140 L305 130 L295 115 L290 95 L295 75 L305 60 L315 50 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- South America -->
-                  <path d="M240 260 L260 265 L275 270 L285 280 L290 295 L288 315 L285 335 L280 355 L272 375 L260 390 L245 395 L230 390 L218 380 L210 365 L205 350 L203 335 L205 320 L210 305 L218 290 L228 275 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Europe -->
-                  <path d="M380 100 L400 95 L420 98 L440 105 L460 115 L470 130 L465 145 L455 160 L440 170 L420 175 L400 172 L385 165 L375 150 L370 135 L372 120 L375 105 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- UK -->
-                  <path d="M365 110 L375 108 L385 112 L388 120 L385 128 L378 132 L370 130 L365 125 L363 118 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Africa -->
-                  <path d="M380 175 L400 178 L420 182 L440 188 L460 195 L475 205 L485 220 L490 240 L492 260 L490 280 L485 300 L478 320 L468 340 L455 355 L440 365 L420 370 L400 368 L385 365 L375 355 L370 340 L368 320 L370 300 L375 280 L378 260 L380 240 L382 220 L384 200 L382 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Asia -->
-                  <path d="M470 70 L500 75 L530 80 L560 85 L590 90 L620 95 L650 100 L680 105 L710 110 L740 118 L760 130 L770 145 L765 165 L755 185 L740 200 L720 210 L695 215 L670 218 L645 215 L620 210 L595 205 L570 200 L545 195 L520 188 L500 180 L485 165 L475 150 L470 135 L468 120 L470 105 L472 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- India -->
-                  <path d="M530 195 L545 198 L555 205 L560 215 L558 230 L552 242 L542 250 L530 248 L520 242 L515 230 L518 215 L525 205 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Australia -->
-                  <path d="M640 300 L665 305 L690 310 L715 318 L730 330 L735 345 L730 360 L720 370 L705 375 L685 372 L660 368 L640 363 L625 355 L620 340 L625 325 L632 315 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <!-- Japan -->
-                  <path d="M695 150 L705 148 L715 152 L718 162 L715 172 L708 180 L700 182 L692 178 L688 168 L690 158 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                `
-              }} />
 
-              {/* Subtle latitude/longitude grid */}
+              {/* Subtle grid overlay */}
               <g stroke="#94a3b8" strokeWidth="0.3" opacity="0.2">
                 {/* Longitude lines */}
                 {Array.from({ length: 13 }, (_, i) => (
@@ -223,18 +340,22 @@ export default function LiveWorldMap() {
                 {Array.from({ length: 7 }, (_, i) => (
                   <line key={`lat-${i}`} x1="0" y1={i * 66.67} x2="800" y2={i * 66.67} strokeDasharray="2,4" />
                 ))}
-                {/* Equator (more prominent) */}
+                {/* Equator */}
                 <line x1="0" y1="200" x2="800" y2="200" stroke="#64748b" strokeWidth="0.5" opacity="0.4" />
               </g>
 
               {/* Animated Search Dots */}
               {animatedDots.map(dot => {
                 const age = Date.now() - dot.timestamp;
-                const opacity = Math.max(0, 1 - age / 10000); // Fade out over 10 seconds
-                const scale = Math.min(1, age / 500); // Scale in over 0.5 seconds
+                const opacity = Math.max(0, 1 - age / 10000);
+                const scale = Math.min(1, age / 500);
+                
+                // Convert normalized coordinates to SVG coordinates
+                const svgX = dot.x * 800;
+                const svgY = dot.y * 400;
 
                 return (
-                  <g key={dot.id} transform={`translate(${dot.x}, ${dot.y})`}>
+                  <g key={dot.id} transform={`translate(${svgX}, ${svgY})`} className="pointer-events-auto">
                     {/* Ripple effect */}
                     <circle
                       r={age / 100}
@@ -252,19 +373,22 @@ export default function LiveWorldMap() {
                       filter="url(#glow)"
                     />
                     
-                    {/* Tooltip on hover */}
+                    {/* Tooltip */}
                     <title>{`${dot.device} - ${dot.location}`}</title>
                   </g>
                 );
               })}
 
-              {/* Static dots for existing searches - show last 100 */}
-              {searches?.searches?.slice(0, 100).map((search: SearchLocation, index: number) => {
+              {/* Static dots for existing searches */}
+              {searches?.searches?.slice(0, 100).map((search: SearchLocation) => {
                 const coords = getMapCoordinates(search.location || 'unknown');
                 if (!coords) return null;
 
+                const svgX = coords.x * 800;
+                const svgY = coords.y * 400;
+
                 return (
-                  <g key={`static-${search.id}`} transform={`translate(${coords.x}, ${coords.y})`}>
+                  <g key={`static-${search.id}`} transform={`translate(${svgX}, ${svgY})`} className="pointer-events-auto">
                     <circle
                       r="2"
                       fill="#64748b"
@@ -291,7 +415,10 @@ export default function LiveWorldMap() {
               <div className="w-3 h-3 bg-slate-500 rounded-full opacity-60"></div>
               <span>Previous Searches</span>
             </div>
-            
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-600 rounded-full opacity-70"></div>
+              <span>3D Terrain</span>
+            </div>
           </div>
         </div>
       </div>
