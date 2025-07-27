@@ -812,7 +812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Authentication Routes
-  app.post("/api/admin/request-login", async (req, res) => {
+  app.post("/api/admin/validate-email", async (req, res) => {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
 
@@ -825,62 +825,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Generate login token
-      const token = nanoid(32);
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-      await storage.createLoginToken({
-        email,
-        token,
-        expiresAt
-      });
-
-      // For now, log the magic link (in production, send via email)
-      const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
-      console.log(`🔐 Magic link for ${email}: ${magicLink}`);
-
       res.json({ 
         success: true,
-        message: "Magic link sent to your email",
-        devNote: `Check console for magic link: ${magicLink}`
+        message: "Email is registered" 
       });
     } catch (error) {
-      console.error("Magic link request error:", error);
+      console.error("Email validation error:", error);
       res.status(400).json({ 
         error: "Invalid request",
-        message: error instanceof Error ? error.message : "Failed to send magic link" 
+        message: error instanceof Error ? error.message : "Failed to validate email" 
       });
     }
   });
 
-  app.post("/api/admin/verify-token", async (req, res) => {
+  app.post("/api/admin/create-session", async (req, res) => {
     try {
-      const { token } = req.body;
+      const { email } = req.body;
 
-      if (!token) {
+      if (!email) {
         return res.status(400).json({ 
-          error: "Token required",
-          message: "Login token is required" 
+          error: "Email required",
+          message: "Email is required to create session" 
         });
       }
 
-      // Verify login token
-      const loginToken = await storage.getLoginTokenByToken(token);
-      if (!loginToken || loginToken.used) {
-        return res.status(401).json({ 
-          error: "Invalid token",
-          message: "Login token is invalid or has expired" 
+      // Verify email has an API key (is registered)
+      const apiKey = await storage.getApiKeyByEmail(email);
+      if (!apiKey) {
+        return res.status(404).json({ 
+          error: "Email not found",
+          message: "This email is not registered. Please generate an API key first." 
         });
       }
-
-      // Mark token as used
-      await storage.useLoginToken(token);
 
       // Create admin session
       const sessionToken = nanoid(32);
       const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      await storage.createAdminSession({        email: loginToken.email,
+      await storage.createAdminSession({
+        email,
         sessionToken,
         expiresAt: sessionExpiresAt
       });
@@ -888,13 +871,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         success: true,
         sessionToken,
-        email: loginToken.email 
+        email 
       });
     } catch (error) {
-      console.error("Token verification error:", error);
+      console.error("Session creation error:", error);
       res.status(500).json({ 
-        error: "Verification failed",
-        message: "Failed to verify login token" 
+        error: "Session creation failed",
+        message: "Failed to create admin session" 
       });
     }
   });

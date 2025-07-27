@@ -5,6 +5,9 @@ import { Smartphone, ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { auth } from "@/lib/firebase";
+import { completeMagicLinkSignIn, isMagicLinkSignIn } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import AdminDashboard from "@/components/admin-dashboard";
 import AdminLogin from "@/components/admin-login";
 
@@ -15,63 +18,94 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Check for token in URL params on mount
+  // Check for Firebase magic link and auth state
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const storedToken = localStorage.getItem('adminSessionToken');
-    const storedEmail = localStorage.getItem('adminEmail');
+    let unsubscribe: any;
 
-    if (token) {
-      // Verify the magic link token
-      verifyTokenMutation.mutate(token);
-      // Clean URL
-      window.history.replaceState({}, '', '/admin');
-    } else if (storedToken && storedEmail) {
-      // Use stored session
-      setSessionToken(storedToken);
-      setUserEmail(storedEmail);
-      setIsLoading(false);
-    } else {
-      setIsLoading(false);
-    }
+    const initAuth = async () => {
+      try {
+        // Check if this is a magic link sign-in
+        if (isMagicLinkSignIn()) {
+          const email = await completeMagicLinkSignIn();
+          if (email) {
+            // Verify email is registered and create session
+            await createAdminSession(email);
+            // Clean URL
+            window.history.replaceState({}, '', '/admin');
+          }
+        }
+
+        // Listen for auth state changes
+        unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user && user.email) {
+            // User is signed in with Firebase
+            await createAdminSession(user.email);
+          } else {
+            // Check for stored session
+            const storedToken = localStorage.getItem('adminSessionToken');
+            const storedEmail = localStorage.getItem('adminEmail');
+            
+            if (storedToken && storedEmail) {
+              setSessionToken(storedToken);
+              setUserEmail(storedEmail);
+            }
+            setIsLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
-  const verifyTokenMutation = useMutation({
-    mutationFn: async (token: string) => {
-      const response = await apiRequest("POST", "/api/admin/verify-token", { token });
-      return response.json();
-    },
-    onSuccess: (data) => {
+  const createAdminSession = async (email: string) => {
+    try {
+      const response = await apiRequest("POST", "/api/admin/create-session", { email });
+      const data = await response.json();
+      
       setSessionToken(data.sessionToken);
-      setUserEmail(data.email);
+      setUserEmail(email);
       setIsLoading(false);
       
       // Store session in localStorage
       localStorage.setItem('adminSessionToken', data.sessionToken);
-      localStorage.setItem('adminEmail', data.email);
+      localStorage.setItem('adminEmail', email);
       
       toast({
         title: "Login successful!",
-        description: `Welcome back, ${data.email}`,
+        description: `Welcome back, ${email}`,
       });
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
+      console.error("Session creation error:", error);
       setIsLoading(false);
       toast({
         title: "Login failed",
-        description: error.message || "Invalid or expired magic link",
+        description: error.message || "Failed to create admin session",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/logout", { 
-        sessionToken 
-      });
-      return response.json();
+      // Sign out from Firebase
+      await signOut(auth);
+      
+      // Clear backend session
+      if (sessionToken) {
+        const response = await apiRequest("POST", "/api/admin/logout", { 
+          sessionToken 
+        });
+        return response.json();
+      }
+      return { success: true };
     },
     onSuccess: () => {
       setSessionToken(null);

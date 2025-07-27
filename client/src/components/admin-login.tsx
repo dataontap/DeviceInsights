@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { sendMagicLink } from "@/lib/firebase";
 import { z } from "zod";
 
 const emailSchema = z.object({
@@ -20,8 +20,21 @@ export default function AdminLogin() {
 
   const sendMagicLinkMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await apiRequest("POST", "/api/admin/request-login", { email });
-      return response.json();
+      // First check if email is registered (has API key)
+      const checkResponse = await fetch("/api/admin/validate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!checkResponse.ok) {
+        const error = await checkResponse.json();
+        throw new Error(error.message || "Email not registered");
+      }
+      
+      // Send Firebase magic link
+      await sendMagicLink(email);
+      return { success: true };
     },
     onSuccess: () => {
       setEmailSent(true);
