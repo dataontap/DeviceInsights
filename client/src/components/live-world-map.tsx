@@ -191,13 +191,29 @@ export default function LiveWorldMap() {
               {/* AI-Generated World Map */}
               <g dangerouslySetInnerHTML={{ 
                 __html: worldMapSVG || `
-                  <!-- Fallback world map -->
-                  <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
-                  <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Improved fallback world map with better geographic accuracy -->
+                  <!-- North America -->
+                  <path d="M120 140 L160 120 L200 130 L240 140 L280 150 L290 180 L285 220 L270 240 L240 250 L200 245 L160 240 L130 220 L115 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Greenland -->
+                  <path d="M320 80 L340 75 L355 85 L360 110 L350 130 L330 135 L315 125 L310 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- South America -->
+                  <path d="M220 260 L250 270 L270 290 L275 330 L270 370 L250 390 L230 385 L210 370 L205 330 L210 290 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Europe -->
+                  <path d="M380 120 L420 115 L440 125 L445 150 L435 170 L415 175 L385 170 L375 145 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Africa -->
+                  <path d="M390 180 L430 185 L450 200 L460 240 L465 280 L455 320 L445 350 L430 365 L410 370 L390 365 L380 320 L385 280 L388 240 L390 200 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Asia -->
+                  <path d="M460 90 L520 95 L580 105 L640 115 L680 125 L720 140 L740 160 L735 190 L720 210 L680 220 L640 215 L580 210 L520 200 L480 185 L465 160 L460 120 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- India -->
+                  <path d="M520 200 L540 205 L550 220 L545 240 L535 250 L520 245 L510 230 L515 215 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Australia -->
+                  <path d="M620 310 L660 315 L690 325 L705 340 L700 360 L680 365 L640 360 L615 350 L610 330 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Japan -->
+                  <path d="M680 160 L690 155 L695 165 L692 180 L685 185 L678 175 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- UK -->
+                  <path d="M375 130 L385 128 L388 138 L383 145 L378 143 L374 138 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <!-- Madagascar -->
+                  <path d="M480 320 L490 325 L488 345 L482 350 L478 340 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
                 `
               }} />
 

@@ -463,27 +463,44 @@ export async function generateWorldMapSVG(): Promise<string> {
       return getFallbackWorldMapSVG();
     }
 
-    const prompt = `Generate an accurate SVG world map that fits in an 800x400 viewBox. The map should include:
+    const prompt = `Generate a geographically accurate SVG world map for an 800x400 viewBox. Create recognizable continental shapes with proper proportions.
 
-1. **Geographically accurate continental outlines** with proper proportions and coastlines
-2. **Major continents**: North America, South America, Europe, Africa, Asia, Australia, Antarctica
-3. **Major islands**: Greenland, Madagascar, New Zealand, Japan, UK, Philippines, Indonesia
-4. **Accurate positioning** using proper map projection (preferably Equirectangular)
-5. **Clean, modern styling** with:
-   - Fill color: #475569 (slate-600)
-   - Stroke color: #334155 (slate-700) 
-   - Stroke width: 0.6
-   - Opacity: 0.85
+CRITICAL REQUIREMENTS:
+1. **Accurate continental shapes** - each continent must be immediately recognizable
+2. **Proper positioning** - use equirectangular projection coordinates
+3. **Realistic proportions** - continents should be sized correctly relative to each other
 
-Requirements:
-- Use only SVG path elements with proper d attributes
-- Ensure all continents are recognizable and properly shaped
-- Include major geographic features like the Mediterranean Sea, Baltic Sea, etc.
-- Make sure the map is suitable for displaying search location dots
-- No text labels or country names needed
-- Return ONLY the SVG path elements (no full SVG wrapper)
+CONTINENTS TO INCLUDE (with approximate coordinates):
+- **North America**: Western portion (x: 80-300, y: 120-250)
+- **South America**: Below North America (x: 200-280, y: 260-390)  
+- **Europe**: Small but detailed (x: 380-460, y: 115-180)
+- **Africa**: Large, extending down (x: 380-480, y: 180-370)
+- **Asia**: Largest continent (x: 460-740, y: 90-220)
+- **Australia**: Southeastern (x: 620-710, y: 310-365)
 
-Generate a unique variation of the world map each time - vary the level of detail, coastal features, or minor stylistic elements while maintaining geographical accuracy.`;
+MAJOR ISLANDS:
+- **Greenland**: North of America (x: 310-360, y: 75-135)
+- **Japan**: East of Asia (x: 675-695, y: 155-185)
+- **UK**: Northwest of Europe (x: 375-390, y: 125-145)
+- **Madagascar**: East of Africa (x: 480-495, y: 320-350)
+
+STYLING (EXACT):
+- Fill: #475569
+- Stroke: #334155
+- Stroke-width: 0.6
+- Opacity: 0.85
+
+TECHNICAL:
+- Use SVG path elements only
+- Return ONLY the path elements (no SVG wrapper)
+- Each continent should be a separate path element
+- Ensure shapes look like real continents, not abstract blobs
+- Vary coastline detail while maintaining recognizable shapes
+
+EXAMPLE FORMAT:
+<path d="M120,140 L160,120..." fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+
+Generate unique coastline variations while keeping continents instantly recognizable.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-pro",
@@ -507,23 +524,38 @@ Generate a unique variation of the world map each time - vary the level of detai
 // Fallback world map SVG paths
 function getFallbackWorldMapSVG(): string {
   return `
-    <!-- North America -->
-    <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- North America with more recognizable shape -->
+    <path d="M120 140 L140 125 L160 120 L180 125 L200 130 L220 135 L240 140 L260 145 L280 150 L290 160 L295 180 L290 200 L285 220 L275 235 L265 245 L250 250 L230 248 L210 245 L190 242 L170 240 L150 235 L135 225 L125 210 L120 190 L115 170 L118 150 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
     
-    <!-- South America -->
-    <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Greenland -->
+    <path d="M320 80 L335 75 L350 78 L360 85 L365 95 L362 110 L358 125 L350 135 L340 138 L330 136 L320 130 L315 115 L312 100 L315 85 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
     
-    <!-- Europe -->
-    <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- South America with characteristic shape -->
+    <path d="M220 260 L235 265 L250 270 L265 275 L275 285 L280 300 L278 320 L275 340 L272 360 L268 375 L260 385 L250 390 L240 388 L230 385 L220 380 L212 365 L208 350 L205 335 L204 320 L206 305 L210 290 L215 275 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
     
-    <!-- Africa -->
-    <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Europe with distinctive outline -->
+    <path d="M380 120 L395 115 L410 117 L425 120 L440 125 L445 135 L448 145 L445 155 L440 165 L435 170 L425 173 L410 175 L395 173 L385 170 L378 160 L375 150 L376 140 L378 130 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
     
-    <!-- Asia -->
-    <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- UK -->
+    <path d="M375 130 L380 128 L385 130 L388 135 L386 142 L383 145 L378 143 L374 140 L372 135 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
     
-    <!-- Australia -->
-    <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    <!-- Africa with recognizable outline -->
+    <path d="M390 180 L405 182 L420 185 L435 190 L450 195 L460 205 L465 220 L467 240 L468 260 L467 280 L465 300 L462 320 L458 340 L452 355 L445 365 L435 370 L425 372 L410 370 L395 368 L385 365 L378 355 L375 340 L377 325 L380 310 L383 295 L385 280 L387 265 L388 250 L389 235 L390 220 L390 200 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Madagascar -->
+    <path d="M480 320 L485 322 L490 325 L492 335 L490 345 L487 350 L482 352 L478 348 L476 340 L477 330 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Asia with better proportions -->
+    <path d="M460 90 L480 92 L500 95 L520 98 L540 102 L560 105 L580 108 L600 112 L620 115 L640 118 L660 122 L680 125 L700 130 L720 135 L735 145 L745 160 L742 175 L735 190 L728 200 L720 210 L710 218 L695 220 L680 222 L665 220 L650 218 L635 215 L620 212 L605 210 L590 208 L575 206 L560 204 L545 202 L530 200 L515 196 L500 192 L485 185 L475 175 L468 160 L465 145 L464 130 L463 115 L462 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- India subcontinent -->
+    <path d="M520 200 L530 202 L540 205 L548 212 L552 222 L550 235 L545 245 L538 250 L530 248 L522 245 L515 238 L512 228 L515 218 L518 208 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Japan -->
+    <path d="M680 160 L685 158 L690 160 L692 165 L694 172 L692 178 L688 182 L683 184 L678 182 L675 178 L674 172 L676 165 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Australia with recognizable shape -->
+    <path d="M620 310 L635 312 L650 315 L665 318 L680 322 L695 325 L705 330 L710 340 L708 350 L703 358 L695 362 L685 364 L670 363 L655 361 L640 358 L625 355 L615 350 L610 340 L612 330 L615 320 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
   `;
 }
 
