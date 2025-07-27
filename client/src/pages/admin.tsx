@@ -35,23 +35,35 @@ export default function Admin() {
           }
         }
 
-        // Listen for auth state changes
-        unsubscribe = onAuthStateChanged(auth, async (user) => {
-          if (user && user.email) {
-            // User is signed in with Firebase
-            await createAdminSession(user.email);
-          } else {
-            // Check for stored session
-            const storedToken = localStorage.getItem('adminSessionToken');
-            const storedEmail = localStorage.getItem('adminEmail');
-            
-            if (storedToken && storedEmail) {
-              setSessionToken(storedToken);
-              setUserEmail(storedEmail);
+        // Listen for auth state changes (if Firebase is available)
+        if (auth) {
+          unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user && user.email) {
+              // User is signed in with Firebase
+              await createAdminSession(user.email);
+            } else {
+              // Check for stored session
+              const storedToken = localStorage.getItem('adminSessionToken');
+              const storedEmail = localStorage.getItem('adminEmail');
+              
+              if (storedToken && storedEmail) {
+                setSessionToken(storedToken);
+                setUserEmail(storedEmail);
+              }
+              setIsLoading(false);
             }
-            setIsLoading(false);
+          });
+        } else {
+          // No Firebase, check for stored session only
+          const storedToken = localStorage.getItem('adminSessionToken');
+          const storedEmail = localStorage.getItem('adminEmail');
+          
+          if (storedToken && storedEmail) {
+            setSessionToken(storedToken);
+            setUserEmail(storedEmail);
           }
-        });
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error("Auth initialization error:", error);
         setIsLoading(false);
@@ -95,8 +107,10 @@ export default function Admin() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Sign out from Firebase
-      await signOut(auth);
+      // Sign out from Firebase (if available)
+      if (auth) {
+        await signOut(auth);
+      }
       
       // Clear backend session
       if (sessionToken) {

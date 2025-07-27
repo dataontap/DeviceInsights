@@ -900,6 +900,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Temporary magic link endpoints (fallback when Firebase is not configured)
+  app.post("/api/admin/send-temp-link", async (req, res) => {
+    try {
+      const { email } = magicLinkRequestSchema.parse(req.body);
+      
+      // Check if email has an API key (is registered)
+      const apiKey = await storage.getApiKeyByEmail(email);
+      if (!apiKey) {
+        return res.status(404).json({ 
+          error: "Email not found",
+          message: "This email is not registered. Please generate an API key first." 
+        });
+      }
+      
+      // Generate login token
+      const token = nanoid(32);
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      await storage.createLoginToken({
+        email,
+        token,
+        expiresAt
+      });
+      
+      // Log the magic link for testing (in production, send via email)
+      const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
+      console.log(`🔐 Magic link for ${email}: ${magicLink}`);
+      
+      res.json({ 
+        success: true,
+        message: "Magic link sent! Check console for dev link.",
+        devNote: magicLink
+      });
+    } catch (error) {
+      console.error("Temp magic link error:", error);
+      res.status(400).json({ 
+        error: "Invalid request",
+        message: error instanceof Error ? error.message : "Failed to send magic link" 
+      });
+    }
+  });
+
+  app.post("/api/admin/verify-temp-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ 
+          error: "Token required",
+          message: "Login token is required" 
+        });
+      }
+      
+      // Verify login token
+      const loginToken = await storage.getLoginTokenByToken(token);
+      if (!loginToken || loginToken.used) {
+        return res.status(401).json({ 
+          error: "Invalid token",
+          message: "Login token is invalid or has expired" 
+        });
+      }
+      
+      // Mark token as used
+      await storage.useLoginToken(token);
+      
+      res.json({ 
+        success: true,
+        email: loginToken.email 
+      });
+    } catch (error) {
+      console.error("Temp token verification error:", error);
+      res.status(500).json({ 
+        error: "Verification failed",
+        message: "Failed to verify login token" 
+      });
+    }
+  });
+
   // Admin session validation middleware
   async function validateAdminSession(req: AuthenticatedRequest, res: any, next: any) {
     try {
