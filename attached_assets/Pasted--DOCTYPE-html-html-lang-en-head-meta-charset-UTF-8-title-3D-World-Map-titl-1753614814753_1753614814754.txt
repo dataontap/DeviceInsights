@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D World Map</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create a simple plane as the base (world map)
+        const geometry = new THREE.PlaneGeometry(10, 5, 10, 5);
+        const material = new THREE.MeshBasicMaterial({ color: 0xcccccc, wireframe: false });
+        const plane = new THREE.Mesh(geometry, material);
+        plane.rotation.x = -Math.PI / 2; // Rotate to lie flat
+        scene.add(plane);
+
+        // Add basic extruded shapes for continents (simplified)
+        const extrudeSettings = { depth: 0.5, bevelEnabled: false };
+
+        // North America
+        const northAmericaShape = new THREE.Shape();
+        northAmericaShape.moveTo(-4, 1);
+        northAmericaShape.lineTo(-2, 2);
+        northAmericaShape.lineTo(-1, 1);
+        northAmericaShape.lineTo(-3, 0);
+        const northAmericaGeometry = new THREE.ExtrudeGeometry(northAmericaShape, extrudeSettings);
+        const northAmerica = new THREE.Mesh(northAmericaGeometry, material);
+        scene.add(northAmerica);
+
+        // Africa
+        const africaShape = new THREE.Shape();
+        africaShape.moveTo(0, 0);
+        africaShape.lineTo(1, 0.5);
+        africaShape.lineTo(1.5, -0.5);
+        africaShape.lineTo(0.5, -1);
+        const africaGeometry = new THREE.ExtrudeGeometry(africaShape, extrudeSettings);
+        const africa = new THREE.Mesh(africaGeometry, material);
+        scene.add(africa);
+
+        // Asia
+        const asiaShape = new THREE.Shape();
+        asiaShape.moveTo(2, 0.5);
+        asiaShape.lineTo(3, 1);
+        asiaShape.lineTo(4, 0);
+        asiaShape.lineTo(3, -0.5);
+        const asiaGeometry = new THREE.ExtrudeGeometry(asiaShape, extrudeSettings);
+        const asia = new THREE.Mesh(asiaGeometry, material);
+        scene.add(asia);
+
+        // Australia
+        const australiaShape = new THREE.Shape();
+        australiaShape.moveTo(3, -1.5);
+        australiaShape.lineTo(3.5, -1);
+        australiaShape.lineTo(4, -1.5);
+        const australiaGeometry = new THREE.ExtrudeGeometry(australiaShape, extrudeSettings);
+        const australia = new THREE.Mesh(australiaGeometry, material);
+        scene.add(australia);
+
+        // South America
+        const southAmericaShape = new THREE.Shape();
+        southAmericaShape.moveTo(-2, -1);
+        southAmericaShape.lineTo(-1.5, -0.5);
+        southAmericaShape.lineTo(-1, -1.5);
+        const southAmericaGeometry = new THREE.ExtrudeGeometry(southAmericaShape, extrudeSettings);
+        const southAmerica = new THREE.Mesh(southAmericaGeometry, material);
+        scene.add(southAmerica);
+
+        // Camera position
+        camera.position.z = 5;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            plane.rotation.z += 0.01; // Rotate the map
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
