@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -75,29 +74,36 @@ export default function LiveWorldMap() {
     };
 
     const normalized = location.toLowerCase().trim();
-    
+
     // Direct match
     if (locationMap[normalized]) {
       return locationMap[normalized];
     }
-    
+
     // Partial match
     for (const [key, coords] of Object.entries(locationMap)) {
       if (normalized.includes(key) || key.includes(normalized)) {
         return coords;
       }
     }
-    
+
     // Default to center if unknown
     return { lat: 0, lng: 0 };
   };
 
-  // Initialize Google Maps
+  // Load Google Maps API if not already loaded
   useEffect(() => {
-    const loadGoogleMaps = () => {
-      if (!mapRef.current || !window.google) return;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    console.log('Google Maps API Key available:', !!apiKey);
 
-      // Initialize Google Map
+    if (!apiKey) {
+      console.error('VITE_GOOGLE_MAPS_API_KEY is not set');
+      return;
+    }
+
+    const loadGoogleMaps = () => {
+      if (!mapRef.current) return;
+
       const map = new google.maps.Map(mapRef.current, {
         center: { lat: 20, lng: 0 }, // Center on world
         zoom: 2,
@@ -133,7 +139,7 @@ export default function LiveWorldMap() {
     // Load Google Maps API if not already loaded
     if (!window.google) {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = loadGoogleMaps;
@@ -162,7 +168,7 @@ export default function LiveWorldMap() {
         if (!coords || !googleMapRef.current) return;
 
         const isNew = search.id > lastSearchId;
-        
+
         const marker = new google.maps.Marker({
           position: coords,
           map: googleMapRef.current,
