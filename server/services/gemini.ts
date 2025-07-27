@@ -455,6 +455,78 @@ function getFallbackDeviceInfo(imei: string): DeviceInfo {
   };
 }
 
+// Generate an accurate world map SVG using Gemini AI
+export async function generateWorldMapSVG(): Promise<string> {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      console.log("Gemini API key not available, using fallback world map");
+      return getFallbackWorldMapSVG();
+    }
+
+    const prompt = `Generate an accurate SVG world map that fits in an 800x400 viewBox. The map should include:
+
+1. **Geographically accurate continental outlines** with proper proportions and coastlines
+2. **Major continents**: North America, South America, Europe, Africa, Asia, Australia, Antarctica
+3. **Major islands**: Greenland, Madagascar, New Zealand, Japan, UK, Philippines, Indonesia
+4. **Accurate positioning** using proper map projection (preferably Equirectangular)
+5. **Clean, modern styling** with:
+   - Fill color: #475569 (slate-600)
+   - Stroke color: #334155 (slate-700) 
+   - Stroke width: 0.6
+   - Opacity: 0.85
+
+Requirements:
+- Use only SVG path elements with proper d attributes
+- Ensure all continents are recognizable and properly shaped
+- Include major geographic features like the Mediterranean Sea, Baltic Sea, etc.
+- Make sure the map is suitable for displaying search location dots
+- No text labels or country names needed
+- Return ONLY the SVG path elements (no full SVG wrapper)
+
+Generate a unique variation of the world map each time - vary the level of detail, coastal features, or minor stylistic elements while maintaining geographical accuracy.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-pro",
+      contents: prompt,
+    });
+
+    const svgPaths = response.text;
+    
+    if (!svgPaths || svgPaths.length < 100) {
+      throw new Error("Generated SVG paths too short or empty");
+    }
+
+    return svgPaths;
+
+  } catch (error) {
+    console.error("Gemini world map generation error:", error);
+    return getFallbackWorldMapSVG();
+  }
+}
+
+// Fallback world map SVG paths
+function getFallbackWorldMapSVG(): string {
+  return `
+    <!-- North America -->
+    <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- South America -->
+    <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Europe -->
+    <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Africa -->
+    <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Asia -->
+    <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+    
+    <!-- Australia -->
+    <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+  `;
+}
+
 export function validateIMEI(imei: string): boolean {
   // Remove any spaces or dashes
   const cleanImei = imei.replace(/[\s-]/g, '');

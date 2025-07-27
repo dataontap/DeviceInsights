@@ -9,7 +9,7 @@ interface AuthenticatedRequest extends Request {
 }
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { analyzeIMEI, validateIMEI } from "./services/gemini";
+import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -21,14 +21,14 @@ async function validateApiKey(req: AuthenticatedRequest, res: any, next: any) {
   try {
     const authHeader = req.headers.authorization;
     const apiKey = authHeader?.replace('Bearer ', '');
-    
+
     if (!apiKey || apiKey.trim() === '') {
       return res.status(401).json({ 
         error: 'Authentication required',
         message: 'API key must be provided in Authorization header' 
       });
     }
-    
+
     // Validate API key format (should start with 'imei_')
     if (!apiKey.startsWith('imei_')) {
       return res.status(401).json({ 
@@ -36,21 +36,21 @@ async function validateApiKey(req: AuthenticatedRequest, res: any, next: any) {
         message: 'API key format is invalid' 
       });
     }
-    
+
     // Hash the provided key and validate against database
     const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
     const storedKey = await storage.getApiKeyByHash(keyHash);
-    
+
     if (!storedKey || !storedKey.isActive) {
       return res.status(401).json({ 
         error: 'Invalid API key',
         message: 'API key is invalid or inactive' 
       });
     }
-    
+
     // Update last used timestamp and increment usage count
     await storage.incrementApiKeyUsage(keyHash);
-    
+
     // Store validated key info for logging/analytics (but not the actual key)
     req.apiKeyId = storedKey.id;
     req.apiKeyName = storedKey.name;
@@ -67,12 +67,12 @@ async function validateApiKey(req: AuthenticatedRequest, res: any, next: any) {
 // Extract country from location for caching purposes
 function extractCountryFromLocation(location: string): string {
   const normalized = location.toLowerCase().trim();
-  
+
   // Handle coordinate-based locations
   if (/^-?\d+\.?\d*,\s*-?\d+\.?\d*$/.test(normalized)) {
     return "GPS_COORDINATES"; // Generic cache key for GPS coordinates
   }
-  
+
   // Common country patterns
   const countryMappings: { [key: string]: string } = {
     'united states': 'United States',
@@ -100,19 +100,19 @@ function extractCountryFromLocation(location: string): string {
     'china': 'China',
     'cn': 'China'
   };
-  
+
   // Check for exact country matches first
   if (countryMappings[normalized]) {
     return countryMappings[normalized];
   }
-  
+
   // Check if location contains country names
   for (const [pattern, country] of Object.entries(countryMappings)) {
     if (normalized.includes(pattern)) {
       return country;
     }
   }
-  
+
   // Default fallback
   return 'Unknown';
 }
@@ -143,16 +143,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       'http://localhost:5000', // Local development
       'http://localhost:3000'  // Common dev port
     ];
-    
+
     // Allow same-origin requests (when origin is undefined)
     if (!origin || allowedOrigins.includes(origin)) {
       res.header('Access-Control-Allow-Origin', origin || '*');
     }
-    
+
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-    
+
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
     } else {
@@ -215,14 +215,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/carriers", async (req, res) => {
     try {
       const { location } = req.body;
-      
+
       if (!location) {
         return res.status(400).json({ error: "Location is required" });
       }
 
       // Extract country from location for caching
       const country = extractCountryFromLocation(location);
-      
+
       // Check cache first
       const cachedData = await storage.getCachedCarriers(country);
       if (cachedData) {
@@ -238,10 +238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Cache miss for country: ${country}, fetching from LLM`);
       const { getTopCarriers } = await import("./services/gemini.js");
       const carriersData = await getTopCarriers(location);
-      
+
       // Cache the result for 24 hours
       await storage.setCachedCarriers(country, carriersData, 24);
-      
+
       res.json({
         success: true,
         ...carriersData,
@@ -264,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/check", async (req, res) => {
     try {
       const { imei, location, network } = req.body;
-      
+
       if (!imei) {
         return res.status(400).json({ error: "IMEI is required" });
       }
@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Analyze device using AI with specified network (default OXIO)
         const targetNetwork = network || "OXIO";
         const deviceInfo = await analyzeIMEI(imei, targetNetwork);
-        
+
         // Store search in database
         const searchData = {
           imei,
@@ -331,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error) {
         console.error("AI Analysis failed:", error);
-        
+
         // Store failed search for analytics
         const searchData = {
           imei,
@@ -371,12 +371,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           compatible: z.boolean().optional(),
         }).optional(),
       });
-      
+
       const { searchId, accepted, deviceInfo } = validationSchema.parse(req.body);
-      
+
       const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
       const userAgent = req.get('User-Agent') || 'unknown';
-      
+
       const policyData = {
         searchId: searchId || null,
         ipAddress,
@@ -385,9 +385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accepted,
         deviceInfo: deviceInfo || null,
       };
-      
+
       const acceptance = await storage.createPolicyAcceptance(policyData);
-      
+
       res.json({
         success: true,
         acceptanceId: acceptance.id,
@@ -404,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/v1/check", validateApiKey, async (req, res) => {
     try {
       const { imei, location, network } = req.body;
-      
+
       if (!imei) {
         return res.status(400).json({ error: "IMEI is required" });
       }
@@ -434,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Analyze device using AI with specified network (default AT&T)
         const targetNetwork = network || "AT&T";
         const deviceInfo = await analyzeIMEI(imei, targetNetwork);
-        
+
         // Store search in database with API key association
         const searchData = {
           imei,
@@ -471,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (aiError) {
         console.error("AI Analysis error:", aiError);
-        
+
         // Store failed search with API key association
         await storage.createImeiSearch({
           imei,
@@ -498,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get stats only for this API key
       const stats = await storage.getSearchStatisticsByApiKey(req.apiKeyId);
       const popularDevices = await storage.getPopularDevicesByApiKey(req.apiKeyId, 5);
-      
+
       res.json({
         totalSearches: stats.totalSearches,
         uniqueDevices: stats.uniqueDevices,
@@ -521,10 +521,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const format = req.query.format as string || 'json';
       const limit = parseInt(req.query.limit as string) || 1000;
-      
+
       // Only get searches for this specific API key
       const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
-      
+
       if (format === 'csv') {
         const csvData = [
           'ID,IMEI,Device Make,Device Model,Device Year,Search Location,IP Address,Searched At',
@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             search.searchedAt?.toISOString() || ''
           ].join(','))
         ].join('\n');
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename=my_imei_searches.csv');
         res.send(csvData);
@@ -570,17 +570,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/search/:id", validateApiKey, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Get search and verify it belongs to this API key
       const search = await storage.getImeiSearchByIdAndApiKey(id, req.apiKeyId);
-      
+
       if (!search) {
         return res.status(404).json({ 
           error: "Search not found", 
           message: "Search does not exist or you do not have access to it" 
         });
       }
-      
+
       res.json({
         id: search.id,
         imei: search.imei,
@@ -605,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const searches = await storage.getRecentValidSearches(limit);
-      
+
       res.json({
         searches: searches.map(search => ({
           id: search.id,
@@ -627,10 +627,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/my/searches", validateApiKey, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      
+
       // Only get searches for this specific API key
       const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
-      
+
       res.json({
         searches: searches.map(search => ({
           id: search.id,
@@ -662,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const searches = await storage.getImeiSearches(limit);
-      
+
       res.json({
         searches: searches.map(search => ({
           id: search.id,
@@ -682,6 +682,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate world map SVG using Gemini AI (public endpoint)
+  app.get('/api/map/generate', async (req, res) => {
+    try {
+      const svgPaths = await generateWorldMapSVG();
+
+      res.json({ 
+        svgPaths,
+        generated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error generating world map:', error);
+      res.status(500).json({ error: 'Failed to generate world map' });
+    }
+  });
+
   // Policy acceptance endpoint (requires API key)
   app.post("/api/v1/policy/accept", validateApiKey, async (req, res) => {
     try {
@@ -694,12 +709,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           compatible: z.boolean().optional(),
         }).optional(),
       });
-      
+
       const { searchId, accepted, deviceInfo } = validationSchema.parse(req.body);
-      
+
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.get('User-Agent') || 'unknown';
-      
+
       const policyData = {
         searchId: searchId || null,
         ipAddress,
@@ -708,9 +723,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accepted,
         deviceInfo: deviceInfo || null,
       };
-      
+
       const acceptance = await storage.createPolicyAcceptance(policyData);
-      
+
       res.json({
         success: true,
         acceptanceId: acceptance.id,
@@ -728,13 +743,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // SECURITY: Apply additional rate limiting for key generation
       const userIP = req.ip || 'unknown';
-      
+
       const { email, name } = generateApiKeySchema.parse(req.body);
-      
+
       // SECURITY: Additional validation and sanitization
       const sanitizedEmail = email.toLowerCase().trim();
       const sanitizedName = name.trim().substring(0, 100); // Limit name length
-      
+
       // SECURITY: Check for suspicious patterns
       if (sanitizedName.length < 2) {
         return res.status(400).json({ 
@@ -742,11 +757,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: ["Name must be at least 2 characters long"]
         });
       }
-      
+
       // Generate unique API key with stronger entropy
       const apiKey = `imei_${nanoid(24)}_${Date.now()}`;
       const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
-      
+
       // Store in database with sanitized data
       const storedKey = await storage.createApiKey({
         key: apiKey,
@@ -754,7 +769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: sanitizedEmail,
         name: sanitizedName,
       });
-      
+
       res.json({
         success: true,
         apiKey: apiKey,
@@ -780,7 +795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/policy/stats", validateApiKey, async (req, res) => {
     try {
       const stats = await storage.getPolicyComplianceStats();
-      
+
       res.json({
         compliance: {
           totalAcceptances: stats.totalAcceptances,
@@ -800,7 +815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/request-login", async (req, res) => {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
-      
+
       // Check if email has an API key (is registered)
       const apiKey = await storage.getApiKeyByEmail(email);
       if (!apiKey) {
@@ -809,21 +824,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "This email is not registered. Please generate an API key first." 
         });
       }
-      
+
       // Generate login token
       const token = nanoid(32);
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-      
+
       await storage.createLoginToken({
         email,
         token,
         expiresAt
       });
-      
+
       // For now, log the magic link (in production, send via email)
       const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
       console.log(`🔐 Magic link for ${email}: ${magicLink}`);
-      
+
       res.json({ 
         success: true,
         message: "Magic link sent to your email",
@@ -841,14 +856,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/verify-token", async (req, res) => {
     try {
       const { token } = req.body;
-      
+
       if (!token) {
         return res.status(400).json({ 
           error: "Token required",
           message: "Login token is required" 
         });
       }
-      
+
       // Verify login token
       const loginToken = await storage.getLoginTokenByToken(token);
       if (!loginToken || loginToken.used) {
@@ -857,20 +872,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Login token is invalid or has expired" 
         });
       }
-      
+
       // Mark token as used
       await storage.useLoginToken(token);
-      
+
       // Create admin session
       const sessionToken = nanoid(32);
       const sessionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
-      await storage.createAdminSession({
-        email: loginToken.email,
+
+      await storage.createAdminSession({        email: loginToken.email,
         sessionToken,
         expiresAt: sessionExpiresAt
       });
-      
+
       res.json({ 
         success: true,
         sessionToken,
@@ -888,11 +902,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/logout", async (req, res) => {
     try {
       const { sessionToken } = req.body;
-      
+
       if (sessionToken) {
         await storage.deleteAdminSession(sessionToken);
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Logout error:", error);
@@ -907,14 +921,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function validateAdminSession(req: AuthenticatedRequest, res: any, next: any) {
     try {
       const sessionToken = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-session-token'];
-      
+
       if (!sessionToken) {
         return res.status(401).json({ 
           error: "Authentication required",
           message: "Admin session token required" 
         });
       }
-      
+
       const session = await storage.getAdminSessionByToken(sessionToken as string);
       if (!session) {
         return res.status(401).json({ 
@@ -922,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Admin session is invalid or expired" 
         });
       }
-      
+
       req.adminEmail = session.email;
       next();
     } catch (error) {

@@ -25,6 +25,7 @@ interface AnimatedDot {
 export default function LiveWorldMap() {
   const [animatedDots, setAnimatedDots] = useState<AnimatedDot[]>([]);
   const [lastSearchId, setLastSearchId] = useState<number>(0);
+  const [worldMapSVG, setWorldMapSVG] = useState<string>('');
   const mapRef = useRef<SVGSVGElement>(null);
 
   // Fetch recent searches every 5 seconds
@@ -32,6 +33,18 @@ export default function LiveWorldMap() {
     queryKey: ['/api/map/searches?limit=100'],
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
+  });
+
+  // Fetch AI-generated world map every 30 seconds
+  const { data: mapData } = useQuery<{ svgPaths: string; generated: string }>({
+    queryKey: ['/api/map/generate'],
+    refetchInterval: 30000, // Regenerate map every 30 seconds
+    refetchIntervalInBackground: true,
+    onSuccess: (data) => {
+      if (data?.svgPaths) {
+        setWorldMapSVG(data.svgPaths);
+      }
+    }
   });
 
   // Convert location string to map coordinates
@@ -175,41 +188,18 @@ export default function LiveWorldMap() {
                 </filter>
               </defs>
               
-              {/* Enhanced World Map with detailed coastlines */}
-              <g fill="#475569" stroke="#334155" strokeWidth="0.6" opacity="0.85">
-                {/* North America - more detailed */}
-                <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" />
-                
-                {/* South America - more natural shape */}
-                <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" />
-                
-                {/* Europe - detailed coastlines */}
-                <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" />
-                
-                {/* Africa - realistic outline */}
-                <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" />
-                
-                {/* Asia - vast continent */}
-                <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" />
-                
-                {/* Australia and Oceania */}
-                <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" />
-                
-                {/* Additional island chains and details */}
-                <ellipse cx="580" cy="180" rx="12" ry="8" opacity="0.8" /> {/* Japan */}
-                <circle cx="460" cy="130" r="4" opacity="0.8" /> {/* UK */}
-                <ellipse cx="350" cy="270" rx="3" ry="8" opacity="0.7" /> {/* Madagascar */}
-                <circle cx="720" cy="200" r="4" opacity="0.7" /> {/* Philippines */}
-                <ellipse cx="680" cy="350" rx="8" ry="4" opacity="0.8" /> {/* New Zealand */}
-                
-                {/* Major island chains */}
-                <circle cx="600" cy="220" r="2" opacity="0.6" /> {/* Indonesia */}
-                <circle cx="610" cy="225" r="2" opacity="0.6" />
-                <circle cx="620" cy="230" r="2" opacity="0.6" />
-                <circle cx="400" cy="250" r="2" opacity="0.6" /> {/* Caribbean */}
-                <circle cx="405" cy="255" r="1.5" opacity="0.6" />
-                <circle cx="410" cy="260" r="1.5" opacity="0.6" />
-              </g>
+              {/* AI-Generated World Map */}
+              <g dangerouslySetInnerHTML={{ 
+                __html: worldMapSVG || `
+                  <!-- Fallback world map -->
+                  <path d="M50 100 Q70 80 100 85 L130 75 Q160 70 180 80 L200 85 Q230 90 250 100 L270 110 Q290 125 295 150 L290 180 Q285 200 270 215 L250 225 Q220 230 190 225 L160 220 Q130 215 110 200 L90 180 Q70 160 65 140 L60 120 Q55 110 50 100 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M200 240 Q220 235 240 245 L260 255 Q280 270 285 295 L290 320 Q285 345 275 365 L265 380 Q250 390 235 385 L220 380 Q205 375 195 360 L190 340 Q185 320 190 300 L195 280 Q200 260 200 240 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M360 110 Q380 105 400 110 L420 115 Q440 120 450 135 L455 150 Q450 165 440 175 L420 180 Q400 175 380 170 L365 165 Q355 155 355 140 L358 125 Q360 115 360 110 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M390 180 Q410 175 430 185 L450 195 Q470 210 475 235 L480 260 Q475 285 470 310 L465 335 Q455 355 445 370 L430 380 Q410 385 395 380 L380 375 Q370 360 375 340 L380 315 Q385 290 388 265 L390 240 Q392 210 390 180 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M470 90 Q500 85 530 95 L560 105 Q590 115 620 125 L650 135 Q680 145 700 160 L720 175 Q735 190 730 210 L725 230 Q715 245 700 255 L680 260 Q650 255 620 250 L590 245 Q560 240 530 235 L500 230 Q480 220 470 200 L468 180 Q466 160 468 140 L470 120 Q472 105 470 90 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                  <path d="M630 300 Q650 295 670 305 L690 315 Q710 325 720 340 L715 355 Q705 365 690 360 L670 355 Q650 350 635 340 L628 325 Q625 312 630 300 Z" fill="#475569" stroke="#334155" stroke-width="0.6" opacity="0.85"/>
+                `
+              }} />
 
               {/* Subtle latitude/longitude grid */}
               <g stroke="#94a3b8" strokeWidth="0.3" opacity="0.2">
@@ -289,6 +279,12 @@ export default function LiveWorldMap() {
               <div className="w-3 h-3 bg-slate-500 rounded-full opacity-60"></div>
               <span>Previous Searches</span>
             </div>
+            {mapData?.generated && (
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span>AI-Generated Map ({new Date(mapData.generated).toLocaleTimeString()})</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
