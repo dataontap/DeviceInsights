@@ -5,6 +5,7 @@ import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import RecentSearches from "@/components/recent-searches";
+import { NotificationManager } from "@/components/notification-manager";
 
 interface StatsData {
   totalSearches: number;
@@ -135,7 +136,7 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-8">
           {/* Popular Devices Chart */}
           <Card>
             <CardHeader>
@@ -173,6 +174,11 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
 
           {/* Recent Searches */}
           <RecentSearches popularDevices={stats?.popularDevices || []} />
+        </div>
+
+        {/* Firebase Messaging Center */}
+        <div className="max-w-4xl mx-auto">
+          <NotificationManager />
         </div>
       </div>
     </section>

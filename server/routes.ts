@@ -10,6 +10,7 @@ interface AuthenticatedRequest extends Request {
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
+import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1009,6 +1010,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   }
+
+  // Firebase Messaging API Routes
+  
+  // Send SMS notification (requires API key)
+  app.post("/api/messaging/sms", validateApiKey, async (req, res) => {
+    try {
+      const { phoneNumber, message } = req.body;
+      
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          message: "Phone number and message are required" 
+        });
+      }
+      
+      const success = await sendSMS(phoneNumber, message);
+      
+      if (success) {
+        res.json({ success: true, message: "SMS sent successfully" });
+      } else {
+        res.status(500).json({ 
+          error: "SMS failed",
+          message: "Failed to send SMS notification" 
+        });
+      }
+    } catch (error) {
+      console.error("SMS API error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Send email notification (requires API key)
+  app.post("/api/messaging/email", validateApiKey, async (req, res) => {
+    try {
+      const { email, subject, body } = req.body;
+      
+      if (!email || !subject || !body) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          message: "Email, subject, and body are required" 
+        });
+      }
+      
+      const success = await sendEmail(email, subject, body);
+      
+      if (success) {
+        res.json({ success: true, message: "Email sent successfully" });
+      } else {
+        res.status(500).json({ 
+          error: "Email failed",
+          message: "Failed to send email notification" 
+        });
+      }
+    } catch (error) {
+      console.error("Email API error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Send push notification (requires API key)
+  app.post("/api/messaging/push", validateApiKey, async (req, res) => {
+    try {
+      const { token, title, body, data } = req.body;
+      
+      if (!token || !title || !body) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          message: "Token, title, and body are required" 
+        });
+      }
+      
+      const success = await sendPushNotification(token, title, body, data);
+      
+      if (success) {
+        res.json({ success: true, message: "Push notification sent successfully" });
+      } else {
+        res.status(500).json({ 
+          error: "Push notification failed",
+          message: "Failed to send push notification" 
+        });
+      }
+    } catch (error) {
+      console.error("Push notification API error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // Register PDF generation routes
   registerPDFRoutes(app);

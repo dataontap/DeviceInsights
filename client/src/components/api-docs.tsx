@@ -145,6 +145,33 @@ export default function APIDocs() {
 }`
     },
     {
+      method: "POST",
+      path: "/api/messaging/sms",
+      description: "Send SMS notification via Firebase messaging",
+      example: `{
+  "success": true,
+  "message": "SMS sent successfully"
+}`
+    },
+    {
+      method: "POST",
+      path: "/api/messaging/email",
+      description: "Send email notification via Firebase messaging",
+      example: `{
+  "success": true,
+  "message": "Email sent successfully"
+}`
+    },
+    {
+      method: "POST",
+      path: "/api/messaging/push",
+      description: "Send push notification via Firebase Cloud Messaging",
+      example: `{
+  "success": true,
+  "message": "Push notification sent successfully"
+}`
+    },
+    {
       method: "GET",
       path: "/api/v1/search/{id}",
       description: "Get individual search by ID",
