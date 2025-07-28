@@ -79,8 +79,8 @@ async function testEmailMessaging(apiKey) {
 async function testPushMessaging(apiKey) {
   console.log('\n🔔 Testing push notification...');
   
-  // Using a mock FCM token for testing
-  const mockFcmToken = 'dGVzdC1mY20tdG9rZW4tZm9yLWRlbW9uc3RyYXRpb24';
+  // Using a realistic FCM token format for testing (still mock but proper format)
+  const mockFcmToken = 'fGd8gF7YQyOvK1:APA91bG8r3p4m0n2l1k9j8h7g6f5d4c3b2a1z0y9x8w7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9v8u7t6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1z0y9x8w7v6u5t4s3r2q1';
   
   const response = await fetch(`${API_BASE}/api/messaging/push`, {
     method: 'POST',
