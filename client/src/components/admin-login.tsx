@@ -36,11 +36,18 @@ export default function AdminLogin() {
       await sendMagicLink(email);
       return { success: true };
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setEmailSent(true);
+      
+      // If in development mode, log the magic link to console
+      if (data.isDevMode && data.devNote) {
+        console.log("🔐 Development Magic Link:", data.devNote);
+        console.log("Click this link to access admin dashboard:", data.devNote);
+      }
+      
       toast({
         title: "Magic link sent!",
-        description: "Check your email for the login link.",
+        description: data.isDevMode ? "Check console for development link" : "Check your email for the login link.",
       });
     },
     onError: (error: any) => {
@@ -83,6 +90,11 @@ export default function AdminLogin() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Development Mode:</strong> Check the browser console or server logs for the magic link until Firebase credentials are configured.
+              </p>
+            </div>
             <p className="text-sm text-gray-600">
               Click the link in your email to access the admin dashboard. The link will expire in 15 minutes.
             </p>

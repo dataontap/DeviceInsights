@@ -930,8 +930,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true,
-        message: "Magic link sent! Check console for dev link.",
-        devNote: magicLink
+        message: "Magic link generated! Check console/logs for development link.",
+        devNote: `Development mode: ${magicLink}`,
+        isDevMode: true
       });
     } catch (error) {
       console.error("Temp magic link error:", error);
