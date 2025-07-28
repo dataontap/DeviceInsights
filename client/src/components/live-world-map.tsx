@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import SVGWorldMap from "./svg-world-map";
 
 interface SearchLocation {
   id: number;
@@ -25,6 +26,7 @@ interface AnimatedDot {
 export default function LiveWorldMap() {
   const [animatedDots, setAnimatedDots] = useState<AnimatedDot[]>([]);
   const [lastSearchId, setLastSearchId] = useState<number>(0);
+  const [mapError, setMapError] = useState<boolean>(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -91,6 +93,19 @@ export default function LiveWorldMap() {
     return { lat: 0, lng: 0 };
   };
 
+  // Listen for Google Maps API errors
+  useEffect(() => {
+    const handleGoogleMapsError = (event: any) => {
+      if (event.error && event.error.message && event.error.message.includes('Google Maps')) {
+        console.error('Google Maps JavaScript API error detected:', event.error);
+        setMapError(true);
+      }
+    };
+
+    window.addEventListener('error', handleGoogleMapsError);
+    return () => window.removeEventListener('error', handleGoogleMapsError);
+  }, []);
+
   // Load Google Maps API if not already loaded
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -99,47 +114,82 @@ export default function LiveWorldMap() {
 
     if (!apiKey) {
       console.error('VITE_GOOGLE_MAPS_API_KEY is not set');
+      setMapError(true);
       return;
     }
 
     if (apiKey === 'undefined' || apiKey === 'null') {
       console.error('VITE_GOOGLE_MAPS_API_KEY has invalid value:', apiKey);
+      setMapError(true);
       return;
     }
+
+    // Set a timer to detect if Google Maps fails to load properly
+    const errorDetectionTimer = setTimeout(() => {
+      if (mapRef.current && !googleMapRef.current) {
+        console.error('Google Maps failed to initialize within timeout');
+        setMapError(true);
+      } else if (mapRef.current) {
+        // Check for error messages in the DOM
+        const errorElements = mapRef.current.querySelectorAll('[data-value*="Oops"], [data-value*="went wrong"], .gm-err-container');
+        if (errorElements.length > 0) {
+          console.error('Google Maps error detected in DOM after timeout');
+          setMapError(true);
+        }
+      }
+    }, 5000); // 5 second timeout
 
     const loadGoogleMaps = () => {
       if (!mapRef.current) return;
 
-      const map = new google.maps.Map(mapRef.current, {
-        center: { lat: 20, lng: 0 }, // Center on world
-        zoom: 2,
-        styles: [
-          {
-            featureType: "water",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#4a90e2" }]
-          },
-          {
-            featureType: "landscape",
-            elementType: "geometry.fill",
-            stylers: [{ color: "#2e7d32" }]
-          },
-          {
-            featureType: "administrative.country",
-            elementType: "geometry.stroke",
-            stylers: [{ color: "#1b5e20" }, { weight: 1 }]
-          }
-        ],
-        disableDefaultUI: true,
-        zoomControl: true,
-        mapTypeControl: false,
-        scaleControl: false,
-        streetViewControl: false,
-        rotateControl: false,
-        fullscreenControl: false
-      });
+      try {
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: 20, lng: 0 }, // Center on world
+          zoom: 2,
+          styles: [
+            {
+              featureType: "water",
+              elementType: "geometry.fill",
+              stylers: [{ color: "#4a90e2" }]
+            },
+            {
+              featureType: "landscape",
+              elementType: "geometry.fill",
+              stylers: [{ color: "#2e7d32" }]
+            },
+            {
+              featureType: "administrative.country",
+              elementType: "geometry.stroke",
+              stylers: [{ color: "#1b5e20" }, { weight: 1 }]
+            }
+          ],
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          scaleControl: false,
+          streetViewControl: false,
+          rotateControl: false,
+          fullscreenControl: false
+        });
 
-      googleMapRef.current = map;
+        googleMapRef.current = map;
+
+        // Listen for map errors
+        map.addListener('tilesloaded', () => {
+          // Check if the map has loaded successfully
+          const mapDiv = mapRef.current;
+          if (mapDiv) {
+            const errorElements = mapDiv.querySelectorAll('[data-value="Oops! Something went wrong."]');
+            if (errorElements.length > 0) {
+              console.error('Google Maps error detected in DOM');
+              setMapError(true);
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error initializing Google Maps:', error);
+        setMapError(true);
+      }
     };
 
     // Load Google Maps API if not already loaded
@@ -149,10 +199,19 @@ export default function LiveWorldMap() {
       script.async = true;
       script.defer = true;
       script.onload = loadGoogleMaps;
+      script.onerror = () => {
+        console.error('Failed to load Google Maps API');
+        setMapError(true);
+      };
       document.head.appendChild(script);
     } else {
       loadGoogleMaps();
     }
+
+    // Cleanup timer on unmount
+    return () => {
+      clearTimeout(errorDetectionTimer);
+    };
   }, []);
 
   // Process new searches and add Google Maps markers
@@ -237,6 +296,11 @@ export default function LiveWorldMap() {
   }, []);
 
   const totalSearches = searches?.searches?.length || 0;
+
+  // If Google Maps failed, show SVG fallback
+  if (mapError) {
+    return <SVGWorldMap />;
+  }
 
   return (
     <section className="py-16 bg-gradient-to-b from-slate-50 to-slate-100">
