@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
-          apiKeyId: req.apiKeyId, // Associate with the API key
+          apiKeyId: (req as AuthenticatedRequest).apiKeyId, // Associate with the API key
         };
 
         const search = await storage.createImeiSearch(searchData);
@@ -479,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
-          apiKeyId: req.apiKeyId,
+          apiKeyId: (req as AuthenticatedRequest).apiKeyId,
         });
 
         res.status(500).json({ 
@@ -497,8 +497,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {
       // Get stats only for this API key
-      const stats = await storage.getSearchStatisticsByApiKey(req.apiKeyId);
-      const popularDevices = await storage.getPopularDevicesByApiKey(req.apiKeyId, 5);
+      const stats = await storage.getSearchStatisticsByApiKey((req as AuthenticatedRequest).apiKeyId);
+      const popularDevices = await storage.getPopularDevicesByApiKey((req as AuthenticatedRequest).apiKeyId, 5);
 
       res.json({
         totalSearches: stats.totalSearches,
@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 1000;
 
       // Only get searches for this specific API key
-      const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
+      const searches = await storage.getImeiSearchesByApiKey((req as AuthenticatedRequest).apiKeyId, limit);
 
       if (format === 'csv') {
         const csvData = [
@@ -557,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             location: search.searchLocation,
             searchedAt: search.searchedAt
           })),
-          apiKeyName: req.apiKeyName,
+          apiKeyName: (req as AuthenticatedRequest).apiKeyName,
           totalCount: searches.length
         });
       }
@@ -573,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
 
       // Get search and verify it belongs to this API key
-      const search = await storage.getImeiSearchByIdAndApiKey(id, req.apiKeyId);
+      const search = await storage.getImeiSearchByIdAndApiKey(id, (req as AuthenticatedRequest).apiKeyId);
 
       if (!search) {
         return res.status(404).json({ 
@@ -630,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 50;
 
       // Only get searches for this specific API key
-      const searches = await storage.getImeiSearchesByApiKey(req.apiKeyId, limit);
+      const searches = await storage.getImeiSearchesByApiKey((req as AuthenticatedRequest).apiKeyId, limit);
 
       res.json({
         searches: searches.map(search => ({
@@ -649,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchedAt: search.searchedAt,
           ipAddress: search.ipAddress
         })),
-        apiKeyName: req.apiKeyName,
+        apiKeyName: (req as AuthenticatedRequest).apiKeyName,
         totalCount: searches.length
       });
     } catch (error) {

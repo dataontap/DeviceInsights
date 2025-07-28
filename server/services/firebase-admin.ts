@@ -153,11 +153,12 @@ export async function sendMulticastNotification(
       tokens,
     };
 
-    const response = await messaging.sendAll(message.tokens.map(token => ({
+    const messages = message.tokens.map(token => ({
       notification: message.notification,
       data: message.data,
       token
-    })));
+    }));
+    const response = await messaging.sendEach(messages);
     console.log('Multicast notification sent:', response);
     return response;
   } catch (error) {
