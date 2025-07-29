@@ -108,11 +108,31 @@ export function ProviderCoverageMaps({
         throw new Error('No valid location set');
       }
 
+      // First, generate a temporary API key for the demo
+      const keyResponse = await fetch('/api/generate-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'coverage-demo@example.com',
+          name: 'Coverage Maps Demo'
+        }),
+      });
+
+      if (!keyResponse.ok) {
+        throw new Error('Failed to generate API key for coverage analysis');
+      }
+
+      const keyData = await keyResponse.json();
+      const apiKey = keyData.apiKey;
+
+      // Now perform the coverage analysis
       const response = await fetch('/api/coverage/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer imei_demo_key_for_coverage_testing`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           lat: coordinates.lat,
@@ -122,7 +142,8 @@ export function ProviderCoverageMaps({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to analyze coverage');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to analyze coverage');
       }
 
       const result = await response.json();
@@ -242,7 +263,7 @@ export function ProviderCoverageMaps({
         <Card>
           <CardContent className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            <span>Analyzing coverage using Downdetector data...</span>
+            <span>Generating API key and analyzing coverage using AI and Downdetector data...</span>
           </CardContent>
         </Card>
       )}
