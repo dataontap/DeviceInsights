@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 interface CoverageAnalysis {
   provider: string;
+  service_type: 'mobile' | 'broadband';
   coverage_score: number;
   reliability_rating: number;
   recent_issues: number;
@@ -24,7 +25,8 @@ interface LocationCoverage {
     lng: number;
     address?: string;
   };
-  providers: CoverageAnalysis[];
+  mobile_providers: CoverageAnalysis[];
+  broadband_providers: CoverageAnalysis[];
   analysis_timestamp: string;
   data_period: string;
 }
@@ -299,81 +301,180 @@ export function ProviderCoverageMaps({
             </CardContent>
           </Card>
 
-          {/* Provider Coverage Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {coverageData.providers.map((provider) => {
-              const display = getRecommendationDisplay(provider.recommendation);
-              const IconComponent = display.icon;
-              
-              return (
-                <Card key={provider.provider} className="relative">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{provider.provider}</CardTitle>
-                      <Badge className={`${display.color} text-white`}>
-                        <IconComponent className="h-3 w-3 mr-1" />
-                        {display.text}
+          {/* Mobile Providers Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-blue-600" />
+              <h4 className="text-lg font-semibold">Mobile Carriers</h4>
+              <Badge variant="outline">{coverageData.mobile_providers.length} providers</Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coverageData.mobile_providers.map((provider) => {
+                const display = getRecommendationDisplay(provider.recommendation);
+                const IconComponent = display.icon;
+                
+                return (
+                  <Card key={`mobile-${provider.provider}`} className="relative">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{provider.provider}</CardTitle>
+                        <Badge className={`${display.color} text-white`}>
+                          <IconComponent className="h-3 w-3 mr-1" />
+                          {display.text}
+                        </Badge>
+                      </div>
+                      <Badge variant="secondary" className="w-fit">
+                        <Smartphone className="h-3 w-3 mr-1" />
+                        Mobile Network
                       </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Coverage Score */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Coverage Score</span>
-                        <span className="font-medium">{provider.coverage_score}/100</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            provider.coverage_score >= 80 ? 'bg-green-500' :
-                            provider.coverage_score >= 60 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
-                          style={{ width: `${provider.coverage_score}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Reliability Rating */}
-                    <div>
-                      <div className="flex justify-between items-center text-sm mb-1">
-                        <span>Reliability</span>
-                        <div className="flex">
-                          {renderStars(provider.reliability_rating)}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {/* Coverage Score */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Coverage Score</span>
+                          <span className="font-medium">{provider.coverage_score}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              provider.coverage_score >= 80 ? 'bg-green-500' :
+                              provider.coverage_score >= 60 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${provider.coverage_score}%` }}
+                          />
                         </div>
                       </div>
-                    </div>
 
-                    {/* Recent Issues */}
-                    <div className="text-sm">
-                      <span className="font-medium">Recent Issues: </span>
-                      <span className={`${provider.recent_issues === 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {provider.recent_issues}
-                      </span>
-                    </div>
-
-                    {/* Issue Summary */}
-                    <div className="text-xs text-muted-foreground">
-                      {provider.issue_summary}
-                    </div>
-
-                    {/* Last Major Outage */}
-                    {provider.last_major_outage && (
-                      <div className="text-xs text-red-600">
-                        Last major outage: {provider.last_major_outage}
+                      {/* Reliability Rating */}
+                      <div>
+                        <div className="flex justify-between items-center text-sm mb-1">
+                          <span>Reliability</span>
+                          <div className="flex">
+                            {renderStars(provider.reliability_rating)}
+                          </div>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Confidence Score */}
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Confidence</span>
-                      <span>{Math.round(provider.confidence_score * 100)}%</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      {/* Recent Issues */}
+                      <div className="text-sm">
+                        <span className="font-medium">Recent Issues: </span>
+                        <span className={`${provider.recent_issues === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {provider.recent_issues}
+                        </span>
+                      </div>
+
+                      {/* Issue Summary */}
+                      <div className="text-xs text-muted-foreground">
+                        {provider.issue_summary}
+                      </div>
+
+                      {/* Last Major Outage */}
+                      {provider.last_major_outage && (
+                        <div className="text-xs text-red-600">
+                          Last major outage: {provider.last_major_outage}
+                        </div>
+                      )}
+
+                      {/* Confidence Score */}
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Confidence</span>
+                        <span>{Math.round(provider.confidence_score * 100)}%</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Broadband Providers Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-green-600" />
+              <h4 className="text-lg font-semibold">Fixed Broadband Internet</h4>
+              <Badge variant="outline">{coverageData.broadband_providers.length} providers</Badge>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {coverageData.broadband_providers.map((provider) => {
+                const display = getRecommendationDisplay(provider.recommendation);
+                const IconComponent = display.icon;
+                
+                return (
+                  <Card key={`broadband-${provider.provider}`} className="relative">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{provider.provider}</CardTitle>
+                        <Badge className={`${display.color} text-white`}>
+                          <IconComponent className="h-3 w-3 mr-1" />
+                          {display.text}
+                        </Badge>
+                      </div>
+                      <Badge variant="secondary" className="w-fit">
+                        <Monitor className="h-3 w-3 mr-1" />
+                        Fixed Internet
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {/* Coverage Score */}
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Coverage Score</span>
+                          <span className="font-medium">{provider.coverage_score}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              provider.coverage_score >= 80 ? 'bg-green-500' :
+                              provider.coverage_score >= 60 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${provider.coverage_score}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Reliability Rating */}
+                      <div>
+                        <div className="flex justify-between items-center text-sm mb-1">
+                          <span>Reliability</span>
+                          <div className="flex">
+                            {renderStars(provider.reliability_rating)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recent Issues */}
+                      <div className="text-sm">
+                        <span className="font-medium">Recent Issues: </span>
+                        <span className={`${provider.recent_issues === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {provider.recent_issues}
+                        </span>
+                      </div>
+
+                      {/* Issue Summary */}
+                      <div className="text-xs text-muted-foreground">
+                        {provider.issue_summary}
+                      </div>
+
+                      {/* Last Major Outage */}
+                      {provider.last_major_outage && (
+                        <div className="text-xs text-red-600">
+                          Last major outage: {provider.last_major_outage}
+                        </div>
+                      )}
+
+                      {/* Confidence Score */}
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Confidence</span>
+                        <span>{Math.round(provider.confidence_score * 100)}%</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

@@ -211,5 +211,10 @@ The application is built as a monorepo with clear separation between client, ser
 ✓ Implemented AI-powered provider comparison with scoring, reliability ratings, and recommendations
 ✓ Coverage analysis supports all major providers (Verizon, AT&T, T-Mobile, OXIO, Rogers, Bell, Telus)
 ✓ Added comprehensive testing suite demonstrating coverage analysis functionality
+✓ Implemented service type separation: mobile carriers vs fixed broadband providers
+✓ Mobile analysis focuses on cellular networks, 4G/5G, voice calls, and SMS services
+✓ Broadband analysis covers fixed internet connections: cable, fiber, DSL, home internet
+✓ Enhanced UI with separate sections for mobile carriers and broadband providers
+✓ AI analysis now tailored to service-specific issues and performance metrics
 
 The application follows modern full-stack practices with type safety, responsive design, and scalable architecture suitable for production deployment.

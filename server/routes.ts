@@ -1139,12 +1139,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get coverage analysis for a specific provider
   app.post("/api/coverage/provider", validateApiKey, async (req, res) => {
     try {
-      const { provider, lat, lng } = req.body;
+      const { provider, service_type, lat, lng } = req.body;
       
-      if (!provider || !lat || !lng || isNaN(lat) || isNaN(lng)) {
+      if (!provider || !service_type || !lat || !lng || isNaN(lat) || isNaN(lng)) {
         return res.status(400).json({ 
           error: "Missing required fields",
-          message: "Provider name, latitude, and longitude are required" 
+          message: "Provider name, service type (mobile/broadband), latitude, and longitude are required" 
+        });
+      }
+      
+      if (!['mobile', 'broadband'].includes(service_type)) {
+        return res.status(400).json({ 
+          error: "Invalid service type",
+          message: "Service type must be either 'mobile' or 'broadband'" 
         });
       }
       
@@ -1155,8 +1162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Provider coverage analysis for ${provider} at: ${lat}, ${lng}`);
-      const analysis = await getProviderCoverage(provider, lat, lng);
+      console.log(`Provider coverage analysis for ${provider} (${service_type}) at: ${lat}, ${lng}`);
+      const analysis = await getProviderCoverage(provider, service_type as 'mobile' | 'broadband', lat, lng);
       
       res.json({
         success: true,

@@ -19,6 +19,7 @@ interface DowndetectorReport {
 
 interface CoverageAnalysis {
   provider: string;
+  service_type: 'mobile' | 'broadband';
   coverage_score: number;
   reliability_rating: number;
   recent_issues: number;
@@ -34,7 +35,8 @@ interface LocationCoverage {
     lng: number;
     address?: string;
   };
-  providers: CoverageAnalysis[];
+  mobile_providers: CoverageAnalysis[];
+  broadband_providers: CoverageAnalysis[];
   analysis_timestamp: string;
   data_period: string;
 }
@@ -110,6 +112,7 @@ async function fetchDowndetectorReports(
  */
 async function analyzeCoverageWithAI(
   provider: string,
+  serviceType: 'mobile' | 'broadband',
   reports: DowndetectorReport[],
   location: { lat: number; lng: number }
 ): Promise<CoverageAnalysis> {
@@ -120,26 +123,32 @@ async function analyzeCoverageWithAI(
   
   const systemPrompt = `You are an expert telecommunications network analyst specializing in coverage assessment and network reliability evaluation. 
 
-Your task is to analyze Downdetector reports for ${provider} in the specified geographic area and provide a comprehensive coverage analysis.
+Your task is to analyze Downdetector reports for ${provider} ${serviceType} services in the specified geographic area and provide a comprehensive coverage analysis.
+
+Service Type Context:
+- Mobile: Cellular networks, 4G/5G connectivity, mobile data, voice calls, SMS
+- Broadband: Fixed internet connections, cable, fiber, DSL, home internet services
 
 Analysis Guidelines:
-1. Coverage Score (0-100): Based on frequency and severity of outages
-2. Reliability Rating (1-5): Overall network dependability 
-3. Recent Issues Count: Number of significant problems in the area
-4. Issue Summary: Brief description of main problems
+1. Coverage Score (0-100): Based on frequency and severity of outages specific to ${serviceType} services
+2. Reliability Rating (1-5): Overall network dependability for ${serviceType}
+3. Recent Issues Count: Number of significant ${serviceType}-related problems in the area
+4. Issue Summary: Brief description of main ${serviceType} problems
 5. Recommendation: excellent (90-100), good (70-89), fair (50-69), poor (<50)
 6. Confidence Score (0-1): How reliable this analysis is based on data quality
 
 Consider these factors:
-- Frequency of reports (more reports = lower score)
-- Severity of issues (network outages worse than billing)
+- Frequency of ${serviceType}-specific reports (more reports = lower score)
+- Severity of issues (network outages worse than billing for ${serviceType})
 - Geographic concentration (issues closer to target location are more relevant)
 - Recent trends (recent issues weighted more heavily)
 - User report volume (more users reporting = more significant issue)
+- Service-specific problems (mobile: dropped calls, no signal; broadband: slow speeds, connection drops)
 
 Response must be valid JSON matching this schema:
 {
   "provider": string,
+  "service_type": "${serviceType}",
   "coverage_score": number (0-100),
   "reliability_rating": number (1-5),
   "recent_issues": number,
@@ -149,7 +158,7 @@ Response must be valid JSON matching this schema:
   "confidence_score": number (0-1)
 }`;
 
-  const analysisPrompt = `Analyze ${provider} network coverage based on these Downdetector reports near location ${location.lat}, ${location.lng}:
+  const analysisPrompt = `Analyze ${provider} ${serviceType} service coverage based on these Downdetector reports near location ${location.lat}, ${location.lng}:
 
 Reports Data:
 ${JSON.stringify(providerReports, null, 2)}
@@ -157,8 +166,9 @@ ${JSON.stringify(providerReports, null, 2)}
 Total reports in area: ${providerReports.length}
 Analysis period: Last 30 days
 Geographic radius: 10km
+Service Focus: ${serviceType.toUpperCase()} services only
 
-Provide comprehensive coverage analysis in the specified JSON format.`;
+Provide comprehensive ${serviceType} coverage analysis in the specified JSON format.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -216,10 +226,11 @@ Provide comprehensive coverage analysis in the specified JSON format.`;
     
     return {
       provider,
+      service_type: serviceType,
       coverage_score: coverageScore,
       reliability_rating: reliabilityRating,
       recent_issues: providerReports.length,
-      issue_summary: `${providerReports.length} reports in the last 30 days. Main issues: ${Array.from(new Set(providerReports.map(r => r.issue_type))).join(', ')}`,
+      issue_summary: `${providerReports.length} ${serviceType} service reports in the last 30 days. Main issues: ${Array.from(new Set(providerReports.map(r => r.issue_type))).join(', ')}`,
       recommendation,
       confidence_score: 0.6 // Lower confidence for fallback analysis
     };
@@ -239,16 +250,25 @@ export async function getCoverageAnalysis(
     console.log(`Fetching coverage data for location: ${lat}, ${lng}`);
     const reports = await fetchDowndetectorReports(lat, lng, 10, 30);
     
-    // List of major providers to analyze
-    const providers = ['Verizon', 'AT&T', 'T-Mobile', 'OXIO', 'Rogers', 'Bell', 'Telus'];
+    // Mobile providers (cellular networks)
+    const mobileProviders = ['Verizon', 'AT&T', 'T-Mobile', 'OXIO', 'Rogers', 'Bell', 'Telus'];
     
-    // Analyze each provider using AI
-    const providerAnalyses = await Promise.all(
-      providers.map(provider => analyzeCoverageWithAI(provider, reports, { lat, lng }))
+    // Broadband providers (fixed internet)
+    const broadbandProviders = ['Comcast', 'Spectrum', 'Verizon Fios', 'AT&T Internet', 'Rogers Internet', 'Bell Internet', 'Telus Internet'];
+    
+    // Analyze mobile providers
+    const mobileAnalyses = await Promise.all(
+      mobileProviders.map(provider => analyzeCoverageWithAI(provider, 'mobile', reports, { lat, lng }))
+    );
+    
+    // Analyze broadband providers
+    const broadbandAnalyses = await Promise.all(
+      broadbandProviders.map(provider => analyzeCoverageWithAI(provider, 'broadband', reports, { lat, lng }))
     );
     
     // Sort by coverage score (best first)
-    providerAnalyses.sort((a, b) => b.coverage_score - a.coverage_score);
+    mobileAnalyses.sort((a, b) => b.coverage_score - a.coverage_score);
+    broadbandAnalyses.sort((a, b) => b.coverage_score - a.coverage_score);
     
     return {
       location: {
@@ -256,7 +276,8 @@ export async function getCoverageAnalysis(
         lng,
         address
       },
-      providers: providerAnalyses,
+      mobile_providers: mobileAnalyses,
+      broadband_providers: broadbandAnalyses,
       analysis_timestamp: new Date().toISOString(),
       data_period: "Last 30 days"
     };
@@ -272,9 +293,10 @@ export async function getCoverageAnalysis(
  */
 export async function getProviderCoverage(
   provider: string,
+  serviceType: 'mobile' | 'broadband',
   lat: number,
   lng: number
 ): Promise<CoverageAnalysis> {
   const reports = await fetchDowndetectorReports(lat, lng, 10, 30);
-  return await analyzeCoverageWithAI(provider, reports, { lat, lng });
+  return await analyzeCoverageWithAI(provider, serviceType, reports, { lat, lng });
 }
