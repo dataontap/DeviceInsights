@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GoogleCoverageMap } from './google-coverage-map';
 
@@ -57,6 +58,10 @@ export function ProviderCoverageMaps({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [mapRadius, setMapRadius] = useState(10); // km radius for analysis
   const [showMap, setShowMap] = useState(false);
+  const [showReportIssue, setShowReportIssue] = useState(false);
+  const [issueDescription, setIssueDescription] = useState('');
+  const [isReportingIssue, setIsReportingIssue] = useState(false);
+  const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
 
   // Check if we have a valid location
   useEffect(() => {
@@ -102,6 +107,58 @@ export function ProviderCoverageMaps({
         lng,
         address: locationInput.address
       });
+    }
+  };
+
+  // Report issue function
+  const reportIssue = async () => {
+    if (!issueDescription.trim()) return;
+    
+    setIsReportingIssue(true);
+    try {
+      // Generate API key for issue analysis
+      const keyResponse = await fetch('/api/generate-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'issue-report@example.com',
+          name: 'Issue Reporter'
+        }),
+      });
+
+      const keyData = await keyResponse.json();
+      const apiKey = keyData.apiKey;
+
+      // Analyze the reported issue
+      const response = await fetch('/api/coverage/analyze-issue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+          address: coordinates.address,
+          issue_description: issueDescription,
+          user_agent: navigator.userAgent // For device detection
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setIssueAnalysis(result.data);
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to analyze issue');
+      }
+    } catch (error) {
+      console.error('Error reporting issue:', error);
+      alert('Failed to analyze issue. Please try again.');
+    } finally {
+      setIsReportingIssue(false);
     }
   };
 
@@ -259,6 +316,14 @@ export function ProviderCoverageMaps({
               <Wifi className="h-4 w-4 mr-2" />
               Analyze Coverage
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowReportIssue(!showReportIssue)}
+              disabled={!hasValidLocation}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Report an Issue
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -279,6 +344,115 @@ export function ProviderCoverageMaps({
             <p className="text-red-600 text-center">
               Error analyzing coverage: {error.message}
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Issue Reporting Section */}
+      {showReportIssue && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Report Network Issue
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="issue-description">Describe your network issue</Label>
+              <Textarea
+                id="issue-description"
+                placeholder="Describe the network problem you're experiencing... e.g., 'No signal on my iPhone 15 Pro in downtown area, calls keep dropping, slow internet speeds, can't connect to 5G network, etc.'"
+                value={issueDescription}
+                onChange={(e) => setIssueDescription(e.target.value)}
+                className="min-h-24 mt-2"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={reportIssue}
+                disabled={!issueDescription.trim() || isReportingIssue}
+                className="flex-1"
+              >
+                {isReportingIssue ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Analyzing Issue...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Analyze Issue
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReportIssue(false);
+                  setIssueDescription('');
+                  setIssueAnalysis(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Issue Analysis Results */}
+      {issueAnalysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Issue Analysis & Similar Reports
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Issue Classification */}
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">Issue Classification</h4>
+              <p className="text-sm text-blue-800">{issueAnalysis.issue_classification}</p>
+            </div>
+
+            {/* Similar Issues in Area */}
+            <div className="p-4 bg-yellow-50 rounded-lg">
+              <h4 className="font-semibold text-yellow-900 mb-2">Similar Issues in Your Area</h4>
+              <p className="text-sm text-yellow-800 mb-2">{issueAnalysis.similar_issues_summary}</p>
+              {issueAnalysis.similar_reports && issueAnalysis.similar_reports.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-yellow-700 font-medium">Recent Similar Reports:</p>
+                  {issueAnalysis.similar_reports.slice(0, 3).map((report: any, index: number) => (
+                    <div key={index} className="text-xs text-yellow-700 bg-white p-2 rounded border-l-2 border-yellow-400">
+                      <strong>{report.device || 'Unknown Device'}:</strong> {report.description}
+                      {report.distance && <span className="text-yellow-600"> ({report.distance})</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Device Pattern Analysis */}
+            {issueAnalysis.device_pattern && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-2">Device Pattern Analysis</h4>
+                <p className="text-sm text-green-800">{issueAnalysis.device_pattern}</p>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <h4 className="font-semibold text-purple-900 mb-2">AI Recommendations</h4>
+              <p className="text-sm text-purple-800">{issueAnalysis.recommendations}</p>
+            </div>
+
+            {/* Area Impact */}
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Analysis Confidence: {Math.round(issueAnalysis.confidence_score * 100)}%</span>
+              <span>Similar Reports: {issueAnalysis.similar_reports?.length || 0}</span>
+            </div>
           </CardContent>
         </Card>
       )}

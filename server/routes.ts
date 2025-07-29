@@ -12,6 +12,7 @@ import { storage } from "./storage";
 import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
+import { analyzeIssueWithAI } from './services/issue-analyzer.js';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1132,6 +1133,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: "Analysis failed",
         message: "Unable to analyze coverage for the specified location" 
+      });
+    }
+  });
+  
+  // Analyze reported issue and find similar patterns
+  app.post("/api/coverage/analyze-issue", validateApiKey, async (req, res) => {
+    try {
+      const { lat, lng, address, issue_description, user_agent } = req.body;
+      
+      if (!lat || !lng || !issue_description || isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          message: "Latitude, longitude, and issue description are required" 
+        });
+      }
+      
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ 
+          error: "Invalid coordinate range",
+          message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
+        });
+      }
+      
+      console.log(`Issue analysis requested for: ${lat}, ${lng}`);
+      console.log(`Issue description: ${issue_description}`);
+      
+      // Analyze the issue using Gemini AI
+      const analysis = await analyzeIssueWithAI({
+        lat,
+        lng,
+        address,
+        issue_description,
+        user_agent
+      });
+      
+      res.json({
+        success: true,
+        data: analysis
+      });
+      
+    } catch (error) {
+      console.error("Issue analysis error:", error);
+      res.status(500).json({ 
+        error: "Analysis failed",
+        message: "Unable to analyze the reported issue" 
       });
     }
   });
