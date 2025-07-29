@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GoogleCoverageMap } from './google-coverage-map';
@@ -62,6 +63,7 @@ export function ProviderCoverageMaps({
   const [issueDescription, setIssueDescription] = useState('');
   const [isReportingIssue, setIsReportingIssue] = useState(false);
   const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string>('auto');
 
   // Check if we have a valid location
   useEffect(() => {
@@ -164,7 +166,7 @@ export function ProviderCoverageMaps({
 
   // Coverage analysis query
   const { data: coverageData, isLoading, error, refetch } = useQuery<LocationCoverage>({
-    queryKey: ['coverage-analysis', coordinates.lat, coordinates.lng],
+    queryKey: ['coverage-analysis', coordinates.lat, coordinates.lng, selectedProvider],
     queryFn: async () => {
       if (coordinates.lat === 0 && coordinates.lng === 0) {
         throw new Error('No valid location set');
@@ -199,7 +201,8 @@ export function ProviderCoverageMaps({
         body: JSON.stringify({
           lat: coordinates.lat,
           lng: coordinates.lng,
-          address: coordinates.address
+          address: coordinates.address,
+          provider: selectedProvider !== 'auto' ? selectedProvider : undefined
         }),
       });
 
@@ -288,6 +291,36 @@ export function ProviderCoverageMaps({
                 onChange={(e) => setLocationInput({ ...locationInput, address: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Provider Selection */}
+          <div>
+            <Label htmlFor="provider-select">Network Provider (Optional)</Label>
+            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+              <SelectTrigger id="provider-select">
+                <SelectValue placeholder="Auto-detect largest provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto-detect (Largest in Country)</SelectItem>
+                <SelectItem value="Verizon">Verizon</SelectItem>
+                <SelectItem value="AT&T">AT&T</SelectItem>
+                <SelectItem value="T-Mobile">T-Mobile</SelectItem>
+                <SelectItem value="Rogers">Rogers (Canada)</SelectItem>
+                <SelectItem value="Bell">Bell (Canada)</SelectItem>
+                <SelectItem value="Telus">Telus (Canada)</SelectItem>
+                <SelectItem value="OXIO">OXIO</SelectItem>
+                <SelectItem value="Verizon Fios">Verizon Fios (Internet)</SelectItem>
+                <SelectItem value="AT&T Internet">AT&T Internet</SelectItem>
+                <SelectItem value="Comcast">Comcast/Xfinity</SelectItem>
+                <SelectItem value="Spectrum">Spectrum</SelectItem>
+                <SelectItem value="Rogers Internet">Rogers Internet</SelectItem>
+                <SelectItem value="Bell Internet">Bell Internet</SelectItem>
+                <SelectItem value="Telus Internet">Telus Internet</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Leave on auto-detect to analyze the largest provider in your country
+            </p>
           </div>
 
           {/* Action Buttons */}

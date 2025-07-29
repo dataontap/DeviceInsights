@@ -1104,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get comprehensive coverage analysis for a location
   app.post("/api/coverage/analyze", validateApiKey, async (req, res) => {
     try {
-      const { lat, lng, address } = req.body;
+      const { lat, lng, address, provider } = req.body;
       
       if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
         return res.status(400).json({ 
@@ -1121,7 +1121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Coverage analysis requested for: ${lat}, ${lng}`);
-      const analysis = await getCoverageAnalysis(lat, lng, address);
+      const analysis = await getCoverageAnalysis(lat, lng, address, provider);
       
       res.json({
         success: true,

@@ -2,6 +2,33 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
+// Simple in-memory cache for coverage analysis (in production, use Redis)
+interface CacheEntry {
+  data: LocationCoverage;
+  timestamp: number;
+}
+
+const coverageCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+function getCachedCoverageAnalysis(key: string): LocationCoverage | null {
+  const entry = coverageCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data;
+  }
+  if (entry) {
+    coverageCache.delete(key); // Remove expired entry
+  }
+  return null;
+}
+
+function setCachedCoverageAnalysis(key: string, data: LocationCoverage): void {
+  coverageCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
 interface DowndetectorReport {
   id: string;
   provider: string;
@@ -240,37 +267,81 @@ Provide comprehensive ${serviceType} coverage analysis in the specified JSON for
 /**
  * Get comprehensive coverage analysis for a location
  */
+// Get default provider for a country based on coordinates
+function getDefaultProviderForCountry(lat: number, lng: number): string[] {
+  // US coordinates (rough boundaries)
+  if (lat >= 24.5 && lat <= 49.3 && lng >= -125 && lng <= -66.9) {
+    return ['Verizon', 'AT&T', 'T-Mobile']; // Largest US carriers
+  }
+  
+  // Canada coordinates (rough boundaries)  
+  if (lat >= 41.7 && lat <= 83.1 && lng >= -141 && lng <= -52.6) {
+    return ['Rogers', 'Bell', 'Telus']; // Largest Canadian carriers
+  }
+  
+  // Default to major international providers
+  return ['Verizon', 'AT&T', 'T-Mobile', 'Rogers', 'Bell'];
+}
+
 export async function getCoverageAnalysis(
   lat: number,
   lng: number,
-  address?: string
+  address?: string,
+  specificProvider?: string
 ): Promise<LocationCoverage> {
   try {
+    // Create cache key for this analysis
+    const cacheKey = `coverage_${lat.toFixed(3)}_${lng.toFixed(3)}_${specificProvider || 'auto'}`;
+    
+    // Check cache first (for production, this would use Redis or database)
+    // For now, we'll implement in-memory cache with 30-minute TTL
+    const cachedResult = getCachedCoverageAnalysis(cacheKey);
+    if (cachedResult) {
+      console.log(`Using cached coverage analysis for ${lat}, ${lng} (provider: ${specificProvider || 'auto'})`);
+      return cachedResult;
+    }
+    
     // Fetch Downdetector reports for the area
     console.log(`Fetching coverage data for location: ${lat}, ${lng}`);
     const reports = await fetchDowndetectorReports(lat, lng, 10, 30);
     
-    // Mobile providers (cellular networks)
-    const mobileProviders = ['Verizon', 'AT&T', 'T-Mobile', 'OXIO', 'Rogers', 'Bell', 'Telus'];
+    // Determine providers to analyze based on selection
+    let mobileProviders: string[];
+    let broadbandProviders: string[];
     
-    // Broadband providers (fixed internet)
-    const broadbandProviders = ['Comcast', 'Spectrum', 'Verizon Fios', 'AT&T Internet', 'Rogers Internet', 'Bell Internet', 'Telus Internet'];
+    if (specificProvider && specificProvider !== 'auto') {
+      // Analyze only the specified provider
+      if (['Verizon Fios', 'AT&T Internet', 'Comcast', 'Spectrum', 'Rogers Internet', 'Bell Internet', 'Telus Internet'].includes(specificProvider)) {
+        mobileProviders = [];
+        broadbandProviders = [specificProvider];
+      } else {
+        mobileProviders = [specificProvider];
+        broadbandProviders = [];
+      }
+      console.log(`Analyzing specific provider: ${specificProvider}`);
+    } else {
+      // Auto-detect: use country defaults for mobile, all major broadband
+      const defaultMobile = getDefaultProviderForCountry(lat, lng);
+      mobileProviders = [...defaultMobile, 'OXIO']; // Include OXIO as specialty provider
+      broadbandProviders = ['Comcast', 'Spectrum', 'Verizon Fios', 'AT&T Internet', 'Rogers Internet', 'Bell Internet', 'Telus Internet'];
+      console.log(`Auto-detecting providers for country. Mobile defaults: ${defaultMobile.join(', ')}`);
+    }
     
-    // Analyze mobile providers
-    const mobileAnalyses = await Promise.all(
+    // Analyze mobile providers (only if we have mobile providers to analyze)
+    const mobileAnalyses = mobileProviders.length > 0 ? await Promise.all(
       mobileProviders.map(provider => analyzeCoverageWithAI(provider, 'mobile', reports, { lat, lng }))
-    );
+    ) : [];
     
-    // Analyze broadband providers
-    const broadbandAnalyses = await Promise.all(
+    // Analyze broadband providers (only if we have broadband providers to analyze)
+    const broadbandAnalyses = broadbandProviders.length > 0 ? await Promise.all(
       broadbandProviders.map(provider => analyzeCoverageWithAI(provider, 'broadband', reports, { lat, lng }))
-    );
+    ) : [];
     
     // Sort by coverage score (best first)
     mobileAnalyses.sort((a, b) => b.coverage_score - a.coverage_score);
     broadbandAnalyses.sort((a, b) => b.coverage_score - a.coverage_score);
     
-    return {
+    const result = {
       location: {
         lat,
         lng,
@@ -281,6 +352,11 @@ export async function getCoverageAnalysis(
       analysis_timestamp: new Date().toISOString(),
       data_period: "Last 30 days"
     };
+    
+    // Cache the result for 30 minutes
+    setCachedCoverageAnalysis(cacheKey, result);
+    
+    return result;
     
   } catch (error) {
     console.error('Error in coverage analysis:', error);
