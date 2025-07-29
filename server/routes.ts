@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
+import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1094,6 +1095,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Push notification API error:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Coverage Analysis API Endpoints
+  
+  // Get comprehensive coverage analysis for a location
+  app.post("/api/coverage/analyze", validateApiKey, async (req, res) => {
+    try {
+      const { lat, lng, address } = req.body;
+      
+      if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ 
+          error: "Invalid coordinates",
+          message: "Valid latitude and longitude are required" 
+        });
+      }
+      
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ 
+          error: "Invalid coordinate range",
+          message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
+        });
+      }
+      
+      console.log(`Coverage analysis requested for: ${lat}, ${lng}`);
+      const analysis = await getCoverageAnalysis(lat, lng, address);
+      
+      res.json({
+        success: true,
+        data: analysis
+      });
+      
+    } catch (error) {
+      console.error("Coverage analysis error:", error);
+      res.status(500).json({ 
+        error: "Analysis failed",
+        message: "Unable to analyze coverage for the specified location" 
+      });
+    }
+  });
+  
+  // Get coverage analysis for a specific provider
+  app.post("/api/coverage/provider", validateApiKey, async (req, res) => {
+    try {
+      const { provider, lat, lng } = req.body;
+      
+      if (!provider || !lat || !lng || isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ 
+          error: "Missing required fields",
+          message: "Provider name, latitude, and longitude are required" 
+        });
+      }
+      
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ 
+          error: "Invalid coordinate range",
+          message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
+        });
+      }
+      
+      console.log(`Provider coverage analysis for ${provider} at: ${lat}, ${lng}`);
+      const analysis = await getProviderCoverage(provider, lat, lng);
+      
+      res.json({
+        success: true,
+        data: analysis
+      });
+      
+    } catch (error) {
+      console.error("Provider coverage analysis error:", error);
+      res.status(500).json({ 
+        error: "Analysis failed",
+        message: "Unable to analyze provider coverage for the specified location" 
+      });
     }
   });
 
