@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor } from 'lucide-react';
+import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { GoogleCoverageMap } from './google-coverage-map';
 
 interface CoverageAnalysis {
   provider: string;
@@ -54,6 +55,8 @@ export function ProviderCoverageMaps({
   });
   const [hasValidLocation, setHasValidLocation] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [mapRadius, setMapRadius] = useState(10); // km radius for analysis
+  const [showMap, setShowMap] = useState(false);
 
   // Check if we have a valid location
   useEffect(() => {
@@ -300,6 +303,42 @@ export function ProviderCoverageMaps({
               </div>
             </CardContent>
           </Card>
+
+          {/* Google Maps Coverage Visualization */}
+          {coordinates.lat !== 0 && coordinates.lng !== 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Map className="h-5 w-5 text-blue-600" />
+                  <h4 className="text-lg font-semibold">Coverage Map Visualization</h4>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMap(!showMap)}
+                >
+                  {showMap ? 'Hide Map' : 'Show Map'}
+                </Button>
+              </div>
+              
+              {showMap && (
+                <GoogleCoverageMap
+                  lat={coordinates.lat}
+                  lng={coordinates.lng}
+                  address={coordinates.address}
+                  radius={mapRadius}
+                  onRadiusChange={setMapRadius}
+                  issueCount={
+                    coverageData ? 
+                    coverageData.mobile_providers.reduce((sum, p) => sum + p.recent_issues, 0) +
+                    coverageData.broadband_providers.reduce((sum, p) => sum + p.recent_issues, 0)
+                    : 0
+                  }
+                  areaName={coordinates.address || `${coordinates.lat.toFixed(2)}, ${coordinates.lng.toFixed(2)}`}
+                />
+              )}
+            </div>
+          )}
 
           {/* Mobile Providers Section */}
           <div className="space-y-4">
