@@ -90,7 +90,7 @@ export default function Home() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm">📱</span>
                 </div>
-                <span className="text-xl font-semibold text-white">Network Services Checker</span>
+                <span className="text-xl font-semibold text-white">Network Services</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
                 Comprehensive network services including IMEI compatibility checking and coverage analysis. 

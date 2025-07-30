@@ -17,7 +17,7 @@ export default function Navigation() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Smartphone className="text-white w-4 h-4" />
             </div>
-            <span className="text-xl font-semibold text-gray-900">Network Services Checker</span>
+            <span className="text-xl font-semibold text-gray-900">Network Services</span>
           </Link>
           
           <div className="hidden md:flex items-center space-x-6">
