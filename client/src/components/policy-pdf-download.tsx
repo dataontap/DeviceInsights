@@ -11,11 +11,11 @@ export default function PolicyPDFDownload() {
   const handleDownloadPDF = async () => {
     try {
       const response = await fetch('/api/generate-policy-pdf');
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -25,7 +25,7 @@ export default function PolicyPDFDownload() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       toast({
         title: "PDF Downloaded Successfully",
         description: "The OXIO Device Compatibility Policy has been downloaded to your device.",
@@ -55,7 +55,7 @@ export default function PolicyPDFDownload() {
           Complete OXIO device compatibility guide and pre-porting checklist
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Primary action - View Policy inline */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
@@ -90,9 +90,9 @@ export default function PolicyPDFDownload() {
                 <div className="text-3xl font-bold text-blue-600 mb-2">OXIO</div>
                 <div className="text-lg text-gray-600 dark:text-gray-400">Connected. Simple. Reliable.</div>
               </div>
-              
+
               <h1 className="text-center text-3xl font-bold mb-6">Device Compatibility Policy</h1>
-              
+
               {/* Important Notice */}
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
@@ -108,7 +108,7 @@ export default function PolicyPDFDownload() {
 
               {/* Device Compatibility Overview */}
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">📱 Device Compatibility Overview</h2>
-              
+
               <p className="mb-6">
                 OXIO operates on a modern LTE and 5G network infrastructure designed to provide exceptional coverage and performance. To ensure the best possible experience, your device must meet specific technical requirements and be properly configured for our network.
               </p>
@@ -120,19 +120,19 @@ export default function PolicyPDFDownload() {
                   <h3 className="font-semibold mb-2">4G LTE</h3>
                   <p className="text-sm">Required for all devices. Ensures reliable voice, text, and data services.</p>
                 </div>
-                
+
                 <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg p-4 text-center">
                   <div className="text-2xl mb-2">🚀</div>
                   <h3 className="font-semibold mb-2">5G Ready</h3>
                   <p className="text-sm">Enhanced speeds and performance in 5G coverage areas.</p>
                 </div>
-                
+
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg p-4 text-center">
                   <div className="text-2xl mb-2">📞</div>
                   <h3 className="font-semibold mb-2">VoLTE</h3>
                   <p className="text-sm">Voice over LTE for crystal-clear calling experience.</p>
                 </div>
-                
+
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg p-4 text-center">
                   <div className="text-2xl mb-2">📡</div>
                   <h3 className="font-semibold mb-2">Wi-Fi Calling</h3>
@@ -142,7 +142,7 @@ export default function PolicyPDFDownload() {
 
               {/* Pre-Porting Checklist */}
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">✅ Pre-Porting Checklist</h2>
-              
+
               <div className="bg-gray-50 dark:bg-gray-800 border rounded-lg p-4 mb-6">
                 <div className="space-y-4">
                   {[
@@ -179,7 +179,7 @@ export default function PolicyPDFDownload() {
 
               {/* Device Unlock Requirements */}
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔓 Device Unlock Requirements</h2>
-              
+
               <p className="mb-4">
                 A locked device is tied to a specific carrier and cannot be used with other networks. To use your device with OXIO, it must be unlocked from your current provider.
               </p>
@@ -218,10 +218,10 @@ export default function PolicyPDFDownload() {
 
               {/* Technical Requirements */}
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔧 Technical Requirements</h2>
-              
+
               <h3 className="text-xl font-semibold mb-3">Minimum Network Band Support</h3>
               <p className="mb-4">Your device must support the following LTE bands for optimal OXIO network performance:</p>
-              
+
               <div className="space-y-3 mb-6">
                 {[
                   { band: "Band 4 (1700/2100 MHz)", description: "Primary LTE band for data and voice services" },
