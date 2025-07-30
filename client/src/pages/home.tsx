@@ -63,8 +63,8 @@ export default function Home() {
         </div>
       </section>
       
-      {/* Live World Map */}
-      <LiveWorldMap />
+      {/* Live World Map - Temporarily Hidden */}
+      {/* <LiveWorldMap /> */}
       
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
