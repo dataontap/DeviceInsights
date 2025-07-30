@@ -55,6 +55,7 @@ export function ProviderCoverageMaps({
     lng: initialLng.toString(),
     address: initialAddress
   });
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [hasValidLocation, setHasValidLocation] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [mapRadius, setMapRadius] = useState(10); // km radius for analysis
@@ -136,6 +137,7 @@ export function ProviderCoverageMaps({
         lng,
         address: locationInput.address
       });
+      setLocationConfirmed(true);
     }
   };
 
@@ -385,6 +387,37 @@ export function ProviderCoverageMaps({
               Report an Issue
             </Button>
           </div>
+          
+          {/* Location Confirmation */}
+          {locationConfirmed && (
+            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-lg mt-4">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Location confirmed: {coordinates.address || `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`}
+              </span>
+            </div>
+          )}
+          
+          {/* Coverage Analysis Prompt */}
+          {locationConfirmed && !coverageData && !isLoading && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <div className="flex items-center gap-2 text-blue-700 mb-2">
+                <Wifi className="h-5 w-5" />
+                <h4 className="font-semibold">Ready to Analyze Coverage</h4>
+              </div>
+              <p className="text-blue-600 text-sm mb-3">
+                Would you like to analyze network coverage and performance for this location? 
+                We'll check provider reliability, recent issues, and coverage quality using real-time data.
+              </p>
+              <Button 
+                onClick={() => refetch()} 
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Wifi className="h-4 w-4 mr-2" />
+                Yes, Analyze Coverage
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
