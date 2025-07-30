@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send } from 'lucide-react';
+import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GoogleCoverageMap } from './google-coverage-map';
 
@@ -545,6 +545,79 @@ export function ProviderCoverageMaps({
                 />
               )}
             </div>
+          )}
+
+          {/* Google Maps Thumbnail with 10km Area Preview */}
+          {coordinates.lat !== 0 && coordinates.lng !== 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-green-600" />
+                  <CardTitle>Area Map (10km Radius)</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground mb-3">
+                  Click the map to explore the surrounding area in Google Maps
+                </div>
+                
+                {/* Google Maps Static API Thumbnail */}
+                <div 
+                  className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors group"
+                  onClick={() => {
+                    const googleMapsUrl = `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},13z`;
+                    window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  <img
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=12&size=600x300&maptype=roadmap&markers=color:red%7C${coordinates.lat},${coordinates.lng}&circle=fillcolor:0x0080FF30%7Ccolor:0x0080FFFF%7Cweight:2%7C${coordinates.lat},${coordinates.lng},10000&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
+                    alt={`Map showing 10km area around ${coordinates.address || `${coordinates.lat}, ${coordinates.lng}`}`}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      // Fallback if Google Maps Static API fails
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
+                  />
+                  
+                  {/* Fallback for when Static Maps API is unavailable */}
+                  <div className="hidden w-full h-48 bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900 dark:to-green-900 flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                      <p className="text-sm font-medium">Click to view area map</p>
+                      <p className="text-xs text-muted-foreground">{coordinates.address || `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <ExternalLink className="h-4 w-4" />
+                        Open in Google Maps
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Map details */}
+                <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Center:</span> {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                  </div>
+                  <div>
+                    <span className="font-medium">Coverage Radius:</span> 10km
+                  </div>
+                  {coordinates.address && (
+                    <div className="col-span-2">
+                      <span className="font-medium">Location:</span> {coordinates.address}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Mobile Providers Section */}
