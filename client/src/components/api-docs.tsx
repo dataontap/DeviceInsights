@@ -182,6 +182,37 @@ export default function APIDocs() {
   "capabilities": { ... },
   "searchedAt": "2024-01-01T12:00:00Z"
 }`
+    },
+    {
+      method: "POST",
+      path: "/api/coverage/analyze",
+      description: "Analyze network coverage for mobile carriers and broadband providers",
+      example: `{
+  "success": true,
+  "data": {
+    "location": { "lat": 43.6532, "lng": -79.3832 },
+    "mobile_providers": [{
+      "provider": "Rogers",
+      "coverage_score": 95,
+      "reliability_rating": 5,
+      "recommendation": "excellent"
+    }]
+  }
+}`
+    },
+    {
+      method: "POST",
+      path: "/api/coverage/analyze-issue",
+      description: "Report network issues with AI-powered pattern recognition",
+      example: `{
+  "success": true,
+  "data": {
+    "issue_analysis": "AI analysis of your issue",
+    "similar_issues_summary": "3 similar issues found",
+    "device_pattern": "Pattern detected with device type",
+    "confidence_score": 0.85
+  }
+}`
     }
   ];
 
@@ -197,8 +228,16 @@ export default function APIDocs() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">API Documentation</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Access our comprehensive API to integrate IMEI checking capabilities into your applications
+            Access our comprehensive APIs for IMEI checking and network coverage analysis
           </p>
+          <div className="flex flex-wrap justify-center gap-4 mt-6">
+            <Button variant="outline" onClick={() => window.location.href = '/coverage-api-docs'}>
+              Coverage Maps API Docs
+            </Button>
+            <Button variant="outline" onClick={() => window.location.href = '/coverage-maps'}>
+              Interactive Coverage Testing
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

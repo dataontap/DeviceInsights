@@ -267,3 +267,146 @@ response = requests.post(
 data = response.json()
 print(data)
 ```
+
+---
+
+# Coverage Maps API
+
+## Overview
+The Coverage Maps API provides comprehensive network coverage analysis for mobile carriers and broadband providers using AI-powered analysis of network issue reports.
+
+## Coverage Analysis Endpoints
+
+### 6. Analyze Network Coverage
+**POST** `/api/coverage/analyze`
+
+Analyzes network coverage for mobile carriers and broadband providers at a specific location.
+
+#### Request Body
+```json
+{
+  "lat": 43.6532,
+  "lng": -79.3832,
+  "address": "Toronto, ON, Canada",
+  "provider": "Rogers"
+}
+```
+
+#### Parameters
+- `lat` (number, required): Latitude coordinate (-90 to 90)
+- `lng` (number, required): Longitude coordinate (-180 to 180)
+- `address` (string, optional): Human-readable address for context
+- `provider` (string, optional): Specific provider to analyze ("auto" for country defaults)
+
+#### Supported Providers
+**Mobile Carriers:** Verizon, AT&T, T-Mobile (US), Rogers, Bell, Telus (Canada), OXIO (International)
+**Broadband Providers:** Comcast, Spectrum, Verizon Fios, AT&T Internet (US), Rogers Internet, Bell Internet, Telus Internet (Canada)
+
+#### Response
+```json
+{
+  "success": true,
+  "data": {
+    "location": {
+      "lat": 43.6532,
+      "lng": -79.3832,
+      "address": "Toronto, ON, Canada"
+    },
+    "mobile_providers": [
+      {
+        "provider": "Rogers",
+        "service_type": "mobile",
+        "coverage_score": 95,
+        "reliability_rating": 5,
+        "recent_issues": 0,
+        "issue_summary": "No mobile service issues reported in the last 30 days",
+        "recommendation": "excellent",
+        "confidence_score": 0.95,
+        "last_major_outage": "None reported in the last 30 days"
+      }
+    ],
+    "broadband_providers": [
+      {
+        "provider": "Bell Internet",
+        "service_type": "broadband",
+        "coverage_score": 88,
+        "reliability_rating": 4,
+        "recent_issues": 1,
+        "issue_summary": "Minor connectivity issues reported by few users",
+        "recommendation": "good",
+        "confidence_score": 0.87,
+        "last_major_outage": "2025-06-15T10:30:00Z"
+      }
+    ],
+    "analysis_timestamp": "2025-01-30T08:35:42Z",
+    "data_period": "Last 30 days"
+  }
+}
+```
+
+### 7. Report Network Issue
+**POST** `/api/coverage/analyze-issue`
+
+Reports a network issue and analyzes similar problems in the area using AI pattern recognition.
+
+#### Request Body
+```json
+{
+  "lat": 43.6532,
+  "lng": -79.3832,
+  "address": "Toronto, ON, Canada",
+  "issue_description": "Frequent call drops during peak hours",
+  "user_agent": "Mozilla/5.0..."
+}
+```
+
+#### Response
+```json
+{
+  "success": true,
+  "data": {
+    "issue_analysis": "AI analysis of your reported issue...",
+    "similar_issues_summary": "3 similar issues found in your area",
+    "device_pattern": "Pattern detected with Samsung Galaxy devices",
+    "recommendations": "Try switching to 4G mode during peak hours",
+    "confidence_score": 0.85,
+    "similar_reports": [
+      {
+        "device": "Samsung Galaxy S21",
+        "description": "Call drops on Rogers network",
+        "distance": "1.2km away"
+      }
+    ]
+  }
+}
+```
+
+## Coverage Maps Features
+
+### AI Analysis
+- **Pattern Recognition**: Identifies similar issues by device type and location
+- **Confidence Scoring**: 0.9-1.0 (high confidence) to 0.0-0.5 (low confidence)
+- **Device-Specific Analysis**: Provides device-specific recommendations
+- **Historical Trends**: Analyzes patterns and trends over time
+
+### Geographic Coverage
+- **Automatic Provider Detection**: Detects largest providers by country
+- **Coordinate Boundaries**: US, Canada, and global coverage
+- **10km Radius Analysis**: Comprehensive area coverage analysis
+- **Google Maps Integration**: Static map thumbnails with coverage visualization
+
+### Performance Optimization
+- **Caching**: 30-minute response caching for improved performance
+- **Rate Limiting**: 100 requests per hour per IP address
+- **Real-time Analysis**: Live network issue data processing
+
+## Support
+
+For technical support or API questions:
+- Email: rbm@dotmobile.app first with questions
+- Documentation: Visit `/coverage-maps` for interactive testing
+- Status: Monitor API health at your deployment URL
+
+---
+
+*Coverage Maps API is currently in Alpha status. Results are experimental and should be verified with additional sources for critical decisions.*
