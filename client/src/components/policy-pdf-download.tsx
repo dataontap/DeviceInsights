@@ -52,7 +52,7 @@ export default function PolicyPDFDownload() {
           <CardTitle>Device Compatibility Policy</CardTitle>
         </div>
         <CardDescription>
-          Complete OXIO device compatibility guide and pre-porting checklist
+          Complete device compatibility guide and pre-porting checklist
         </CardDescription>
       </CardHeader>
 
@@ -64,7 +64,7 @@ export default function PolicyPDFDownload() {
             <h3 className="font-semibold text-blue-900 dark:text-blue-100">Complete Policy Document</h3>
           </div>
           <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-            This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition to OXIO.
+            This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition onto this network.
           </p>
           <div className="flex gap-3">
             <Button onClick={togglePolicy} className="flex-1 bg-blue-600 hover:bg-blue-700">
@@ -288,7 +288,7 @@ export default function PolicyPDFDownload() {
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                OXIO support contact information
+                Support contact information
               </li>
             </ul>
 
