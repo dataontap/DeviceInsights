@@ -48,34 +48,59 @@ export function GoogleCoverageMap({
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Check if Google Maps is available
-    if (typeof window.google === 'undefined') {
-      setMapError('Google Maps is not available. Using fallback visualization.');
-      return;
-    }
+    const initializeMap = () => {
+      // Check if Google Maps is available
+      if (typeof window.google === 'undefined' || !window.google.maps) {
+        setMapError('Google Maps is not available. Using fallback visualization.');
+        return;
+      }
 
-    try {
-      const mapInstance = new window.google.maps.Map(mapRef.current, {
-        center: { lat, lng },
-        zoom: getZoomLevel(radius),
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }]
-          }
-        ]
-      });
+      try {
+        const mapInstance = new window.google.maps.Map(mapRef.current, {
+          center: { lat, lng },
+          zoom: getZoomLevel(radius),
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+          styles: [
+            {
+              featureType: 'poi',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }]
+            }
+          ]
+        });
 
-      setMap(mapInstance);
-      setIsMapLoaded(true);
-      setMapError(null);
-    } catch (error) {
-      console.error('Error initializing Google Maps:', error);
-      setMapError('Failed to load Google Maps. Using fallback visualization.');
+        setMap(mapInstance);
+        setIsMapLoaded(true);
+        setMapError(null);
+      } catch (error) {
+        console.error('Error initializing Google Maps:', error);
+        setMapError('Failed to load Google Maps. Using fallback visualization.');
+      }
+    };
+
+    // If Google Maps is already loaded, initialize immediately
+    if (typeof window.google !== 'undefined' && window.google.maps) {
+      initializeMap();
+    } else {
+      // Wait for Google Maps to load, with timeout
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait
+      
+      const checkGoogleMaps = () => {
+        attempts++;
+        
+        if (typeof window.google !== 'undefined' && window.google.maps) {
+          initializeMap();
+        } else if (attempts < maxAttempts) {
+          setTimeout(checkGoogleMaps, 100);
+        } else {
+          setMapError('Google Maps failed to load. Using fallback visualization.');
+        }
+      };
+      
+      checkGoogleMaps();
     }
-  }, [lat, lng]);
+  }, [lat, lng, radius]);
 
   // Update map center when coordinates change
   useEffect(() => {
@@ -87,70 +112,88 @@ export function GoogleCoverageMap({
 
   // Create coverage overlays and marker
   useEffect(() => {
-    if (!map || !isMapLoaded) return;
+    if (!map || !isMapLoaded || !window.google?.maps) return;
 
-    // Clear existing overlays and marker
-    overlays.forEach(overlay => overlay.setMap(null));
-    if (marker) marker.setMap(null);
-
-    // Create new marker at the center
-    const newMarker = new window.google.maps.Marker({
-      position: { lat, lng },
-      map: map,
-      title: address || `Coverage Analysis: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-      icon: {
-        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-          <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="12" fill="#3b82f6" stroke="white" stroke-width="2"/>
-            <circle cx="16" cy="16" r="4" fill="white"/>
-          </svg>
-        `),
-        scaledSize: new window.google.maps.Size(32, 32),
-        anchor: new window.google.maps.Point(16, 16)
+    try {
+      // Clear existing overlays and marker
+      overlays.forEach(overlay => {
+        try {
+          overlay.setMap(null);
+        } catch (e) {
+          console.warn('Error clearing overlay:', e);
+        }
+      });
+      
+      if (marker) {
+        try {
+          marker.setMap(null);
+        } catch (e) {
+          console.warn('Error clearing marker:', e);
+        }
       }
-    });
 
-    // Create concentric circles for different analysis areas
-    const newOverlays: any[] = [];
-    const overlayConfigs: IssueOverlay[] = [
-      { radius: 5, issueCount: Math.floor(issueCount * 0.4), label: '5km', color: '#10b981' },
-      { radius: 10, issueCount: Math.floor(issueCount * 0.7), label: '10km', color: '#f59e0b' },
-      { radius: 20, issueCount: issueCount, label: '20km', color: '#ef4444' },
-    ];
-
-    overlayConfigs.forEach((config, index) => {
-      const circle = new window.google.maps.Circle({
-        strokeColor: config.color,
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: config.color,
-        fillOpacity: 0.1,
+      // Create new marker at the center
+      const newMarker = new window.google.maps.Marker({
+        position: { lat, lng },
         map: map,
-        center: { lat, lng },
-        radius: config.radius * 1000, // Convert km to meters
+        title: address || `Coverage Analysis: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="16" r="12" fill="#3b82f6" stroke="white" stroke-width="2"/>
+              <circle cx="16" cy="16" r="4" fill="white"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(32, 32),
+          anchor: new window.google.maps.Point(16, 16)
+        }
       });
 
-      // Add info window for each circle
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div class="p-2">
-            <h4 class="font-semibold">${config.label} Analysis Radius</h4>
-            <p class="text-sm text-gray-600">Issues reported: ${config.issueCount}</p>
-            <p class="text-xs text-gray-500">Based on last 30 days of data</p>
-          </div>
-        `,
-        position: { lat: lat + (config.radius * 0.01), lng }
+      // Create concentric circles for different analysis areas
+      const newOverlays: any[] = [];
+      const overlayConfigs: IssueOverlay[] = [
+        { radius: 5, issueCount: Math.floor(issueCount * 0.4), label: '5km', color: '#10b981' },
+        { radius: 10, issueCount: Math.floor(issueCount * 0.7), label: '10km', color: '#f59e0b' },
+        { radius: 20, issueCount: issueCount, label: '20km', color: '#ef4444' },
+      ];
+
+      overlayConfigs.forEach((config, index) => {
+        const circle = new window.google.maps.Circle({
+          strokeColor: config.color,
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: config.color,
+          fillOpacity: 0.1,
+          map: map,
+          center: { lat, lng },
+          radius: config.radius * 1000, // Convert km to meters
+        });
+
+        // Add info window for each circle
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div class="p-2">
+              <h4 class="font-semibold">${config.label} Analysis Radius</h4>
+              <p class="text-sm text-gray-600">Issues reported: ${config.issueCount}</p>
+              <p class="text-xs text-gray-500">Based on last 30 days of data</p>
+            </div>
+          `,
+          position: { lat: lat + (config.radius * 0.01), lng }
+        });
+
+        circle.addListener('click', () => {
+          infoWindow.open(map);
+        });
+
+        newOverlays.push(circle);
       });
 
-      circle.addListener('click', () => {
-        infoWindow.open(map);
-      });
-
-      newOverlays.push(circle);
-    });
-
-    setOverlays(newOverlays);
-    setMarker(newMarker);
+      setOverlays(newOverlays);
+      setMarker(newMarker);
+    } catch (error) {
+      console.error('Error creating map overlays:', error);
+      setMapError('Failed to create map overlays. Using fallback visualization.');
+    }
   }, [map, isMapLoaded, lat, lng, radius, issueCount, address]);
 
   // Helper function to determine zoom level based on radius
