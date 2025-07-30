@@ -64,6 +64,7 @@ export function ProviderCoverageMaps({
   const [isReportingIssue, setIsReportingIssue] = useState(false);
   const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('auto');
+  const [showExpandedMap, setShowExpandedMap] = useState(false);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -584,18 +585,16 @@ export function ProviderCoverageMaps({
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground mb-3">
-                  Click the map to explore the surrounding area in Google Maps
+                  {showExpandedMap ? 'Interactive map view' : 'Click the map to expand the interactive view'}
                 </div>
                 
-                {/* Google Maps Static API Thumbnail */}
-                <div 
-                  className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors group"
-                  onClick={() => {
-                    const googleMapsUrl = `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},13z`;
-                    window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
-                  }}
-                >
-                  <img
+                {!showExpandedMap ? (
+                  // Google Maps Static API Thumbnail
+                  <div 
+                    className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors group"
+                    onClick={() => setShowExpandedMap(true)}
+                  >
+                    <img
                     src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=12&size=600x300&maptype=roadmap&markers=color:red%7C${coordinates.lat},${coordinates.lng}&circle=fillcolor:0x0080FF30%7Ccolor:0x0080FFFF%7Cweight:2%7C${coordinates.lat},${coordinates.lng},10000&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
                     alt={`Map showing 10km area around ${coordinates.address || `${coordinates.lat}, ${coordinates.lng}`}`}
                     className="w-full h-48 object-cover"
@@ -617,16 +616,55 @@ export function ProviderCoverageMaps({
                     </div>
                   </div>
                   
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <ExternalLink className="h-4 w-4" />
-                        Open in Google Maps
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <ZoomIn className="h-4 w-4" />
+                          Expand Interactive Map
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // Expanded Interactive Google Maps
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Interactive Coverage Map</h4>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const googleMapsUrl = `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},13z`;
+                            window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Open in Google Maps
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowExpandedMap(false)}
+                        >
+                          <ZoomOut className="h-4 w-4 mr-2" />
+                          Collapse
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <GoogleCoverageMap
+                      lat={coordinates.lat}
+                      lng={coordinates.lng}
+                      address={coordinates.address}
+                      radius={10}
+                      onRadiusChange={() => {}}
+                      issueCount={0}
+                      areaName={coordinates.address || `${coordinates.lat.toFixed(2)}, ${coordinates.lng.toFixed(2)}`}
+                    />
+                  </div>
+                )}
                 
                 {/* Map details */}
                 <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
