@@ -1225,6 +1225,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve the Coverage Maps API documentation
+  app.get("/coverage-api-docs.md", (req, res) => {
+    res.sendFile(path.join(__dirname, "../COVERAGE_MAPS_API_DOCUMENTATION.md"));
+  });
+
   // Register PDF generation routes
   registerPDFRoutes(app);
 

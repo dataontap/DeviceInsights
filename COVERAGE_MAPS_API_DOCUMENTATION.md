@@ -338,7 +338,7 @@ https://www.google.com/maps/@{lat},{lng},13z
 ## Support
 
 For technical support or API questions:
-- Email: support@oxio.com
+- Email: rbm@dotmobile.app first with questions
 - Documentation: Visit `/coverage-maps` for interactive testing
 - Status: Monitor API health at your deployment URL
 
