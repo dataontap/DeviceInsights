@@ -46,6 +46,21 @@ export default function Home() {
       
       {result && !isLoading && (result as any)?.success !== false && <DeviceResults result={result} />}
       
+      {/* Coverage Maps Section */}
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Network Coverage Analysis
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Analyze network coverage and performance in your area. Get real-time insights on provider reliability, recent issues, and coverage quality.
+            </p>
+          </div>
+          <ProviderCoverageMaps />
+        </div>
+      </section>
+      
       {/* API Documentation Section */}
       <APIDocs />
       
@@ -66,21 +81,6 @@ export default function Home() {
       
       {/* Live World Map - Temporarily Hidden */}
       {/* <LiveWorldMap /> */}
-      
-      {/* Coverage Maps Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Network Coverage Analysis
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Analyze network coverage and performance in your area. Get real-time insights on provider reliability, recent issues, and coverage quality.
-            </p>
-          </div>
-          <ProviderCoverageMaps />
-        </div>
-      </section>
       
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
