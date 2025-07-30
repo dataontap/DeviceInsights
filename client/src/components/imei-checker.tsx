@@ -255,7 +255,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     <section className="bg-gradient-to-br from-primary to-secondary text-white py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-6">
-          Check Your Device's Network Compatibility
+          Pretty Good Network Services Discovery Tool
         </h1>
         <p className="text-xl text-blue-100 mb-6 max-w-2xl mx-auto">
           Enter your device's IMEI number to instantly discover its 4G, 5G, VoLTE, and Wi-Fi calling capabilities on any network.
