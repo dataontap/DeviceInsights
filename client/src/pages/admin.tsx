@@ -166,7 +166,7 @@ export default function Admin() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Smartphone className="text-white w-4 h-4" />
               </div>
-              <span className="text-xl font-semibold text-blue-900">IMEI Checker Admin</span>
+              <span className="text-xl font-semibold text-blue-900">Network Services Admin</span>
               <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
                 {userEmail}
               </span>

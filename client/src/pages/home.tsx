@@ -90,11 +90,11 @@ export default function Home() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm">📱</span>
                 </div>
-                <span className="text-xl font-semibold text-white">IMEI Checker</span>
+                <span className="text-xl font-semibold text-white">Network Services Checker</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
-                The most accurate IMEI checker for AT&T network compatibility. 
-                Powered by AI for instant device identification.
+                Comprehensive network services including IMEI compatibility checking and coverage analysis. 
+                Powered by AI for instant insights.
               </p>
             </div>
             
