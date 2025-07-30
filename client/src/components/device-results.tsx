@@ -1,4 +1,5 @@
-import { Signal, Radio, Phone, Wifi, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { Signal, Radio, Phone, Wifi, CheckCircle, AlertTriangle, XCircle, MapPin, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DeviceResultsProps {
   result: {
@@ -28,6 +29,11 @@ interface DeviceResultsProps {
     };
     analysis?: string;
     tacAnalysis?: string;
+    location?: string;
+    coordinates?: {
+      lat: number;
+      lng: number;
+    };
   };
 }
 
@@ -38,6 +44,26 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
     fiveG: false,
     volte: false,
     wifiCalling: 'not_supported'
+  };
+
+  const handleCoverageAnalysis = () => {
+    // Build URL with location parameters
+    let url = '/coverage-maps';
+    const params = new URLSearchParams();
+    
+    if (result.coordinates) {
+      params.set('lat', result.coordinates.lat.toString());
+      params.set('lng', result.coordinates.lng.toString());
+    }
+    if (result.location) {
+      params.set('address', result.location);
+    }
+    
+    if (params.toString()) {
+      url += '?' + params.toString();
+    }
+    
+    window.location.href = url;
   };
 
   const getCapabilityStatus = (capability: boolean | string) => {
@@ -210,6 +236,37 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
               </div>
             )}
           </div>
+
+          {/* Coverage Analysis Banner */}
+          {(result.location || result.coordinates) && (
+            <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <MapPin className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-900 mb-1">
+                      Coverage Analysis Available in Your Area
+                    </h3>
+                    <p className="text-blue-700 text-sm">
+                      Get real-time network coverage insights and provider comparisons for your location
+                      {result.location && ` in ${result.location}`}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleCoverageAnalysis}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center space-x-2"
+                >
+                  <span>Check Coverage</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

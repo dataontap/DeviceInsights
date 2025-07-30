@@ -65,6 +65,32 @@ export function ProviderCoverageMaps({
   const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('auto');
 
+  // Read URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const latParam = urlParams.get('lat');
+    const lngParam = urlParams.get('lng');
+    const addressParam = urlParams.get('address');
+    
+    if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setLocationInput({
+          lat: lat.toString(),
+          lng: lng.toString(),
+          address: addressParam || ''
+        });
+        setCoordinates({
+          lat,
+          lng,
+          address: addressParam || ''
+        });
+      }
+    }
+  }, []);
+
   // Check if we have a valid location
   useEffect(() => {
     const lat = parseFloat(locationInput.lat);
