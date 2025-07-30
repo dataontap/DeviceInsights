@@ -2,7 +2,7 @@ import { useState } from "react";
 import Navigation from "@/components/navigation";
 import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
-import AdminDashboard from "@/components/admin-dashboard";
+
 import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
 import APIDocs from "@/components/api-docs";
@@ -63,10 +63,6 @@ export default function Home() {
         </div>
       </section>
       
-      <div id="admin">
-        <AdminDashboard />
-      </div>
-      
       {/* Live World Map */}
       <LiveWorldMap />
       
@@ -90,7 +86,7 @@ export default function Home() {
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2">
                 <li><a href="#api" className="text-gray-400 hover:text-white transition-colors">API Documentation</a></li>
-                <li><a href="#admin" className="text-gray-400 hover:text-white transition-colors">Analytics</a></li>
+                <li><a href="/admin" className="text-gray-400 hover:text-white transition-colors">Analytics</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Status</a></li>
               </ul>
