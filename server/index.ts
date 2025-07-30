@@ -5,11 +5,14 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 
 // Set environment variables for client - ensure it's available before Vite starts
-if (process.env.GOOGLE_MAPS_API_KEY) {
+if (process.env.GORSE_GOOGLE_API_KEY) {
+  process.env.VITE_GOOGLE_MAPS_API_KEY = process.env.GORSE_GOOGLE_API_KEY;
+  console.log('Google Maps API key set for client:', process.env.GORSE_GOOGLE_API_KEY ? 'YES' : 'NO');
+} else if (process.env.GOOGLE_MAPS_API_KEY) {
   process.env.VITE_GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-  console.log('Google Maps API key set for client:', process.env.GOOGLE_MAPS_API_KEY ? 'YES' : 'NO');
+  console.log('Google Maps API key set for client (fallback):', process.env.GOOGLE_MAPS_API_KEY ? 'YES' : 'NO');
 } else {
-  console.error('GOOGLE_MAPS_API_KEY environment variable is not set');
+  console.error('Neither GORSE_GOOGLE_API_KEY nor GOOGLE_MAPS_API_KEY environment variable is set');
 }
 
 // Configure trust proxy for rate limiting to work correctly
