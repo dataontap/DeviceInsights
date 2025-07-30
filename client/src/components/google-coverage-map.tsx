@@ -248,15 +248,34 @@ export function GoogleCoverageMap({
       <CardContent className="space-y-4">
         {/* Map Container */}
         {mapError ? (
-          <div className="w-full h-96 rounded-lg border bg-gray-100 flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto" />
-              <p className="text-sm text-gray-600">{mapError}</p>
-              <div className="space-y-1 text-xs text-gray-500">
-                <p>Location: {address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`}</p>
-                <p>Analysis Radius: {radius}km</p>
-                <p>Issues in Area: {issueCount}</p>
+          <div className="w-full h-96 rounded-lg border bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900 dark:to-green-900 flex items-center justify-center">
+            <div className="text-center space-y-4 p-6">
+              <MapPin className="h-12 w-12 text-blue-600 mx-auto" />
+              <h3 className="text-lg font-semibold">Interactive Map Unavailable</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Google Maps requires API configuration. Please enable these APIs in Google Cloud Console:
+              </p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 text-xs max-w-sm">
+                <ul className="text-left space-y-1">
+                  <li>• Maps JavaScript API</li>
+                  <li>• Maps Static API</li>
+                  <li>• Billing account (free tier available)</li>
+                </ul>
               </div>
+              <div className="space-y-1 text-sm">
+                <p><strong>Location:</strong> {address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`}</p>
+                <p><strong>Analysis Radius:</strong> {radius}km</p>
+                <p><strong>Issues in Area:</strong> {issueCount}</p>
+              </div>
+              <a 
+                href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Configure Google Maps API
+              </a>
             </div>
           </div>
         ) : (
