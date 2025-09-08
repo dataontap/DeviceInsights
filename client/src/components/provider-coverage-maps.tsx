@@ -337,7 +337,7 @@ export function ProviderCoverageMaps({
                 <SelectItem value="Rogers">Rogers (Canada)</SelectItem>
                 <SelectItem value="Bell">Bell (Canada)</SelectItem>
                 <SelectItem value="Telus">Telus (Canada)</SelectItem>
-                <SelectItem value="OXIO">OXIO</SelectItem>
+                <SelectItem value="DOTM">DOTM</SelectItem>
                 <SelectItem value="Verizon Fios">Verizon Fios (Internet)</SelectItem>
                 <SelectItem value="AT&T Internet">AT&T Internet</SelectItem>
                 <SelectItem value="Comcast">Comcast/Xfinity</SelectItem>

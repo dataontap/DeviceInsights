@@ -20,7 +20,7 @@ export default function PolicyPDFDownload() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'OXIO_Device_Compatibility_Policy.pdf';
+      a.download = 'DOTM_Device_Compatibility_Policy.pdf';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -28,7 +28,7 @@ export default function PolicyPDFDownload() {
 
       toast({
         title: "PDF Downloaded Successfully",
-        description: "The OXIO Device Compatibility Policy has been downloaded to your device.",
+        description: "The DOTM Device Compatibility Policy has been downloaded to your device.",
       });
     } catch (error) {
       console.error('PDF download error:', error);
@@ -87,7 +87,7 @@ export default function PolicyPDFDownload() {
             <div className="prose prose-blue dark:prose-invert max-w-none">
               {/* Header */}
               <div className="text-center mb-8 pb-4 border-b-2 border-blue-600">
-                <div className="text-3xl font-bold text-blue-600 mb-2">OXIO</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">DOTM</div>
                 <div className="text-lg text-gray-600 dark:text-gray-400">Connected. Simple. Reliable.</div>
               </div>
 

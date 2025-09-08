@@ -40,10 +40,10 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
           <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
           <div>
             <p className="font-medium text-green-800 dark:text-green-200">
-              Device Compatible with OXIO Network
+              Device Compatible with DOTM Network
             </p>
             <p className="text-sm text-green-600 dark:text-green-300">
-              Your {deviceInfo.make} {deviceInfo.model} supports OXIO's network features
+              Your {deviceInfo.make} {deviceInfo.model} supports DOTM's network features
             </p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               Limited Network Compatibility
             </p>
             <p className="text-sm text-yellow-600 dark:text-yellow-300">
-              Your device may have reduced functionality on OXIO network
+              Your device may have reduced functionality on DOTM network
             </p>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
       <CardHeader>
         <div className="flex items-center gap-2">
           <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <CardTitle>OXIO Network Policy & Terms</CardTitle>
+          <CardTitle>DOTM Network Policy & Terms</CardTitle>
         </div>
         <CardDescription>
           Please review our network usage policy and device compatibility information
@@ -149,7 +149,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               <p className="text-sm text-muted-foreground mt-1">
                 Device compatibility results are based on technical specifications. Actual network 
                 performance may vary depending on location, network traffic, and device condition. 
-                OXIO does not guarantee specific service levels for all devices.
+                DOTM does not guarantee specific service levels for all devices.
               </p>
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               <h4 className="font-semibold text-sm">Data Retention</h4>
               <p className="text-sm text-muted-foreground mt-1">
                 Device analysis data is retained for 12 months for service improvement purposes. 
-                You may request data deletion by contacting OXIO customer support at any time.
+                You may request data deletion by contacting DOTM customer support at any time.
               </p>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               htmlFor="policy-accept" 
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              I acknowledge this is an Alpha service and agree to the OXIO Network Policy and Terms of Service
+              I acknowledge this is an Alpha service and agree to the DOTM Network Policy and Terms of Service
             </label>
           </div>
           
@@ -201,7 +201,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
 
         <div className="text-xs text-muted-foreground border-t pt-3">
           <p>
-            Last updated: January 2025. Alpha version - Use with caution. For questions about this policy, contact OXIO support at support@oxio.ca
+            Last updated: January 2025. Alpha version - Use with caution. For questions about this policy, contact DOTM support at support@dotm.ca
           </p>
         </div>
       </CardContent>

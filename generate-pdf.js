@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 async function generatePDF() {
   try {
     // Read the HTML file
-    const htmlFilePath = path.join(__dirname, 'OXIO_Device_Compatibility_Policy.html');
+    const htmlFilePath = path.join(__dirname, 'DOTM_Device_Compatibility_Policy.html');
     const htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
     
     // PDF generation options
@@ -42,7 +42,7 @@ async function generatePDF() {
     const pdfBuffer = await htmlPdf.generatePdf(file, options);
     
     // Save PDF to file
-    const outputPath = path.join(__dirname, 'OXIO_Device_Compatibility_Policy.pdf');
+    const outputPath = path.join(__dirname, 'DOTM_Device_Compatibility_Policy.pdf');
     fs.writeFileSync(outputPath, pdfBuffer);
     
     console.log(`PDF generated successfully: ${outputPath}`);

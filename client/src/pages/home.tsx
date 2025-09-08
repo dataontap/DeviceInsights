@@ -72,7 +72,7 @@ export default function Home() {
               Device Compatibility Policy
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number to OXIO.
+              Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number to DOTM.
             </p>
           </div>
           <PolicyPDFDownload />
