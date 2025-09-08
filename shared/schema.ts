@@ -97,10 +97,139 @@ export const carrierCache = pgTable("carrier_cache", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// User Registration and Account Management
+export const registeredUsers = pgTable("registered_users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  subscriptionStatus: text("subscription_status").default("active").notNull(),
+  emailPreferences: jsonb("email_preferences").$type<{
+    monthlyInsights: boolean;
+    interruptionAlerts: boolean;
+    speedAlerts: boolean;
+    marketingEmails: boolean;
+  }>().default({
+    monthlyInsights: true,
+    interruptionAlerts: true,
+    speedAlerts: true,
+    marketingEmails: false
+  }),
+  timezone: text("timezone").default("UTC"),
+  location: text("location"),
+  deviceInfo: jsonb("device_info").$type<{
+    primaryDevice?: string;
+    carrier?: string;
+    networkType?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
+});
+
+// Connectivity Monitoring
+export const connectivityMetrics = pgTable("connectivity_metrics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => registeredUsers.id),
+  sessionId: text("session_id").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  location: text("location"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  connectionType: text("connection_type"), // "4G", "5G", "WiFi", etc.
+  carrier: text("carrier"),
+  signalStrength: integer("signal_strength"), // -50 to -120 dBm range
+  downloadSpeed: integer("download_speed"), // kbps
+  uploadSpeed: integer("upload_speed"), // kbps
+  latency: integer("latency"), // ms
+  jitter: integer("jitter"), // ms
+  packetLoss: integer("packet_loss"), // percentage
+  isInterruption: boolean("is_interruption").default(false).notNull(),
+  interruptionDuration: integer("interruption_duration"), // seconds
+  deviceInfo: jsonb("device_info").$type<{
+    make?: string;
+    model?: string;
+    os?: string;
+    osVersion?: string;
+  }>(),
+});
+
+// Email Insights and Reports
+export const emailReports = pgTable("email_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => registeredUsers.id).notNull(),
+  reportType: text("report_type").notNull(), // "monthly", "interruption", "speed_alert"
+  reportDate: timestamp("report_date").defaultNow().notNull(),
+  emailSent: boolean("email_sent").default(false).notNull(),
+  emailSentAt: timestamp("email_sent_at"),
+  reportData: jsonb("report_data").$type<{
+    averageDownloadSpeed?: number;
+    averageUploadSpeed?: number;
+    averageLatency?: number;
+    totalInterruptions?: number;
+    totalDowntime?: number;
+    connectionQualityScore?: number;
+    recommendations?: string[];
+    comparisonData?: any;
+  }>(),
+  emailTemplate: text("email_template"),
+  emailSubject: text("email_subject"),
+});
+
+// Real-time Alerts
+export const connectivityAlerts = pgTable("connectivity_alerts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => registeredUsers.id),
+  alertType: text("alert_type").notNull(), // "interruption", "speed_drop", "quality_degradation"
+  severity: text("severity").notNull(), // "low", "medium", "high", "critical"
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  isResolved: boolean("is_resolved").default(false).notNull(),
+  alertData: jsonb("alert_data").$type<{
+    duration?: number;
+    affectedMetric?: string;
+    previousValue?: number;
+    currentValue?: number;
+    location?: string;
+    carrier?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],
     references: [policyAcceptances.searchId],
+  }),
+}));
+
+export const registeredUsersRelations = relations(registeredUsers, ({ many }) => ({
+  connectivityMetrics: many(connectivityMetrics),
+  emailReports: many(emailReports),
+  connectivityAlerts: many(connectivityAlerts),
+}));
+
+export const connectivityMetricsRelations = relations(connectivityMetrics, ({ one }) => ({
+  user: one(registeredUsers, {
+    fields: [connectivityMetrics.userId],
+    references: [registeredUsers.id],
+  }),
+}));
+
+export const emailReportsRelations = relations(emailReports, ({ one }) => ({
+  user: one(registeredUsers, {
+    fields: [emailReports.userId],
+    references: [registeredUsers.id],
+  }),
+}));
+
+export const connectivityAlertsRelations = relations(connectivityAlerts, ({ one }) => ({
+  user: one(registeredUsers, {
+    fields: [connectivityAlerts.userId],
+    references: [registeredUsers.id],
   }),
 }));
 
@@ -163,6 +292,52 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const insertRegisteredUserSchema = createInsertSchema(registeredUsers).pick({
+  email: true,
+  firstName: true,
+  lastName: true,
+  emailPreferences: true,
+  timezone: true,
+  location: true,
+  deviceInfo: true,
+});
+
+export const insertConnectivityMetricSchema = createInsertSchema(connectivityMetrics).pick({
+  userId: true,
+  sessionId: true,
+  location: true,
+  ipAddress: true,
+  userAgent: true,
+  connectionType: true,
+  carrier: true,
+  signalStrength: true,
+  downloadSpeed: true,
+  uploadSpeed: true,
+  latency: true,
+  jitter: true,
+  packetLoss: true,
+  isInterruption: true,
+  interruptionDuration: true,
+  deviceInfo: true,
+});
+
+export const insertEmailReportSchema = createInsertSchema(emailReports).pick({
+  userId: true,
+  reportType: true,
+  reportData: true,
+  emailTemplate: true,
+  emailSubject: true,
+});
+
+export const insertConnectivityAlertSchema = createInsertSchema(connectivityAlerts).pick({
+  userId: true,
+  alertType: true,
+  severity: true,
+  title: true,
+  message: true,
+  alertData: true,
+});
+
 export const insertLoginTokenSchema = createInsertSchema(loginTokens).pick({
   email: true,
   token: true,
@@ -181,6 +356,43 @@ export const magicLinkRequestSchema = z.object({
     .max(254, "Email address is too long"),
 });
 
+export const userRegistrationSchema = z.object({
+  email: z.string()
+    .email("Please enter a valid email address")
+    .max(254, "Email address is too long"),
+  firstName: z.string()
+    .min(1, "First name is required")
+    .max(50, "First name is too long")
+    .optional(),
+  lastName: z.string()
+    .min(1, "Last name is required")
+    .max(50, "Last name is too long")
+    .optional(),
+  emailPreferences: z.object({
+    monthlyInsights: z.boolean().default(true),
+    interruptionAlerts: z.boolean().default(true),
+    speedAlerts: z.boolean().default(true),
+    marketingEmails: z.boolean().default(false),
+  }).optional(),
+  timezone: z.string().max(50).optional(),
+  location: z.string().max(100).optional(),
+});
+
+export const connectivityMetricSchema = z.object({
+  sessionId: z.string().min(1, "Session ID is required"),
+  location: z.string().max(100).optional(),
+  connectionType: z.string().max(20).optional(),
+  carrier: z.string().max(50).optional(),
+  signalStrength: z.number().min(-120).max(-30).optional(),
+  downloadSpeed: z.number().min(0).max(1000000).optional(), // up to 1Gbps
+  uploadSpeed: z.number().min(0).max(1000000).optional(),
+  latency: z.number().min(0).max(10000).optional(), // up to 10 seconds
+  jitter: z.number().min(0).max(1000).optional(),
+  packetLoss: z.number().min(0).max(100).optional(),
+  isInterruption: z.boolean().default(false),
+  interruptionDuration: z.number().min(0).optional(),
+});
+
 export type InsertImeiSearch = z.infer<typeof insertImeiSearchSchema>;
 export type ImeiSearch = typeof imeiSearches.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
@@ -195,3 +407,13 @@ export type InsertLoginToken = z.infer<typeof insertLoginTokenSchema>;
 export type LoginToken = typeof loginTokens.$inferSelect;
 export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
 export type AdminSession = typeof adminSessions.$inferSelect;
+export type InsertRegisteredUser = z.infer<typeof insertRegisteredUserSchema>;
+export type RegisteredUser = typeof registeredUsers.$inferSelect;
+export type InsertConnectivityMetric = z.infer<typeof insertConnectivityMetricSchema>;
+export type ConnectivityMetric = typeof connectivityMetrics.$inferSelect;
+export type InsertEmailReport = z.infer<typeof insertEmailReportSchema>;
+export type EmailReport = typeof emailReports.$inferSelect;
+export type InsertConnectivityAlert = z.infer<typeof insertConnectivityAlertSchema>;
+export type ConnectivityAlert = typeof connectivityAlerts.$inferSelect;
+export type UserRegistration = z.infer<typeof userRegistrationSchema>;
+export type ConnectivityMetricInput = z.infer<typeof connectivityMetricSchema>;
