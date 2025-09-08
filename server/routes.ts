@@ -1,5 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 
 // Extend Express Request interface
 interface AuthenticatedRequest extends Request {
@@ -13,7 +14,7 @@ import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from '
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
 import { analyzeIssueWithAI } from './services/issue-analyzer.js';
-import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -498,9 +499,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get search statistics (API key specific for authenticated requests)
   app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+      
       // Get stats only for this API key
-      const stats = await storage.getSearchStatisticsByApiKey((req as AuthenticatedRequest).apiKeyId);
-      const popularDevices = await storage.getPopularDevicesByApiKey((req as AuthenticatedRequest).apiKeyId, 5);
+      const stats = await storage.getSearchStatisticsByApiKey(apiKeyId);
+      const popularDevices = await storage.getPopularDevicesByApiKey(apiKeyId, 5);
 
       res.json({
         totalSearches: stats.totalSearches,
@@ -524,9 +530,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const format = req.query.format as string || 'json';
       const limit = parseInt(req.query.limit as string) || 1000;
+      
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
 
       // Only get searches for this specific API key
-      const searches = await storage.getImeiSearchesByApiKey((req as AuthenticatedRequest).apiKeyId, limit);
+      const searches = await storage.getImeiSearchesByApiKey(apiKeyId, limit);
 
       if (format === 'csv') {
         const csvData = [
@@ -573,9 +584,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/search/:id", validateApiKey, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
 
       // Get search and verify it belongs to this API key
-      const search = await storage.getImeiSearchByIdAndApiKey(id, (req as AuthenticatedRequest).apiKeyId);
+      const search = await storage.getImeiSearchByIdAndApiKey(id, apiKeyId);
 
       if (!search) {
         return res.status(404).json({ 
@@ -630,9 +645,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/my/searches", validateApiKey, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
 
       // Only get searches for this specific API key
-      const searches = await storage.getImeiSearchesByApiKey((req as AuthenticatedRequest).apiKeyId, limit);
+      const searches = await storage.getImeiSearchesByApiKey(apiKeyId, limit);
 
       res.json({
         searches: searches.map(search => ({

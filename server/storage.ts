@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -88,6 +88,41 @@ export interface IStorage {
   getAdminSessionByToken(sessionToken: string): Promise<AdminSession | undefined>;
   deleteAdminSession(sessionToken: string): Promise<void>;
   getApiKeyByEmail(email: string): Promise<ApiKey | undefined>;
+  
+  // User Registration & Management
+  createRegisteredUser(user: InsertRegisteredUser): Promise<RegisteredUser>;
+  getRegisteredUserByEmail(email: string): Promise<RegisteredUser | undefined>;
+  getRegisteredUserById(id: number): Promise<RegisteredUser | undefined>;
+  updateRegisteredUser(id: number, updates: Partial<InsertRegisteredUser>): Promise<RegisteredUser>;
+  updateUserEmailPreferences(id: number, preferences: any): Promise<void>;
+  getActiveUsers(): Promise<RegisteredUser[]>;
+  
+  // Connectivity Monitoring
+  recordConnectivityMetric(metric: InsertConnectivityMetric): Promise<ConnectivityMetric>;
+  getUserConnectivityMetrics(userId: number, limit?: number): Promise<ConnectivityMetric[]>;
+  getConnectivityMetricsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<ConnectivityMetric[]>;
+  getConnectivityInterruptions(userId: number, limit?: number): Promise<ConnectivityMetric[]>;
+  getAverageConnectivityStats(userId: number, days?: number): Promise<{
+    averageDownloadSpeed: number;
+    averageUploadSpeed: number;
+    averageLatency: number;
+    totalInterruptions: number;
+    totalDowntime: number;
+    connectionQualityScore: number;
+  }>;
+  
+  // Email Reports & Insights
+  createEmailReport(report: InsertEmailReport): Promise<EmailReport>;
+  getEmailReportsByUser(userId: number): Promise<EmailReport[]>;
+  getPendingMonthlyReports(): Promise<Array<{ user: RegisteredUser; lastReport?: EmailReport }>>;
+  markEmailReportSent(reportId: number): Promise<void>;
+  
+  // Connectivity Alerts
+  createConnectivityAlert(alert: InsertConnectivityAlert): Promise<ConnectivityAlert>;
+  getUserAlerts(userId: number, unreadOnly?: boolean): Promise<ConnectivityAlert[]>;
+  markAlertAsRead(alertId: number): Promise<void>;
+  markAlertAsResolved(alertId: number): Promise<void>;
+  getUnreadAlertCount(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -554,6 +589,272 @@ export class DatabaseStorage implements IStorage {
       .from(apiKeys)
       .where(eq(apiKeys.email, email));
     return result || undefined;
+  }
+  
+  // User Registration & Management Implementation
+  async createRegisteredUser(user: InsertRegisteredUser): Promise<RegisteredUser> {
+    const [result] = await db
+      .insert(registeredUsers)
+      .values(user)
+      .returning();
+    return result;
+  }
+
+  async getRegisteredUserByEmail(email: string): Promise<RegisteredUser | undefined> {
+    const [result] = await db
+      .select()
+      .from(registeredUsers)
+      .where(eq(registeredUsers.email, email));
+    return result || undefined;
+  }
+
+  async getRegisteredUserById(id: number): Promise<RegisteredUser | undefined> {
+    const [result] = await db
+      .select()
+      .from(registeredUsers)
+      .where(eq(registeredUsers.id, id));
+    return result || undefined;
+  }
+
+  async updateRegisteredUser(id: number, updates: Partial<InsertRegisteredUser>): Promise<RegisteredUser> {
+    const [result] = await db
+      .update(registeredUsers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(registeredUsers.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateUserEmailPreferences(id: number, preferences: any): Promise<void> {
+    await db
+      .update(registeredUsers)
+      .set({ 
+        emailPreferences: preferences,
+        updatedAt: new Date()
+      })
+      .where(eq(registeredUsers.id, id));
+  }
+
+  async getActiveUsers(): Promise<RegisteredUser[]> {
+    return await db
+      .select()
+      .from(registeredUsers)
+      .where(eq(registeredUsers.subscriptionStatus, "active"))
+      .orderBy(desc(registeredUsers.lastActiveAt));
+  }
+  
+  // Connectivity Monitoring Implementation
+  async recordConnectivityMetric(metric: InsertConnectivityMetric): Promise<ConnectivityMetric> {
+    const [result] = await db
+      .insert(connectivityMetrics)
+      .values(metric)
+      .returning();
+    return result;
+  }
+
+  async getUserConnectivityMetrics(userId: number, limit = 100): Promise<ConnectivityMetric[]> {
+    return await db
+      .select()
+      .from(connectivityMetrics)
+      .where(eq(connectivityMetrics.userId, userId))
+      .orderBy(desc(connectivityMetrics.timestamp))
+      .limit(limit);
+  }
+
+  async getConnectivityMetricsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<ConnectivityMetric[]> {
+    return await db
+      .select()
+      .from(connectivityMetrics)
+      .where(and(
+        eq(connectivityMetrics.userId, userId),
+        sql`timestamp >= ${startDate}`,
+        sql`timestamp <= ${endDate}`
+      ))
+      .orderBy(desc(connectivityMetrics.timestamp));
+  }
+
+  async getConnectivityInterruptions(userId: number, limit = 50): Promise<ConnectivityMetric[]> {
+    return await db
+      .select()
+      .from(connectivityMetrics)
+      .where(and(
+        eq(connectivityMetrics.userId, userId),
+        eq(connectivityMetrics.isInterruption, true)
+      ))
+      .orderBy(desc(connectivityMetrics.timestamp))
+      .limit(limit);
+  }
+
+  async getAverageConnectivityStats(userId: number, days = 30): Promise<{
+    averageDownloadSpeed: number;
+    averageUploadSpeed: number;
+    averageLatency: number;
+    totalInterruptions: number;
+    totalDowntime: number;
+    connectionQualityScore: number;
+  }> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const metrics = await db
+      .select()
+      .from(connectivityMetrics)
+      .where(and(
+        eq(connectivityMetrics.userId, userId),
+        sql`timestamp >= ${startDate}`
+      ));
+
+    if (metrics.length === 0) {
+      return {
+        averageDownloadSpeed: 0,
+        averageUploadSpeed: 0,
+        averageLatency: 0,
+        totalInterruptions: 0,
+        totalDowntime: 0,
+        connectionQualityScore: 0
+      };
+    }
+
+    const validMetrics = metrics.filter(m => m.downloadSpeed && m.uploadSpeed && m.latency);
+    const interruptions = metrics.filter(m => m.isInterruption);
+    
+    const totalDowntime = interruptions.reduce((sum, i) => sum + (i.interruptionDuration || 0), 0);
+    
+    const avgDownload = validMetrics.length > 0 
+      ? validMetrics.reduce((sum, m) => sum + (m.downloadSpeed || 0), 0) / validMetrics.length 
+      : 0;
+    const avgUpload = validMetrics.length > 0
+      ? validMetrics.reduce((sum, m) => sum + (m.uploadSpeed || 0), 0) / validMetrics.length
+      : 0;
+    const avgLatency = validMetrics.length > 0
+      ? validMetrics.reduce((sum, m) => sum + (m.latency || 0), 0) / validMetrics.length
+      : 0;
+    
+    // Simple quality score: based on speed, latency, and interruptions
+    const speedScore = Math.min((avgDownload / 25000) * 40, 40); // Up to 40 points for 25Mbps+
+    const latencyScore = Math.max(30 - (avgLatency / 10), 0); // Up to 30 points for low latency
+    const reliabilityScore = Math.max(30 - (interruptions.length * 2), 0); // Up to 30 points for reliability
+    const connectionQualityScore = Math.round(speedScore + latencyScore + reliabilityScore);
+
+    return {
+      averageDownloadSpeed: Math.round(avgDownload),
+      averageUploadSpeed: Math.round(avgUpload),
+      averageLatency: Math.round(avgLatency),
+      totalInterruptions: interruptions.length,
+      totalDowntime: Math.round(totalDowntime),
+      connectionQualityScore: Math.min(connectionQualityScore, 100)
+    };
+  }
+  
+  // Email Reports & Insights Implementation
+  async createEmailReport(report: InsertEmailReport): Promise<EmailReport> {
+    const [result] = await db
+      .insert(emailReports)
+      .values(report)
+      .returning();
+    return result;
+  }
+
+  async getEmailReportsByUser(userId: number): Promise<EmailReport[]> {
+    return await db
+      .select()
+      .from(emailReports)
+      .where(eq(emailReports.userId, userId))
+      .orderBy(desc(emailReports.reportDate));
+  }
+
+  async getPendingMonthlyReports(): Promise<Array<{ user: RegisteredUser; lastReport?: EmailReport }>> {
+    const activeUsers = await db
+      .select()
+      .from(registeredUsers)
+      .where(and(
+        eq(registeredUsers.subscriptionStatus, "active"),
+        sql`email_preferences->>'monthlyInsights' = 'true'`
+      ));
+
+    const usersWithReports = [];
+    
+    for (const user of activeUsers) {
+      const [lastReport] = await db
+        .select()
+        .from(emailReports)
+        .where(and(
+          eq(emailReports.userId, user.id),
+          eq(emailReports.reportType, "monthly")
+        ))
+        .orderBy(desc(emailReports.reportDate))
+        .limit(1);
+      
+      // Check if user needs a monthly report (hasn't received one in the last 25 days)
+      const shouldSendReport = !lastReport || 
+        (new Date().getTime() - new Date(lastReport.reportDate).getTime()) > (25 * 24 * 60 * 60 * 1000);
+      
+      if (shouldSendReport) {
+        usersWithReports.push({ user, lastReport });
+      }
+    }
+    
+    return usersWithReports;
+  }
+
+  async markEmailReportSent(reportId: number): Promise<void> {
+    await db
+      .update(emailReports)
+      .set({ 
+        emailSent: true, 
+        emailSentAt: new Date() 
+      })
+      .where(eq(emailReports.id, reportId));
+  }
+  
+  // Connectivity Alerts Implementation
+  async createConnectivityAlert(alert: InsertConnectivityAlert): Promise<ConnectivityAlert> {
+    const [result] = await db
+      .insert(connectivityAlerts)
+      .values(alert)
+      .returning();
+    return result;
+  }
+
+  async getUserAlerts(userId: number, unreadOnly = false): Promise<ConnectivityAlert[]> {
+    const conditions = [eq(connectivityAlerts.userId, userId)];
+    if (unreadOnly) {
+      conditions.push(eq(connectivityAlerts.isRead, false));
+    }
+    
+    return await db
+      .select()
+      .from(connectivityAlerts)
+      .where(and(...conditions))
+      .orderBy(desc(connectivityAlerts.createdAt));
+  }
+
+  async markAlertAsRead(alertId: number): Promise<void> {
+    await db
+      .update(connectivityAlerts)
+      .set({ isRead: true })
+      .where(eq(connectivityAlerts.id, alertId));
+  }
+
+  async markAlertAsResolved(alertId: number): Promise<void> {
+    await db
+      .update(connectivityAlerts)
+      .set({ 
+        isResolved: true, 
+        resolvedAt: new Date() 
+      })
+      .where(eq(connectivityAlerts.id, alertId));
+  }
+
+  async getUnreadAlertCount(userId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(connectivityAlerts)
+      .where(and(
+        eq(connectivityAlerts.userId, userId),
+        eq(connectivityAlerts.isRead, false)
+      ));
+    return result.count;
   }
 }
 
