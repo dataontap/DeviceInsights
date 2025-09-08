@@ -1244,6 +1244,326 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === USER REGISTRATION AND CONNECTIVITY MONITORING ROUTES ===
+  
+  // User registration for monthly connectivity insights
+  app.post("/api/users/register", async (req, res) => {
+    try {
+      const userData = userRegistrationSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getRegisteredUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(409).json({
+          error: "User already exists",
+          message: "An account with this email address already exists"
+        });
+      }
+      
+      // Create new user
+      const newUser = await storage.createRegisteredUser({
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        emailPreferences: userData.emailPreferences || {
+          monthlyInsights: true,
+          interruptionAlerts: true,
+          speedAlerts: true,
+          marketingEmails: false
+        },
+        timezone: userData.timezone || "UTC",
+        location: userData.location
+      });
+      
+      res.status(201).json({
+        success: true,
+        message: "Registration successful! You'll start receiving monthly connectivity insights.",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          emailPreferences: newUser.emailPreferences,
+          createdAt: newUser.createdAt
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Validation error",
+          details: error.errors
+        });
+      }
+      console.error("User registration error:", error);
+      res.status(500).json({
+        error: "Registration failed",
+        message: "Unable to create account. Please try again."
+      });
+    }
+  });
+  
+  // Update user email preferences
+  app.put("/api/users/:userId/preferences", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { emailPreferences } = req.body;
+      
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          error: "Invalid user ID"
+        });
+      }
+      
+      const user = await storage.getRegisteredUserById(userId);
+      if (!user) {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
+      
+      await storage.updateUserEmailPreferences(userId, emailPreferences);
+      
+      res.json({
+        success: true,
+        message: "Email preferences updated successfully"
+      });
+    } catch (error) {
+      console.error("Update preferences error:", error);
+      res.status(500).json({
+        error: "Failed to update preferences"
+      });
+    }
+  });
+  
+  // Record connectivity metric (lightweight monitoring)
+  app.post("/api/connectivity/record", async (req, res) => {
+    try {
+      const metricData = connectivityMetricSchema.parse(req.body);
+      const userEmail = req.headers['x-user-email'] as string;
+      
+      let userId: number | undefined;
+      
+      // Try to find registered user by email if provided
+      if (userEmail) {
+        const user = await storage.getRegisteredUserByEmail(userEmail);
+        if (user) {
+          userId = user.id;
+          // Update user's last active timestamp
+          await storage.updateRegisteredUser(user.id, { lastActiveAt: new Date() });
+        }
+      }
+      
+      // Get IP address for logging
+      const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'];
+      
+      // Detect interruption based on metrics
+      const isInterruption = metricData.isInterruption || 
+        (metricData.latency && metricData.latency > 3000) || // > 3s latency
+        (metricData.packetLoss && metricData.packetLoss > 5) || // > 5% packet loss
+        (metricData.downloadSpeed && metricData.downloadSpeed < 1000); // < 1Mbps
+      
+      const metric = await storage.recordConnectivityMetric({
+        userId,
+        sessionId: metricData.sessionId,
+        location: metricData.location,
+        ipAddress: ipAddress as string,
+        userAgent,
+        connectionType: metricData.connectionType,
+        carrier: metricData.carrier,
+        signalStrength: metricData.signalStrength,
+        downloadSpeed: metricData.downloadSpeed,
+        uploadSpeed: metricData.uploadSpeed,
+        latency: metricData.latency,
+        jitter: metricData.jitter,
+        packetLoss: metricData.packetLoss,
+        isInterruption,
+        interruptionDuration: metricData.interruptionDuration,
+        deviceInfo: req.body.deviceInfo
+      });
+      
+      // Create alert if significant interruption detected for registered users
+      if (isInterruption && userId) {
+        let alertTitle = "Connectivity Issue Detected";
+        let alertMessage = "We've detected connectivity problems with your connection.";
+        let severity: "low" | "medium" | "high" | "critical" = "medium";
+        
+        if (metricData.latency && metricData.latency > 5000) {
+          severity = "high";
+          alertTitle = "High Latency Detected";
+          alertMessage = `Very slow response times detected (${metricData.latency}ms). This may affect your browsing experience.`;
+        } else if (metricData.packetLoss && metricData.packetLoss > 10) {
+          severity = "critical";
+          alertTitle = "Significant Packet Loss";
+          alertMessage = `High packet loss detected (${metricData.packetLoss}%). You may experience connection drops.`;
+        } else if (metricData.downloadSpeed && metricData.downloadSpeed < 500) {
+          severity = "high";
+          alertTitle = "Slow Connection Speed";
+          alertMessage = `Very slow download speed detected (${metricData.downloadSpeed} kbps). This may impact your online activities.`;
+        }
+        
+        await storage.createConnectivityAlert({
+          userId,
+          alertType: "interruption",
+          severity,
+          title: alertTitle,
+          message: alertMessage,
+          alertData: {
+            duration: metricData.interruptionDuration,
+            location: metricData.location,
+            carrier: metricData.carrier,
+            affectedMetric: metricData.latency ? "latency" : metricData.packetLoss ? "packet_loss" : "speed",
+            currentValue: metricData.latency || metricData.packetLoss || metricData.downloadSpeed
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Connectivity metric recorded successfully",
+        metric: {
+          id: metric.id,
+          timestamp: metric.timestamp,
+          isInterruption
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: "Invalid metric data",
+          details: error.errors
+        });
+      }
+      console.error("Record connectivity metric error:", error);
+      res.status(500).json({
+        error: "Failed to record metric"
+      });
+    }
+  });
+  
+  // Get user connectivity stats
+  app.get("/api/connectivity/:userId/stats", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const days = parseInt(req.query.days as string) || 30;
+      
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          error: "Invalid user ID"
+        });
+      }
+      
+      const user = await storage.getRegisteredUserById(userId);
+      if (!user) {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
+      
+      const stats = await storage.getAverageConnectivityStats(userId, days);
+      const recentMetrics = await storage.getUserConnectivityMetrics(userId, 10);
+      const interruptions = await storage.getConnectivityInterruptions(userId, 5);
+      
+      res.json({
+        success: true,
+        user: {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        period: {
+          days,
+          startDate: new Date(Date.now() - (days * 24 * 60 * 60 * 1000))
+        },
+        stats,
+        recentMetrics: recentMetrics.map(metric => ({
+          timestamp: metric.timestamp,
+          downloadSpeed: metric.downloadSpeed,
+          uploadSpeed: metric.uploadSpeed,
+          latency: metric.latency,
+          connectionType: metric.connectionType,
+          carrier: metric.carrier,
+          location: metric.location
+        })),
+        recentInterruptions: interruptions.map(interrupt => ({
+          timestamp: interrupt.timestamp,
+          duration: interrupt.interruptionDuration,
+          cause: interrupt.latency && interrupt.latency > 3000 ? "High Latency" :
+                 interrupt.packetLoss && interrupt.packetLoss > 5 ? "Packet Loss" : "Low Speed"
+        }))
+      });
+    } catch (error) {
+      console.error("Get connectivity stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch connectivity stats"
+      });
+    }
+  });
+  
+  // Get user alerts
+  app.get("/api/users/:userId/alerts", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const unreadOnly = req.query.unread === 'true';
+      
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          error: "Invalid user ID"
+        });
+      }
+      
+      const alerts = await storage.getUserAlerts(userId, unreadOnly);
+      const unreadCount = await storage.getUnreadAlertCount(userId);
+      
+      res.json({
+        success: true,
+        alerts: alerts.map(alert => ({
+          id: alert.id,
+          type: alert.alertType,
+          severity: alert.severity,
+          title: alert.title,
+          message: alert.message,
+          isRead: alert.isRead,
+          isResolved: alert.isResolved,
+          createdAt: alert.createdAt,
+          resolvedAt: alert.resolvedAt,
+          data: alert.alertData
+        })),
+        unreadCount
+      });
+    } catch (error) {
+      console.error("Get user alerts error:", error);
+      res.status(500).json({
+        error: "Failed to fetch alerts"
+      });
+    }
+  });
+  
+  // Mark alert as read
+  app.put("/api/alerts/:alertId/read", async (req, res) => {
+    try {
+      const alertId = parseInt(req.params.alertId);
+      
+      if (!alertId || isNaN(alertId)) {
+        return res.status(400).json({
+          error: "Invalid alert ID"
+        });
+      }
+      
+      await storage.markAlertAsRead(alertId);
+      
+      res.json({
+        success: true,
+        message: "Alert marked as read"
+      });
+    } catch (error) {
+      console.error("Mark alert as read error:", error);
+      res.status(500).json({
+        error: "Failed to mark alert as read"
+      });
+    }
+  });
+  
   // Serve the Coverage Maps API documentation
   app.get("/coverage-api-docs.md", (req, res) => {
     res.sendFile(path.join(__dirname, "../COVERAGE_MAPS_API_DOCUMENTATION.md"));
