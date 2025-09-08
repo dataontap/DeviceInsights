@@ -100,7 +100,7 @@ export default function PolicyPDFDownload() {
                   <div>
                     <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Important Notice</h3>
                     <p className="text-yellow-700 dark:text-yellow-300">
-                      Before porting your number to OXIO, please ensure your device is compatible with our network and unlocked from your current carrier to avoid service interruptions.
+                      Before porting your number to DOTM, please ensure your device is compatible with our network and unlocked from your current carrier to avoid service interruptions.
                     </p>
                   </div>
                 </div>
@@ -110,7 +110,7 @@ export default function PolicyPDFDownload() {
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">📱 Device Compatibility Overview</h2>
 
               <p className="mb-6">
-                OXIO operates on a modern LTE and 5G network infrastructure designed to provide exceptional coverage and performance. To ensure the best possible experience, your device must meet specific technical requirements and be properly configured for our network.
+                DOTM operates on a modern LTE and 5G network infrastructure designed to provide exceptional coverage and performance. To ensure the best possible experience, your device must meet specific technical requirements and be properly configured for our network.
               </p>
 
               {/* Network Capabilities Grid */}
@@ -148,7 +148,7 @@ export default function PolicyPDFDownload() {
                   {[
                     {
                       title: "Device Compatibility",
-                      description: "Verify your device supports the required network bands and features using our online compatibility checker at oxio.ca/compatibility"
+                      description: "Verify your device supports the required network bands and features using our online compatibility checker at dotm.ca/compatibility"
                     },
                     {
                       title: "Device Unlock Status", 
@@ -181,7 +181,7 @@ export default function PolicyPDFDownload() {
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔓 Device Unlock Requirements</h2>
 
               <p className="mb-4">
-                A locked device is tied to a specific carrier and cannot be used with other networks. To use your device with OXIO, it must be unlocked from your current provider.
+                A locked device is tied to a specific carrier and cannot be used with other networks. To use your device with DOTM, it must be unlocked from your current provider.
               </p>
 
               <div className="bg-white dark:bg-gray-800 border rounded-lg p-4 mb-6">
@@ -200,7 +200,7 @@ export default function PolicyPDFDownload() {
                     {
                       step: "3",
                       title: "Verify Unlock", 
-                      description: "Once unlocked, test with a different carrier's SIM card or contact OXIO support for verification assistance."
+                      description: "Once unlocked, test with a different carrier's SIM card or contact DOTM support for verification assistance."
                     }
                   ].map((item, index) => (
                     <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -220,7 +220,7 @@ export default function PolicyPDFDownload() {
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔧 Technical Requirements</h2>
 
               <h3 className="text-xl font-semibold mb-3">Minimum Network Band Support</h3>
-              <p className="mb-4">Your device must support the following LTE bands for optimal OXIO network performance:</p>
+              <p className="mb-4">Your device must support the following LTE bands for optimal DOTM network performance:</p>
 
               <div className="space-y-3 mb-6">
                 {[
@@ -244,9 +244,9 @@ export default function PolicyPDFDownload() {
               <div className="bg-gray-50 dark:bg-gray-800 border rounded-lg p-6 text-center mb-6">
                 <h3 className="text-xl font-semibold mb-4">Need Help?</h3>
                 <div className="space-y-2 text-blue-600 dark:text-blue-400 font-medium">
-                  <div>📞 1-800-OXIO-HELP</div>
-                  <div>📧 support@oxio.com</div>
-                  <div>💬 Live chat at oxio.com</div>
+                  <div>📞 1-800-DOTM-HELP</div>
+                  <div>📧 support@dotm.com</div>
+                  <div>💬 Live chat at dotm.com</div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                   Support hours: Monday-Friday 8AM-8PM EST, Weekend 10AM-6PM EST
@@ -255,11 +255,11 @@ export default function PolicyPDFDownload() {
 
               {/* Footer */}
               <div className="text-center pt-6 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
-                <p><strong>OXIO Device Compatibility Policy</strong></p>
+                <p><strong>DOTM Device Compatibility Policy</strong></p>
                 <p>Version 2.0 | Effective January 2025</p>
-                <p>© 2025 OXIO Inc. All rights reserved.</p>
+                <p>© 2025 DOTM Inc. All rights reserved.</p>
                 <p className="mt-2">
-                  This document is subject to change. Please visit oxio.com for the most current version.
+                  This document is subject to change. Please visit dotm.com for the most current version.
                 </p>
               </div>
             </div>

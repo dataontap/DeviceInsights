@@ -602,7 +602,7 @@ export function registerPDFRoutes(app: Express) {
       await browser.close();
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="OXIO_Device_Compatibility_Policy.pdf"');
+      res.setHeader('Content-Disposition', 'attachment; filename="DOTM_Device_Compatibility_Policy.pdf"');
       res.send(pdf);
 
     } catch (error) {
