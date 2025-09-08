@@ -11,6 +11,372 @@ A comprehensive IMEI device checker and network connectivity monitoring platform
 - **MCP Server Integration** - Optimized for automated LLM services
 - **Admin Portal** - Comprehensive usage tracking and rate limit monitoring
 
+## 🛠️ Developer Guide
+
+### Prerequisites
+
+Before setting up the development environment, ensure you have the following installed:
+
+- **Node.js** (v18 or later) - [Download here](https://nodejs.org/)
+- **npm** (comes with Node.js) or **yarn**
+- **PostgreSQL** (v12 or later) - [Download here](https://www.postgresql.org/download/)
+- **Git** - [Download here](https://git-scm.com/)
+
+### Local Development Setup
+
+#### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd dotm-device-checker
+```
+
+#### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+#### 3. Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```bash
+# === REQUIRED ENVIRONMENT VARIABLES ===
+
+# Database Configuration
+DATABASE_URL="postgresql://username:password@localhost:5432/dotm_dev"
+
+# Google Gemini API (for AI-powered device identification)
+GEMINI_API_KEY="your_gemini_api_key_here"
+
+# Firebase Configuration (for notifications and messaging)
+VITE_FIREBASE_API_KEY="your_firebase_api_key"
+VITE_FIREBASE_PROJECT_ID="your_firebase_project_id"
+VITE_FIREBASE_APP_ID="your_firebase_app_id"
+FIREBASE_SERVICE_ACCOUNT_JSON="your_firebase_service_account_json"
+
+# Google Maps API (for location services)
+GORSE_GOOGLE_API_KEY="your_google_maps_api_key"
+GOOGLE_MAPS_API_KEY="your_google_maps_api_key" # Fallback
+
+# Application Configuration
+NODE_ENV="development"
+PORT="5000"
+SESSION_SECRET="your_session_secret_here"
+
+# === OPTIONAL ENVIRONMENT VARIABLES ===
+
+# Email Service (for monthly insights - optional)
+SENDGRID_API_KEY="your_sendgrid_api_key"
+
+# Admin Configuration
+ADMIN_EMAIL="admin@yourdomain.com"
+```
+
+#### 4. Database Setup
+
+##### Option A: Local PostgreSQL
+
+1. **Start PostgreSQL service**:
+   ```bash
+   # On macOS with Homebrew
+   brew services start postgresql
+   
+   # On Ubuntu/Debian
+   sudo systemctl start postgresql
+   
+   # On Windows
+   # Start through Services or PostgreSQL installer
+   ```
+
+2. **Create database**:
+   ```bash
+   psql -U postgres
+   CREATE DATABASE dotm_dev;
+   CREATE USER dotm_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE dotm_dev TO dotm_user;
+   \q
+   ```
+
+3. **Update DATABASE_URL** in `.env`:
+   ```bash
+   DATABASE_URL="postgresql://dotm_user:your_password@localhost:5432/dotm_dev"
+   ```
+
+##### Option B: Using Neon (Cloud PostgreSQL)
+
+1. Sign up at [Neon.tech](https://neon.tech/)
+2. Create a new project
+3. Copy the connection string to your `.env` file
+
+#### 5. Database Migration
+
+Initialize the database with the required tables:
+
+```bash
+npm run db:push
+```
+
+This command uses Drizzle ORM to create all necessary tables based on the schema in `shared/schema.ts`.
+
+#### 6. API Keys Setup
+
+##### Google Gemini API
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Add to your `.env` file as `GEMINI_API_KEY`
+
+##### Firebase Configuration
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project or use existing one
+3. Enable Authentication with Google sign-in
+4. Generate service account key (JSON)
+5. Add configuration to your `.env` file
+
+##### Google Maps API
+1. Visit [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable Maps Static API
+3. Create credentials (API Key)
+4. Add to your `.env` file
+
+### Running the Application
+
+#### Development Mode
+
+Start the development server with hot reloading:
+
+```bash
+npm run dev
+```
+
+This will:
+- Start the Express server on `http://localhost:5000`
+- Enable Vite dev server with HMR
+- Watch for file changes and auto-restart
+- Initialize the monthly email insights scheduler
+
+#### Production Build
+
+Build the application for production:
+
+```bash
+npm run build
+```
+
+Start the production server:
+
+```bash
+npm start
+```
+
+### Project Structure
+
+```
+dotm-device-checker/
+├── client/                 # Frontend React application
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utilities and helpers
+│   │   └── main.tsx      # Application entry point
+│   └── index.html
+├── server/                # Backend Express application
+│   ├── services/         # Business logic services
+│   │   ├── gemini.js     # AI device analysis
+│   │   ├── email-insights.ts  # Monthly email reports
+│   │   ├── firebase-admin.js  # Notifications
+│   │   └── coverage-analyzer.js  # Network analysis
+│   ├── middleware/       # Express middleware
+│   ├── routes/          # API route handlers
+│   ├── storage.ts       # Database operations
+│   └── index.ts         # Server entry point
+├── shared/              # Shared code between client/server
+│   └── schema.ts        # Database schema and types
+├── package.json
+├── drizzle.config.ts    # Database configuration
+├── vite.config.ts       # Frontend build configuration
+├── tailwind.config.ts   # Styling configuration
+└── .env                 # Environment variables
+```
+
+### Development Workflow
+
+#### 1. Making Changes
+
+- **Frontend changes**: Edit files in `client/src/` - Vite will hot-reload
+- **Backend changes**: Edit files in `server/` - Server will auto-restart
+- **Database changes**: Modify `shared/schema.ts` then run `npm run db:push`
+
+#### 2. Database Operations
+
+```bash
+# Push schema changes to database
+npm run db:push
+
+# Force push (dangerous - use with caution)
+npm run db:push --force
+
+# Generate migration files (if using migrations instead of push)
+npm run db:generate
+
+# View database in Drizzle Studio
+npm run db:studio
+```
+
+#### 3. Testing API Endpoints
+
+Use the built-in API routes for testing:
+
+```bash
+# Test IMEI analysis
+curl -X POST http://localhost:5000/api/check \
+  -H "Content-Type: application/json" \
+  -d '{"imei": "123456789012345", "location": "New York", "accept_policy": true}'
+
+# Generate API key for testing
+curl -X POST http://localhost:5000/api/keys \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "name": "Test Key"}'
+
+# Register user for email insights
+curl -X POST http://localhost:5000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "firstName": "John", "lastName": "Doe"}'
+```
+
+### Building for Production
+
+#### 1. Environment Setup
+
+Create a production `.env` file with:
+- Production database URL
+- Production API keys
+- Secure session secret
+- Production domain configuration
+
+#### 2. Build Process
+
+```bash
+# Install dependencies
+npm ci
+
+# Build frontend and backend
+npm run build
+
+# Start production server
+npm start
+```
+
+#### 3. Deployment Checklist
+
+- [ ] All environment variables are set
+- [ ] Database is accessible and migrated
+- [ ] API keys are valid and have proper limits
+- [ ] CORS is configured for your domain
+- [ ] Rate limiting is appropriate for production
+- [ ] Logging is configured
+- [ ] Health checks are working
+- [ ] SSL/TLS is properly configured
+
+### Troubleshooting
+
+#### Common Issues
+
+**Database Connection Issues**:
+```bash
+# Check if PostgreSQL is running
+pg_isready -h localhost -p 5432
+
+# Test database connection
+psql "postgresql://username:password@localhost:5432/dotm_dev"
+```
+
+**API Key Issues**:
+- Verify all API keys are valid and have proper permissions
+- Check rate limits haven't been exceeded
+- Ensure environment variables are loaded correctly
+
+**Build Issues**:
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Check for TypeScript errors
+npm run type-check
+```
+
+**Port Already in Use**:
+```bash
+# Find process using port 5000
+lsof -ti:5000
+
+# Kill process (replace PID)
+kill -9 <PID>
+```
+
+### Contributing
+
+#### Code Style
+
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Follow the configured rules
+- **Prettier**: Auto-formatting on save
+- **Naming**: Use descriptive names, camelCase for variables, PascalCase for components
+
+#### Database Changes
+
+1. Modify schema in `shared/schema.ts`
+2. Run `npm run db:push` to apply changes
+3. Test thoroughly in development
+4. Update storage interface if needed
+
+#### Adding New Features
+
+1. **Plan the feature**: Update schema if needed
+2. **Backend first**: Add storage methods, API routes
+3. **Frontend integration**: Add UI components, API calls
+4. **Testing**: Manual testing, edge cases
+5. **Documentation**: Update README if needed
+
+#### Pull Request Process
+
+1. Create feature branch from `main`
+2. Make changes with clear commit messages
+3. Test thoroughly in development
+4. Update documentation if needed
+5. Submit PR with clear description
+
+### Performance Optimization
+
+#### Database Optimization
+
+- Use indexes for frequently queried columns
+- Implement connection pooling
+- Monitor query performance
+- Use appropriate data types
+
+#### API Optimization
+
+- Implement caching where appropriate
+- Use efficient serialization
+- Monitor response times
+- Implement pagination for large datasets
+
+#### Frontend Optimization
+
+- Code splitting for large components
+- Lazy loading for non-critical features
+- Optimize images and assets
+- Use React.memo for expensive components
+
+---
+
 ## 📊 Service Tiers & Rate Limits
 
 ### Standard Tier
