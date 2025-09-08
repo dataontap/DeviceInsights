@@ -1349,7 +1349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user) {
           userId = user.id;
           // Update user's last active timestamp
-          await storage.updateRegisteredUser(user.id, { lastActiveAt: new Date() });
+          await storage.updateRegisteredUser(user.id, {});
         }
       }
       
@@ -1377,7 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         latency: metricData.latency,
         jitter: metricData.jitter,
         packetLoss: metricData.packetLoss,
-        isInterruption,
+        isInterruption: isInterruption || false,
         interruptionDuration: metricData.interruptionDuration,
         deviceInfo: req.body.deviceInfo
       });
