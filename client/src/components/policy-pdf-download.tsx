@@ -216,6 +216,60 @@ export default function PolicyPDFDownload() {
                 </div>
               </div>
 
+              {/* Privacy & Data Collection */}
+              <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔒 Privacy & Data Collection</h2>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <div>
+                    <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Network Connectivity Monitoring</h3>
+                    <p className="text-yellow-700 dark:text-yellow-300">
+                      Every time you use our IMEI checking service, we automatically perform network connectivity pings to measure your current network performance and compatibility. This helps us provide accurate device analysis and network recommendations. No other private information is collected during these pings.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-semibold mb-3">📍 Location Services (Optional)</h3>
+              <p className="mb-4">Location data is only collected with your <strong>explicit consent</strong> when you choose to enable location-based features. This enhanced service provides:</p>
+
+              <div className="grid grid-cols-1 gap-4 mb-6">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">📊</span>
+                    <div>
+                      <h4 className="font-semibold mb-2">Regional Network Analysis</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Detailed coverage maps and performance data for your specific area</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">📱</span>
+                    <div>
+                      <h4 className="font-semibold mb-2">Provider Comparisons</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Real-time insights comparing network performance across different carriers in your location</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl">⚡</span>
+                    <div>
+                      <h4 className="font-semibold mb-2">Service Optimization</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Personalized recommendations based on your geographic area and usage patterns</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-cyan-50 dark:bg-cyan-900/20 border-2 border-cyan-300 dark:border-cyan-600 rounded-lg p-4 mb-6">
+                <p className="text-cyan-800 dark:text-cyan-200 font-medium">
+                  <strong>Your Control:</strong> You can request deletion of all collected data at any time by contacting our support team. Location services can be disabled in your browser settings, and we respect your privacy choices.
+                </p>
+              </div>
+
               {/* Technical Requirements */}
               <h2 className="text-2xl font-semibold mb-4 pb-2 border-l-4 border-blue-600 pl-4">🔧 Technical Requirements</h2>
 
