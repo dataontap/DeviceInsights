@@ -14,6 +14,7 @@ import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from '
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
 import { analyzeIssueWithAI } from './services/issue-analyzer.js';
+import { standardRateLimit, mcpRateLimit, premiumRateLimit } from './middleware/enhanced-rate-limit';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -135,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   });
 
-  // Apply rate limiting to all API routes
+  // Apply basic rate limiting to all API routes (fallback)
   app.use('/api', limiter);
 
   // SECURE CORS configuration - restrict to trusted domains
@@ -405,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // IMEI Analysis endpoint (with API key validation for external access)  
-  app.post("/api/v1/check", validateApiKey, async (req, res) => {
+  app.post("/api/v1/check", validateApiKey, standardRateLimit, async (req, res) => {
     try {
       const { imei, location, network } = req.body;
 
@@ -1564,6 +1565,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // === ADMIN ROUTES FOR RATE LIMIT MONITORING ===
+  
+  // Get admin notifications (rate limit violations, API abuse)
+  app.get("/api/admin/notifications", async (req, res) => {
+    try {
+      const unreadOnly = req.query.unread === 'true';
+      const notifications = await storage.getAdminNotifications(unreadOnly);
+      const unreadCount = await storage.getUnreadAdminNotificationCount();
+      
+      res.json({
+        success: true,
+        notifications: notifications.map(notification => ({
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          severity: notification.severity,
+          apiKey: notification.apiKeyId,
+          metadata: notification.metadata,
+          isRead: notification.isRead,
+          createdAt: notification.createdAt
+        })),
+        unreadCount
+      });
+    } catch (error) {
+      console.error("Get admin notifications error:", error);
+      res.status(500).json({
+        error: "Failed to fetch notifications"
+      });
+    }
+  });
+  
+  // Mark admin notification as read
+  app.put("/api/admin/notifications/:id/read", async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      
+      if (!notificationId || isNaN(notificationId)) {
+        return res.status(400).json({
+          error: "Invalid notification ID"
+        });
+      }
+      
+      await storage.markAdminNotificationRead(notificationId);
+      
+      res.json({
+        success: true,
+        message: "Notification marked as read"
+      });
+    } catch (error) {
+      console.error("Mark admin notification as read error:", error);
+      res.status(500).json({
+        error: "Failed to mark notification as read"
+      });
+    }
+  });
+  
+  // Get API usage stats for specific API key
+  app.get("/api/admin/usage/:apiKeyId", async (req, res) => {
+    try {
+      const apiKeyId = parseInt(req.params.apiKeyId);
+      const hours = parseInt(req.query.hours as string) || 24;
+      
+      if (!apiKeyId || isNaN(apiKeyId)) {
+        return res.status(400).json({
+          error: "Invalid API key ID"
+        });
+      }
+      
+      const apiKey = await storage.getApiKeyByHash(""); // We'll need to get by ID
+      const stats = await storage.getApiUsageStats(apiKeyId);
+      const recentUsage = await storage.getApiUsageByKey(apiKeyId, hours);
+      
+      res.json({
+        success: true,
+        apiKey: apiKey ? {
+          name: apiKey.name,
+          email: apiKey.email,
+          createdAt: apiKey.createdAt,
+          lastUsed: apiKey.lastUsed
+        } : null,
+        stats,
+        recentUsage: recentUsage.map(usage => ({
+          timestamp: usage.timestamp,
+          endpoint: usage.endpoint,
+          method: usage.method,
+          responseStatus: usage.responseStatus,
+          responseTime: usage.responseTime,
+          rateLimitExceeded: usage.rateLimitExceeded,
+          ipAddress: usage.ipAddress
+        }))
+      });
+    } catch (error) {
+      console.error("Get API usage stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch usage stats"
+      });
+    }
+  });
+  
+  // Get all API keys with usage stats for admin dashboard
+  app.get("/api/admin/api-keys", async (req, res) => {
+    try {
+      // This would require a new storage method to get all API keys with stats
+      // For now, return basic structure
+      res.json({
+        success: true,
+        message: "Admin API keys endpoint - implementation in progress",
+        data: []
+      });
+    } catch (error) {
+      console.error("Get admin API keys error:", error);
+      res.status(500).json({
+        error: "Failed to fetch API keys"
+      });
+    }
+  });
+  
+  // Admin access request
+  app.post("/api/admin/access-request", async (req, res) => {
+    try {
+      const {
+        organization,
+        email,
+        apiKeyName,
+        useCase,
+        monthlyVolume,
+        technicalContact,
+        billingContact
+      } = req.body;
+      
+      // Create admin notification for access request
+      await storage.createAdminNotification({
+        type: "admin_access_request",
+        title: "Admin Portal Access Request",
+        message: `New admin access request from ${organization} (${email})`,
+        severity: "info",
+        metadata: {
+          requestedAt: new Date().toISOString(),
+          organization: organization,
+          email: email,
+          apiKeyName: apiKeyName,
+          useCase: useCase,
+          monthlyVolume: monthlyVolume
+        } as any
+      });
+      
+      res.json({
+        success: true,
+        message: "Admin access request submitted successfully. You will receive a response within 1-2 business days.",
+        requestId: `REQ-${Date.now()}`
+      });
+    } catch (error) {
+      console.error("Admin access request error:", error);
+      res.status(500).json({
+        error: "Failed to submit access request"
+      });
+    }
+  });
+
   // Serve the Coverage Maps API documentation
   app.get("/coverage-api-docs.md", (req, res) => {
     res.sendFile(path.join(__dirname, "../COVERAGE_MAPS_API_DOCUMENTATION.md"));

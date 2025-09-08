@@ -199,6 +199,41 @@ export const connectivityAlerts = pgTable("connectivity_alerts", {
   resolvedAt: timestamp("resolved_at"),
 });
 
+// Rate Limiting and API Usage Tracking
+export const apiUsageTracking = pgTable("api_usage_tracking", {
+  id: serial("id").primaryKey(),
+  apiKeyId: integer("api_key_id").references(() => apiKeys.id).notNull(),
+  endpoint: text("endpoint").notNull(),
+  method: text("method").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  responseStatus: integer("response_status"),
+  responseTime: integer("response_time"), // milliseconds
+  rateLimitExceeded: boolean("rate_limit_exceeded").default(false).notNull(),
+  requestSize: integer("request_size"), // bytes
+  responseSize: integer("response_size"), // bytes
+});
+
+// Admin Notifications for Rate Limit Violations
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // "rate_limit_exceeded", "api_abuse", "system_alert"
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  severity: text("severity").notNull(), // "info", "warning", "error", "critical"
+  apiKeyId: integer("api_key_id").references(() => apiKeys.id),
+  metadata: jsonb("metadata").$type<{
+    endpoint?: string;
+    requestCount?: number;
+    timeWindow?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }>(),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],
@@ -230,6 +265,20 @@ export const connectivityAlertsRelations = relations(connectivityAlerts, ({ one 
   user: one(registeredUsers, {
     fields: [connectivityAlerts.userId],
     references: [registeredUsers.id],
+  }),
+}));
+
+export const apiUsageTrackingRelations = relations(apiUsageTracking, ({ one }) => ({
+  apiKey: one(apiKeys, {
+    fields: [apiUsageTracking.apiKeyId],
+    references: [apiKeys.id],
+  }),
+}));
+
+export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
+  apiKey: one(apiKeys, {
+    fields: [adminNotifications.apiKeyId],
+    references: [apiKeys.id],
   }),
 }));
 
@@ -338,6 +387,28 @@ export const insertConnectivityAlertSchema = createInsertSchema(connectivityAler
   alertData: true,
 });
 
+export const insertApiUsageTrackingSchema = createInsertSchema(apiUsageTracking).pick({
+  apiKeyId: true,
+  endpoint: true,
+  method: true,
+  ipAddress: true,
+  userAgent: true,
+  responseStatus: true,
+  responseTime: true,
+  rateLimitExceeded: true,
+  requestSize: true,
+  responseSize: true,
+});
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).pick({
+  type: true,
+  title: true,
+  message: true,
+  severity: true,
+  apiKeyId: true,
+  metadata: true,
+});
+
 export const insertLoginTokenSchema = createInsertSchema(loginTokens).pick({
   email: true,
   token: true,
@@ -417,3 +488,7 @@ export type InsertConnectivityAlert = z.infer<typeof insertConnectivityAlertSche
 export type ConnectivityAlert = typeof connectivityAlerts.$inferSelect;
 export type UserRegistration = z.infer<typeof userRegistrationSchema>;
 export type ConnectivityMetricInput = z.infer<typeof connectivityMetricSchema>;
+export type InsertApiUsageTracking = z.infer<typeof insertApiUsageTrackingSchema>;
+export type ApiUsageTracking = typeof apiUsageTracking.$inferSelect;
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;

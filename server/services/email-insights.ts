@@ -425,11 +425,11 @@ export async function sendMonthlyInsights(): Promise<void> {
         const emailHTML = generateInsightEmailHTML(userName, insightData);
         
         // Send email
-        const emailSent = await sendEmail({
-          to: user.email,
-          subject: `Your ${insightData.period.month} Connectivity Report - DOTM Insights`,
-          html: emailHTML
-        });
+        const emailSent = await sendEmail(
+          user.email,
+          `Your ${insightData.period.month} Connectivity Report - DOTM Insights`,
+          emailHTML
+        );
         
         if (emailSent) {
           // Mark as sent

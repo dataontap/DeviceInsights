@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { scheduleMonthlyInsights } from "./services/email-insights";
 
 const app = express();
 
@@ -124,5 +125,13 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Initialize monthly email insights scheduler
+    try {
+      scheduleMonthlyInsights();
+      log("Monthly email insights scheduler initialized");
+    } catch (error) {
+      console.error("Failed to initialize email insights scheduler:", error);
+    }
   });
 })();

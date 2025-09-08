@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -123,6 +123,24 @@ export interface IStorage {
   markAlertAsRead(alertId: number): Promise<void>;
   markAlertAsResolved(alertId: number): Promise<void>;
   getUnreadAlertCount(userId: number): Promise<number>;
+  
+  // API Usage Tracking & Rate Limiting
+  recordApiUsage(usage: InsertApiUsageTracking): Promise<ApiUsageTracking>;
+  getApiUsageByKey(apiKeyId: number, hours?: number): Promise<ApiUsageTracking[]>;
+  getApiUsageCount(apiKeyId: number, hours?: number): Promise<number>;
+  getApiUsageStats(apiKeyId: number): Promise<{
+    totalRequests: number;
+    requestsLastHour: number;
+    requestsLastDay: number;
+    rateLimitViolations: number;
+    averageResponseTime: number;
+  }>;
+  
+  // Admin Notifications
+  createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification>;
+  getAdminNotifications(unreadOnly?: boolean): Promise<AdminNotification[]>;
+  markAdminNotificationRead(notificationId: number): Promise<void>;
+  getUnreadAdminNotificationCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -854,6 +872,139 @@ export class DatabaseStorage implements IStorage {
         eq(connectivityAlerts.userId, userId),
         eq(connectivityAlerts.isRead, false)
       ));
+    return result.count;
+  }
+  
+  // API Usage Tracking & Rate Limiting Implementation
+  async recordApiUsage(usage: InsertApiUsageTracking): Promise<ApiUsageTracking> {
+    const [result] = await db
+      .insert(apiUsageTracking)
+      .values(usage)
+      .returning();
+    return result;
+  }
+
+  async getApiUsageByKey(apiKeyId: number, hours = 24): Promise<ApiUsageTracking[]> {
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - hours);
+    
+    return await db
+      .select()
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        sql`timestamp >= ${startTime}`
+      ))
+      .orderBy(desc(apiUsageTracking.timestamp));
+  }
+
+  async getApiUsageCount(apiKeyId: number, hours = 1): Promise<number> {
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - hours);
+    
+    const [result] = await db
+      .select({ count: count() })
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        sql`timestamp >= ${startTime}`
+      ));
+    return result.count;
+  }
+
+  async getApiUsageStats(apiKeyId: number): Promise<{
+    totalRequests: number;
+    requestsLastHour: number;
+    requestsLastDay: number;
+    rateLimitViolations: number;
+    averageResponseTime: number;
+  }> {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+    const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(apiUsageTracking)
+      .where(eq(apiUsageTracking.apiKeyId, apiKeyId));
+    
+    const [hourResult] = await db
+      .select({ count: count() })
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        sql`timestamp >= ${oneHourAgo}`
+      ));
+    
+    const [dayResult] = await db
+      .select({ count: count() })
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        sql`timestamp >= ${oneDayAgo}`
+      ));
+    
+    const [violationsResult] = await db
+      .select({ count: count() })
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        eq(apiUsageTracking.rateLimitExceeded, true)
+      ));
+    
+    const [avgResponseResult] = await db
+      .select({ 
+        avg: sql<number>`AVG(response_time)` 
+      })
+      .from(apiUsageTracking)
+      .where(and(
+        eq(apiUsageTracking.apiKeyId, apiKeyId),
+        sql`response_time IS NOT NULL`
+      ));
+    
+    return {
+      totalRequests: totalResult.count,
+      requestsLastHour: hourResult.count,
+      requestsLastDay: dayResult.count,
+      rateLimitViolations: violationsResult.count,
+      averageResponseTime: Math.round(avgResponseResult.avg || 0)
+    };
+  }
+  
+  // Admin Notifications Implementation
+  async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
+    const [result] = await db
+      .insert(adminNotifications)
+      .values(notification)
+      .returning();
+    return result;
+  }
+
+  async getAdminNotifications(unreadOnly = false): Promise<AdminNotification[]> {
+    const conditions = [];
+    if (unreadOnly) {
+      conditions.push(eq(adminNotifications.isRead, false));
+    }
+    
+    return await db
+      .select()
+      .from(adminNotifications)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(adminNotifications.createdAt));
+  }
+
+  async markAdminNotificationRead(notificationId: number): Promise<void> {
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.id, notificationId));
+  }
+
+  async getUnreadAdminNotificationCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(adminNotifications)
+      .where(eq(adminNotifications.isRead, false));
     return result.count;
   }
 }
