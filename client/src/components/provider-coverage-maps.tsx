@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GoogleCoverageMap } from './google-coverage-map';
+import { LocationConsentDialog } from './location-consent-dialog';
 
 interface CoverageAnalysis {
   provider: string;
@@ -66,6 +67,8 @@ export function ProviderCoverageMaps({
   const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('auto');
   const [showExpandedMap, setShowExpandedMap] = useState(false);
+  const [showLocationConsent, setShowLocationConsent] = useState(false);
+  const [locationConsentGranted, setLocationConsentGranted] = useState(false);
 
   // Read URL parameters on component mount
   useEffect(() => {
@@ -100,30 +103,44 @@ export function ProviderCoverageMaps({
     setHasValidLocation(!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
   }, [locationInput]);
 
-  // Get user's current location
+  // Handle location consent
+  const handleLocationConsent = (granted: boolean) => {
+    setLocationConsentGranted(granted);
+    if (granted) {
+      // Proceed with getting location
+      setIsGettingLocation(true);
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            setLocationInput({
+              lat: lat.toString(),
+              lng: lng.toString(),
+              address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            });
+            setIsGettingLocation(false);
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            alert('Unable to get your current location. Please enter coordinates manually.');
+            setIsGettingLocation(false);
+          }
+        );
+      } else {
+        alert('Geolocation is not supported by this browser.');
+        setIsGettingLocation(false);
+      }
+    }
+  };
+
+  // Get user's current location with consent
   const getCurrentLocation = () => {
-    setIsGettingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          setLocationInput({
-            lat: lat.toString(),
-            lng: lng.toString(),
-            address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-          });
-          setIsGettingLocation(false);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          alert('Unable to get your current location. Please enter coordinates manually.');
-          setIsGettingLocation(false);
-        }
-      );
+    if (!locationConsentGranted) {
+      setShowLocationConsent(true);
     } else {
-      alert('Geolocation is not supported by this browser.');
-      setIsGettingLocation(false);
+      // Already have consent, proceed directly
+      handleLocationConsent(true);
     }
   };
 
@@ -894,6 +911,13 @@ export function ProviderCoverageMaps({
           </div>
         </div>
       )}
+
+      {/* Location Consent Dialog */}
+      <LocationConsentDialog
+        isOpen={showLocationConsent}
+        onClose={() => setShowLocationConsent(false)}
+        onConsent={handleLocationConsent}
+      />
     </div>
   );
 }
