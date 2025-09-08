@@ -2,7 +2,7 @@
 
 ## Overview
 
-This full-stack web application enables users to analyze mobile device IMEI numbers to determine device information and network compatibility, primarily focused on the OXIO network. It utilizes AI-powered device identification via Google's Gemini API (with an intelligent fallback system) and provides comprehensive analytics on device searches, including location tracking and Google Earth integration. The project aims to offer a robust and user-friendly tool for device compatibility analysis, with ambitions for broad market adoption and ongoing feature expansion.
+This full-stack web application enables users to analyze mobile device IMEI numbers to determine device information and network compatibility, primarily focused on the DOTM network. It utilizes AI-powered device identification via Google's Gemini API (with an intelligent fallback system) and provides comprehensive analytics on device searches, including location tracking and Google Earth integration. The project aims to offer a robust and user-friendly tool for device compatibility analysis, with ambitions for broad market adoption and ongoing feature expansion.
 
 ## User Preferences
 

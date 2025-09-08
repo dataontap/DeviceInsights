@@ -52,7 +52,7 @@ Analyzes network coverage for mobile carriers and broadband providers at a speci
 **Mobile Carriers:**
 - Verizon, AT&T, T-Mobile (US)
 - Rogers, Bell, Telus (Canada)
-- OXIO (International)
+- DOTM (International)
 
 **Broadband Providers:**
 - Comcast, Spectrum, Verizon Fios, AT&T Internet (US)

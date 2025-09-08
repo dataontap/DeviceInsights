@@ -23,7 +23,7 @@ Analyze an IMEI number and return device information with network compatibility.
 {
   "imei": "123456789012345",
   "location": "37.7749,-122.4194",
-  "network": "OXIO"
+  "network": "DOTM"
 }
 ```
 
@@ -299,7 +299,7 @@ Analyzes network coverage for mobile carriers and broadband providers at a speci
 - `provider` (string, optional): Specific provider to analyze ("auto" for country defaults)
 
 #### Supported Providers
-**Mobile Carriers:** Verizon, AT&T, T-Mobile (US), Rogers, Bell, Telus (Canada), OXIO (International)
+**Mobile Carriers:** Verizon, AT&T, T-Mobile (US), Rogers, Bell, Telus (Canada), DOTM (International)
 **Broadband Providers:** Comcast, Spectrum, Verizon Fios, AT&T Internet (US), Rogers Internet, Bell Internet, Telus Internet (Canada)
 
 #### Response
