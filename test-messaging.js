@@ -63,7 +63,7 @@ async function testEmailMessaging(apiKey) {
     body: JSON.stringify({
       email: 'test@example.com',
       subject: 'IMEI Device Analysis Complete',
-      body: '<h2>Your device analysis is ready!</h2><p>Your device is compatible with the OXIO network.</p>'
+      body: '<h2>Your device analysis is ready!</h2><p>Your device is compatible with the DOTM network.</p>'
     }),
   });
   
@@ -121,7 +121,7 @@ async function testImeiCheck(apiKey) {
     body: JSON.stringify({
       imei: '355965230012345',
       location: 'New York, NY',
-      network: 'OXIO'
+      network: 'DOTM'
     }),
   });
   

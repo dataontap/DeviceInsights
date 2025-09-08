@@ -294,8 +294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userAgent = req.get('User-Agent') || 'unknown';
 
       try {
-        // Analyze device using AI with specified network (default OXIO)
-        const targetNetwork = network || "OXIO";
+        // Analyze device using AI with specified network (default DOTM)
+        const targetNetwork = network || "DOTM";
         const deviceInfo = await analyzeIMEI(imei, targetNetwork);
 
         // Store search in database
