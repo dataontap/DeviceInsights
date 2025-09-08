@@ -1,5 +1,24 @@
 # IMEI Device Checker API Documentation
 
+## Privacy & Data Collection
+
+### Network Connectivity Monitoring
+Every time you use our IMEI checking service, we automatically perform network connectivity pings to measure your current network performance and compatibility. This helps us provide accurate device analysis and network recommendations. **No other private information is collected during these pings.**
+
+### Location Services (Optional)
+Location data is only collected with your **explicit consent** when you choose to enable location-based features. This enhanced service provides:
+- Regional network analysis and coverage maps
+- Real-time provider comparisons for your location  
+- Personalized recommendations based on your geographic area
+
+### Your Privacy Rights
+- Location services are completely optional
+- You can request deletion of all collected data at any time by contacting support@dotm.com
+- Location services can be disabled in your browser settings
+- We respect your privacy choices and make data control easy
+
+---
+
 ## Base URL
 ```
 https://your-replit-app.replit.app

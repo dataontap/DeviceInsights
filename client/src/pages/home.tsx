@@ -7,7 +7,7 @@ import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
 import APIDocs from "@/components/api-docs";
 import { ProviderCoverageMaps } from "@/components/provider-coverage-maps";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wifi } from "lucide-react";
 
 export default function Home() {
   const [result, setResult] = useState(null);
@@ -25,6 +25,28 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       
+      {/* Privacy Notice */}
+      <section className="py-8 bg-blue-50 border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-start gap-4 bg-white rounded-lg border border-blue-200 p-4">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Wifi className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Privacy & Data Collection Notice</h3>
+              <div className="text-sm text-blue-800 space-y-2">
+                <p>
+                  <strong>Network Connectivity Pings:</strong> Every time you use our IMEI checking service, we automatically perform network connectivity pings to measure your current network performance and compatibility. This helps us provide accurate device analysis and network recommendations. No other private information is collected during these pings.
+                </p>
+                <p>
+                  <strong>Location Services (Optional):</strong> Location data is only collected with your explicit consent when you choose to enable location-based features for enhanced coverage analysis. You can request data deletion at any time by contacting support@dotm.com.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <IMEIChecker onResult={handleResult} onLoading={handleLoading} />
       
       {isLoading && (
