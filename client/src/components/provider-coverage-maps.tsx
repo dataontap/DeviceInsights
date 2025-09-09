@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, MapPin, Wifi, AlertTriangle, CheckCircle, XCircle, Smartphone, Monitor, ZoomIn, ZoomOut, Globe, Map, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GoogleCoverageMap } from './google-coverage-map';
-import { LocationConsentDialog } from './location-consent-dialog';
 
 interface CoverageAnalysis {
   provider: string;
@@ -56,7 +55,6 @@ export function ProviderCoverageMaps({
     lng: initialLng.toString(),
     address: initialAddress
   });
-  const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [hasValidLocation, setHasValidLocation] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [mapRadius, setMapRadius] = useState(10); // km radius for analysis
@@ -66,35 +64,6 @@ export function ProviderCoverageMaps({
   const [isReportingIssue, setIsReportingIssue] = useState(false);
   const [issueAnalysis, setIssueAnalysis] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('auto');
-  const [showExpandedMap, setShowExpandedMap] = useState(false);
-  const [showLocationConsent, setShowLocationConsent] = useState(false);
-  const [locationConsentGranted, setLocationConsentGranted] = useState(false);
-
-  // Read URL parameters on component mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const latParam = urlParams.get('lat');
-    const lngParam = urlParams.get('lng');
-    const addressParam = urlParams.get('address');
-
-    if (latParam && lngParam) {
-      const lat = parseFloat(latParam);
-      const lng = parseFloat(lngParam);
-
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setLocationInput({
-          lat: lat.toString(),
-          lng: lng.toString(),
-          address: addressParam || ''
-        });
-        setCoordinates({
-          lat,
-          lng,
-          address: addressParam || ''
-        });
-      }
-    }
-  }, []);
 
   // Check if we have a valid location
   useEffect(() => {
@@ -103,44 +72,30 @@ export function ProviderCoverageMaps({
     setHasValidLocation(!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
   }, [locationInput]);
 
-  // Handle location consent
-  const handleLocationConsent = (granted: boolean) => {
-    setLocationConsentGranted(granted);
-    if (granted) {
-      // Proceed with getting location
-      setIsGettingLocation(true);
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            setLocationInput({
-              lat: lat.toString(),
-              lng: lng.toString(),
-              address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-            });
-            setIsGettingLocation(false);
-          },
-          (error) => {
-            console.error('Error getting location:', error);
-            alert('Unable to get your current location. Please enter coordinates manually.');
-            setIsGettingLocation(false);
-          }
-        );
-      } else {
-        alert('Geolocation is not supported by this browser.');
-        setIsGettingLocation(false);
-      }
-    }
-  };
-
-  // Get user's current location with consent
+  // Get user's current location
   const getCurrentLocation = () => {
-    if (!locationConsentGranted) {
-      setShowLocationConsent(true);
+    setIsGettingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setLocationInput({
+            lat: lat.toString(),
+            lng: lng.toString(),
+            address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          });
+          setIsGettingLocation(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          alert('Unable to get your current location. Please enter coordinates manually.');
+          setIsGettingLocation(false);
+        }
+      );
     } else {
-      // Already have consent, proceed directly
-      handleLocationConsent(true);
+      alert('Geolocation is not supported by this browser.');
+      setIsGettingLocation(false);
     }
   };
 
@@ -154,7 +109,6 @@ export function ProviderCoverageMaps({
         lng,
         address: locationInput.address
       });
-      setLocationConfirmed(true);
     }
   };
 
@@ -354,7 +308,7 @@ export function ProviderCoverageMaps({
                 <SelectItem value="Rogers">Rogers (Canada)</SelectItem>
                 <SelectItem value="Bell">Bell (Canada)</SelectItem>
                 <SelectItem value="Telus">Telus (Canada)</SelectItem>
-                <SelectItem value="DOTM">DOTM</SelectItem>
+                <SelectItem value="OXIO">OXIO</SelectItem>
                 <SelectItem value="Verizon Fios">Verizon Fios (Internet)</SelectItem>
                 <SelectItem value="AT&T Internet">AT&T Internet</SelectItem>
                 <SelectItem value="Comcast">Comcast/Xfinity</SelectItem>
@@ -370,7 +324,7 @@ export function ProviderCoverageMaps({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={getCurrentLocation}
               disabled={isGettingLocation}
@@ -404,37 +358,6 @@ export function ProviderCoverageMaps({
               Report an Issue
             </Button>
           </div>
-
-          {/* Location Confirmation */}
-          {locationConfirmed && (
-            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-lg mt-4">
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                Location confirmed: {coordinates.address || `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`}
-              </span>
-            </div>
-          )}
-
-          {/* Coverage Analysis Prompt */}
-          {locationConfirmed && !coverageData && !isLoading && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <div className="flex items-center gap-2 text-blue-700 mb-2">
-                <Wifi className="h-5 w-5" />
-                <h4 className="font-semibold">Ready to Analyze Coverage</h4>
-              </div>
-              <p className="text-blue-600 text-sm mb-3">
-                Would you like to analyze network coverage and performance for this location? 
-                We'll check provider reliability, recent issues, and coverage quality using real-time data.
-              </p>
-              <Button 
-                onClick={() => refetch()} 
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Wifi className="h-4 w-4 mr-2" />
-                Yes, Analyze Coverage
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -635,16 +558,18 @@ export function ProviderCoverageMaps({
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground mb-3">
-                  {showExpandedMap ? 'Interactive map view' : 'Click the map to expand the interactive view'}
+                  Click the map to explore the surrounding area in Google Maps
                 </div>
 
-                {!showExpandedMap ? (
-                  // Google Maps Static API Thumbnail
-                  <div 
-                    className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors group"
-                    onClick={() => setShowExpandedMap(true)}
-                  >
-                    <img
+                {/* Google Maps Static API Thumbnail */}
+                <div 
+                  className="relative cursor-pointer rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors group"
+                  onClick={() => {
+                    const googleMapsUrl = `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},13z`;
+                    window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  <img
                     src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=12&size=600x300&maptype=roadmap&markers=color:red%7C${coordinates.lat},${coordinates.lng}&circle=fillcolor:0x0080FF30%7Ccolor:0x0080FFFF%7Cweight:2%7C${coordinates.lat},${coordinates.lng},10000&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`}
                     alt={`Map showing 10km area around ${coordinates.address || `${coordinates.lat}, ${coordinates.lng}`}`}
                     className="w-full h-48 object-cover"
@@ -666,55 +591,16 @@ export function ProviderCoverageMaps({
                     </div>
                   </div>
 
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <ZoomIn className="h-4 w-4" />
-                          Expand Interactive Map
-                        </div>
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <ExternalLink className="h-4 w-4" />
+                        Open in Google Maps
                       </div>
                     </div>
                   </div>
-                ) : (
-                  // Expanded Interactive Google Maps
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">Interactive Coverage Map</h4>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const googleMapsUrl = `https://www.google.com/maps/@${coordinates.lat},${coordinates.lng},13z`;
-                            window.open(googleMapsUrl, '_blank', 'noopener,noreferrer');
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Open in Google Maps
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowExpandedMap(false)}
-                        >
-                          <ZoomOut className="h-4 w-4 mr-2" />
-                          Collapse
-                        </Button>
-                      </div>
-                    </div>
-
-                    <GoogleCoverageMap
-                      lat={coordinates.lat}
-                      lng={coordinates.lng}
-                      address={coordinates.address}
-                      radius={10}
-                      onRadiusChange={() => {}}
-                      issueCount={0}
-                      areaName={coordinates.address || `${coordinates.lat.toFixed(2)}, ${coordinates.lng.toFixed(2)}`}
-                    />
-                  </div>
-                )}
+                </div>
 
                 {/* Map details */}
                 <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
@@ -911,13 +797,6 @@ export function ProviderCoverageMaps({
           </div>
         </div>
       )}
-
-      {/* Location Consent Dialog */}
-      <LocationConsentDialog
-        isOpen={showLocationConsent}
-        onClose={() => setShowLocationConsent(false)}
-        onConsent={handleLocationConsent}
-      />
     </div>
   );
 }
