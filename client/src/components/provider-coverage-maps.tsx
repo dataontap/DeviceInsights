@@ -76,11 +76,11 @@ export function ProviderCoverageMaps({
     const latParam = urlParams.get('lat');
     const lngParam = urlParams.get('lng');
     const addressParam = urlParams.get('address');
-    
+
     if (latParam && lngParam) {
       const lat = parseFloat(latParam);
       const lng = parseFloat(lngParam);
-      
+
       if (!isNaN(lat) && !isNaN(lng)) {
         setLocationInput({
           lat: lat.toString(),
@@ -161,7 +161,7 @@ export function ProviderCoverageMaps({
   // Report issue function
   const reportIssue = async () => {
     if (!issueDescription.trim()) return;
-    
+
     setIsReportingIssue(true);
     try {
       // Generate API key for issue analysis
@@ -404,7 +404,7 @@ export function ProviderCoverageMaps({
               Report an Issue
             </Button>
           </div>
-          
+
           {/* Location Confirmation */}
           {locationConfirmed && (
             <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2 rounded-lg mt-4">
@@ -414,7 +414,7 @@ export function ProviderCoverageMaps({
               </span>
             </div>
           )}
-          
+
           {/* Coverage Analysis Prompt */}
           {locationConfirmed && !coverageData && !isLoading && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
@@ -604,7 +604,7 @@ export function ProviderCoverageMaps({
                   {showMap ? 'Hide Map' : 'Show Map'}
                 </Button>
               </div>
-              
+
               {showMap && (
                 <GoogleCoverageMap
                   lat={coordinates.lat}
@@ -637,7 +637,7 @@ export function ProviderCoverageMaps({
                 <div className="text-sm text-muted-foreground mb-3">
                   {showExpandedMap ? 'Interactive map view' : 'Click the map to expand the interactive view'}
                 </div>
-                
+
                 {!showExpandedMap ? (
                   // Google Maps Static API Thumbnail
                   <div 
@@ -656,7 +656,7 @@ export function ProviderCoverageMaps({
                       if (fallback) fallback.classList.remove('hidden');
                     }}
                   />
-                  
+
                   {/* Fallback for when Static Maps API is unavailable */}
                   <div className="hidden w-full h-48 bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900 dark:to-green-900 flex items-center justify-center">
                     <div className="text-center">
@@ -665,7 +665,7 @@ export function ProviderCoverageMaps({
                       <p className="text-xs text-muted-foreground">{coordinates.address || `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`}</p>
                     </div>
                   </div>
-                  
+
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg">
@@ -703,7 +703,7 @@ export function ProviderCoverageMaps({
                         </Button>
                       </div>
                     </div>
-                    
+
                     <GoogleCoverageMap
                       lat={coordinates.lat}
                       lng={coordinates.lng}
@@ -715,7 +715,7 @@ export function ProviderCoverageMaps({
                     />
                   </div>
                 )}
-                
+
                 {/* Map details */}
                 <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -745,7 +745,7 @@ export function ProviderCoverageMaps({
               {coverageData.mobile_providers.map((provider) => {
                 const display = getRecommendationDisplay(provider.recommendation);
                 const IconComponent = display.icon;
-                
+
                 return (
                   <Card key={`mobile-${provider.provider}`} className="relative">
                     <CardHeader className="pb-3">
@@ -833,7 +833,7 @@ export function ProviderCoverageMaps({
               {coverageData.broadband_providers.map((provider) => {
                 const display = getRecommendationDisplay(provider.recommendation);
                 const IconComponent = display.icon;
-                
+
                 return (
                   <Card key={`broadband-${provider.provider}`} className="relative">
                     <CardHeader className="pb-3">

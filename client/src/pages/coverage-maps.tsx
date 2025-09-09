@@ -5,8 +5,8 @@ import { BookOpen } from 'lucide-react';
 export function CoverageMaps() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
-        <div className="text-center mb-8">
+      <div className="container mx-auto py-4 px-4">
+        <div className="text-center mb-6">
           <div className="flex justify-between items-center mb-4">
             <div></div>
             <h1 className="text-3xl font-bold">Provider Coverage Maps</h1>
