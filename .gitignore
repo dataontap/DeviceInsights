@@ -101,3 +101,8 @@ playwright/.cache/
 # Generated files
 generated/
 auto-generated/
+
+# Git lock files
+*.lock
+.git/index.lock
+.git/config.lock
