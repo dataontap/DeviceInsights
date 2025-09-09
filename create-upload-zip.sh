@@ -57,19 +57,19 @@ rm -rf github-upload-temp/**/.cache
 rm -rf github-upload-temp/**/dist
 rm -rf github-upload-temp/**/build
 
-# Create zip file
-echo "📦 Creating zip file..."
+# Create tar.gz archive
+echo "📦 Creating tar.gz archive..."
 cd github-upload-temp
-zip -r ../DeviceInsights-GitHub-Upload.zip . -x "*.log" "*.tmp" "*/.DS_Store" "*/Thumbs.db"
+tar --exclude="*.log" --exclude="*.tmp" --exclude="*/.DS_Store" --exclude="*/Thumbs.db" -czf ../DeviceInsights-GitHub-Upload.tar.gz .
 cd ..
 
 # Clean up temp directory
 rm -rf github-upload-temp
 
 # Show file info
-echo "✅ Zip file created: DeviceInsights-GitHub-Upload.zip"
-echo "📊 File size: $(du -h DeviceInsights-GitHub-Upload.zip | cut -f1)"
+echo "✅ Archive created: DeviceInsights-GitHub-Upload.tar.gz"
+echo "📊 File size: $(du -h DeviceInsights-GitHub-Upload.tar.gz | cut -f1)"
 echo "📋 Contents:"
-unzip -l DeviceInsights-GitHub-Upload.zip | head -20
+tar -tzf DeviceInsights-GitHub-Upload.tar.gz | head -20
 echo ""
 echo "🎯 Ready for GitHub upload!"
