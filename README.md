@@ -697,34 +697,10 @@ Authorization: Bearer your_api_key
 
 ## 🔐 Admin Portal Access
 
-### Request Admin Access
+### Admin Access
 
-To access the admin portal for monitoring API usage, rate limits, and generating reports:
-
-#### Email Request
-Send an email to: **admin-access@dotm.com**
-
-**Subject**: Admin Portal Access Request
-
-**Required Information**:
-```
-Company/Organization: [Your Organization]
-Email Address: [Your Email]
-API Key Name: [Your API Key Name]
-Use Case: [Brief description of your use case]
-Expected Monthly Volume: [Estimated requests per month]
-Technical Contact: [Primary technical contact]
-Billing Contact: [Billing/business contact]
-```
-
-#### Online Request Form
-Visit: **https://your-domain.com/admin-request**
-
-Fill out the admin access request form with:
-- Organization details
-- Technical requirements
-- Usage expectations
-- Billing information
+To access the admin SECTION for monitoring API usage, rate limits, and generating reports:
+Request magic link qwith the email that was used for API key and login
 
 #### API Request
 ```http
@@ -752,7 +728,6 @@ Content-Type: application/json
 
 ### Admin Portal Features
 
-Once approved, you'll have access to:
 
 #### Dashboard
 - **Real-time Usage Metrics**: Current request rates, response times
@@ -828,19 +803,9 @@ async function makeAPICall(endpoint, data) {
 
 ## 📞 Support & Contact
 
-### Technical Support
-- **Email**: support@dotm.com
-- **Documentation**: https://your-domain.com/docs
-- **API Status**: https://status.dotm.com
-
-### Business Inquiries
-- **Sales**: sales@dotm.com
-- **Partnerships**: partners@dotm.com
-- **Admin Access**: admin-access@dotm.com
-
 ### Emergency Contact
 For critical issues affecting production services:
-- **Emergency Support**: urgent@dotm.com
+- **Emergency Support**: rbm@dotmobile.app
 - **Subject Line**: CRITICAL - [Brief Description]
 
 ---
@@ -855,6 +820,6 @@ This API is provided under commercial license. By using this service, you agree 
 
 ---
 
-*Last Updated: January 2024*
+*Last Updated: 09/09/2025*
 *API Version: 1.0.0*
 *Documentation Version: 1.0.0*
