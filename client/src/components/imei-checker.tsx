@@ -51,6 +51,9 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       if (data.carriers && data.carriers.length > 0) {
         const isUS = data.country === "United States" || data.country === "US";
 
+        // Always set all carriers first
+        setCarriers(data.carriers);
+        
         if (isUS) {
           // For US, prefer AT&T if available, otherwise use largest
           const attCarrier = data.carriers.find((c: Carrier) => c.name === "AT&T");
@@ -64,8 +67,13 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     onError: (error: any) => {
       setCarriersLoading(false);
       console.error("Failed to fetch carriers:", error);
-      // Keep default US/AT&T on error
-      setCarriers([{ name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }]);
+      // Fallback to full US carriers list on error
+      const fallbackCarriers = [
+        { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
+        { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
+        { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
+      ];
+      setCarriers(fallbackCarriers);
       setCountry("United States");
       setSelectedCarrier("AT&T");
     },
@@ -132,9 +140,15 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
   });
 
-  // Initialize carriers with US defaults
+  // Initialize carriers with US defaults - show all major carriers
   useEffect(() => {
-    setCarriers([{ name: "AT&T", marketShare: "45.4%", description: "Largest US carrier with nationwide 5G coverage" }]);
+    const defaultUSCarriers = [
+      { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
+      { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
+      { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
+    ];
+    setCarriers(defaultUSCarriers);
+    setSelectedCarrier("AT&T"); // Default to AT&T but show all options
   }, []);
 
   // Handle location changes and carrier fetching
@@ -391,7 +405,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               )}
 
               <p className="text-xs text-gray-500 mt-2">
-                Defaults to AT&T (US). Carriers automatically detected based on your location.
+                Shows all major carriers for your region. Defaults to AT&T (US) but you can select any carrier.
               </p>
             </div>
 
