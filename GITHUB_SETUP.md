@@ -120,8 +120,8 @@ A comprehensive IMEI device checker and network connectivity monitoring platform
 
 \`\`\`bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/dotm-device-checker.git
-cd dotm-device-checker
+git clone https://github.com/dataontap/DeviceInsights.git
+cd DeviceInsights
 
 # Install dependencies
 npm install

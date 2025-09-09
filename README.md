@@ -82,10 +82,10 @@ ADMIN_EMAIL="admin@yourdomain.com"
    ```bash
    # On macOS with Homebrew
    brew services start postgresql
-   
+
    # On Ubuntu/Debian
    sudo systemctl start postgresql
-   
+
    # On Windows
    # Start through Services or PostgreSQL installer
    ```
@@ -437,26 +437,26 @@ class DOTMConnector:
         }
         self.request_count = 0
         self.last_reset = datetime.now()
-    
+
     def check_rate_limit(self):
         """Monitor rate limit usage"""
         if datetime.now() - self.last_reset > timedelta(hours=1):
             self.request_count = 0
             self.last_reset = datetime.now()
-        
+
         if self.request_count >= 480:  # Leave buffer for 500 limit
             raise Exception("Approaching rate limit. Please wait.")
-    
+
     def analyze_device(self, imei: str, location: str = None) -> dict:
         """Analyze IMEI device for MCP server"""
         self.check_rate_limit()
-        
+
         payload = {
             "imei": imei,
             "location": location or "Unknown",
             "accept_policy": True
         }
-        
+
         try:
             response = requests.post(
                 f"{self.base_url}/check",
@@ -464,9 +464,9 @@ class DOTMConnector:
                 json=payload,
                 timeout=30
             )
-            
+
             self.request_count += 1
-            
+
             if response.status_code == 429:
                 # Rate limit exceeded
                 return {
@@ -474,17 +474,17 @@ class DOTMConnector:
                     "message": "MCP service rate limit exceeded",
                     "retry_after": response.headers.get("Retry-After", "3600")
                 }
-            
+
             response.raise_for_status()
             return response.json()
-            
+
         except requests.exceptions.RequestException as e:
             return {
                 "error": "api_error",
                 "message": str(e),
                 "imei": imei
             }
-    
+
     def get_usage_stats(self) -> dict:
         """Get API usage statistics"""
         try:
@@ -503,16 +503,16 @@ dotm = DOTMConnector("your_mcp_api_key_here")
 def handle_device_query(imei: str, location: str = None):
     """Handle device compatibility query from LLM"""
     result = dotm.analyze_device(imei, location)
-    
+
     if "error" in result:
         if result["error"] == "rate_limit_exceeded":
             return f"Rate limit reached. Service will resume in {result.get('retry_after', 3600)} seconds."
         return f"Analysis failed: {result['message']}"
-    
+
     # Format response for LLM
     device_info = result.get("device", {})
     compatibility = result.get("compatibility", {})
-    
+
     return f\"\"\"
 Device Analysis Results:
 - Device: {device_info.get('make')} {device_info.get('model')} ({device_info.get('year', 'Unknown')})
@@ -810,14 +810,14 @@ Always handle rate limit responses gracefully:
 async function makeAPICall(endpoint, data) {
   try {
     const response = await fetch(endpoint, { /* config */ });
-    
+
     if (response.status === 429) {
       const retryAfter = response.headers.get('Retry-After');
       console.log(`Rate limited. Retry after: ${retryAfter} seconds`);
       // Implement retry logic with exponential backoff
       return null;
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('API call failed:', error);
