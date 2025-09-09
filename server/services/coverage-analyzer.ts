@@ -267,20 +267,20 @@ Provide comprehensive ${serviceType} coverage analysis in the specified JSON for
 /**
  * Get comprehensive coverage analysis for a location
  */
-// Get default provider for a country based on coordinates
+// Get default provider for a country based on coordinates, ranked by market share
 function getDefaultProviderForCountry(lat: number, lng: number): string[] {
-  // US coordinates (rough boundaries)
+  // US coordinates (rough boundaries) - ranked by market share
   if (lat >= 24.5 && lat <= 49.3 && lng >= -125 && lng <= -66.9) {
-    return ['Verizon', 'AT&T', 'T-Mobile']; // Largest US carriers
+    return ['Verizon', 'T-Mobile', 'AT&T']; // US carriers by market share: Verizon ~36%, T-Mobile ~33%, AT&T ~31%
   }
   
-  // Canada coordinates (rough boundaries)  
+  // Canada coordinates (rough boundaries) - ranked by market share  
   if (lat >= 41.7 && lat <= 83.1 && lng >= -141 && lng <= -52.6) {
-    return ['Rogers', 'Bell', 'Telus']; // Largest Canadian carriers
+    return ['Rogers', 'Bell', 'Telus']; // Canadian carriers by market share: Rogers ~37%, Bell ~28%, Telus ~26%
   }
   
-  // Default to major international providers
-  return ['Verizon', 'AT&T', 'T-Mobile', 'Rogers', 'Bell'];
+  // Default to major international providers ranked by global market presence
+  return ['Verizon', 'T-Mobile', 'AT&T', 'Rogers', 'Bell'];
 }
 
 export async function getCoverageAnalysis(
