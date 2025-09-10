@@ -109,8 +109,9 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
                 ⚠️ ALPHA SERVICE NOTICE
               </p>
               <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
-                This service is in early testing phase. All results are tentative and experimental. 
-                Device compatibility information may not be 100% accurate. Use at your own discretion.
+                Results are tentative and experimental. Use with caution. These are service terms: use FREE under 100TPH. 
+                Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use cases. 
+                Contact us at rbm@dotmobile.app anytime or use MCP server.
               </p>
             </div>
           </div>

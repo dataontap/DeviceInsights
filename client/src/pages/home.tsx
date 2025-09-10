@@ -36,7 +36,7 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-orange-900 mb-2">Alpha Service</h3>
               <div className="text-sm text-orange-800 space-y-1">
                 <p>
-                  Results are tentative and experimental. Use with caution. These are service terms: use under 100TPH. Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use case.
+                  Results are tentative and experimental. Use with caution. These are service terms: use FREE under 100TPH. Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use cases. Contact us at rbm@dotmobile.app anytime or use MCP server.
                 </p>
               </div>
             </div>
