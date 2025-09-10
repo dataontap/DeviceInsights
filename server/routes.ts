@@ -1683,6 +1683,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // === ANALYTICS DEMO ENDPOINT ===
+  
+  // Demo analytics endpoint with aggregate insights and privacy-protected location data
+  app.get("/api/analytics/demo", async (req, res) => {
+    try {
+      // Get aggregate statistics across all API keys
+      const totalSearches = await storage.getTotalSearchCount();
+      const totalUsers = await storage.getTotalUserCount();
+      const totalApiKeys = await storage.getTotalApiKeyCount();
+      
+      // Get device type statistics
+      const deviceTypes = await storage.getDeviceTypeStats();
+      
+      // Get location statistics (anonymized to city/state/country level)
+      const locationStats = await storage.getLocationStatsAnonymized();
+      
+      // Get popular devices
+      const popularDevices = await storage.getPopularDevices();
+      
+      // Get compatibility statistics
+      const compatibilityStats = await storage.getCompatibilityStats();
+      
+      // Get API usage stats (without exposing sensitive data)
+      const apiUsageStats = await storage.getApiUsageStatsPublic();
+      
+      // Get recent activity (sanitized)
+      const recentActivity = await storage.getRecentActivitySanitized();
+      
+      res.json({
+        success: true,
+        data: {
+          totalSearches,
+          totalUsers,
+          totalApiKeys,
+          deviceTypes,
+          locationStats,
+          popularDevices,
+          compatibilityStats,
+          apiUsageStats,
+          recentActivity
+        }
+      });
+    } catch (error) {
+      console.error("Analytics demo error:", error);
+      res.status(500).json({
+        error: "Failed to fetch analytics data"
+      });
+    }
+  });
+
   // Admin access request
   app.post("/api/admin/access-request", async (req, res) => {
     try {

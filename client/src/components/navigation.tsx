@@ -27,9 +27,9 @@ export default function Navigation() {
             <a href="#api" className="text-gray-700 hover:text-primary transition-colors">
               API Docs
             </a>
-            <a href="#admin" className="text-gray-700 hover:text-primary transition-colors">
+            <Link href="/analytics" className="text-gray-700 hover:text-primary transition-colors">
               Analytics
-            </a>
+            </Link>
             <Link href="/admin">
               <Button className="bg-primary text-white hover:bg-blue-700">
                 Admin Portal
@@ -56,9 +56,9 @@ export default function Navigation() {
             <a href="#api" className="block px-3 py-2 text-gray-700 hover:text-primary">
               API Docs
             </a>
-            <a href="#admin" className="block px-3 py-2 text-gray-700 hover:text-primary">
+            <Link href="/analytics" className="block px-3 py-2 text-gray-700 hover:text-primary">
               Analytics
-            </a>
+            </Link>
             <Link href="/admin" className="block px-3 py-2">
               <Button className="w-full bg-primary text-white hover:bg-blue-700">
                 Admin Portal

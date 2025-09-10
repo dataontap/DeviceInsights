@@ -141,6 +141,17 @@ export interface IStorage {
   getAdminNotifications(unreadOnly?: boolean): Promise<AdminNotification[]>;
   markAdminNotificationRead(notificationId: number): Promise<void>;
   getUnreadAdminNotificationCount(): Promise<number>;
+  
+  // Analytics Methods for Demo
+  getTotalSearchCount(): Promise<number>;
+  getTotalUserCount(): Promise<number>;
+  getTotalApiKeyCount(): Promise<number>;
+  getDeviceTypeStats(): Promise<Array<{ type: string; count: number }>>;
+  getLocationStatsAnonymized(): Promise<Array<{ city: string; state: string; country: string; searches: number }>>;
+  getPopularDevices(): Promise<Array<{ brand: string; model: string; searches: number }>>;
+  getCompatibilityStats(): Promise<{ compatible: number; incompatible: number; unknown: number }>;
+  getApiUsageStatsPublic(): Promise<Array<{ apiKeyName: string; totalRequests: number; requestsLastHour: number; rateLimitViolations: number }>>;
+  getRecentActivitySanitized(): Promise<Array<{ timestamp: string; action: string; details: string; location: string }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1006,6 +1017,197 @@ export class DatabaseStorage implements IStorage {
       .from(adminNotifications)
       .where(eq(adminNotifications.isRead, false));
     return result.count;
+  }
+  
+  // Analytics Methods Implementation
+  async getTotalSearchCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(imeiSearches);
+    return result.count;
+  }
+
+  async getTotalUserCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(registeredUsers);
+    return result.count;
+  }
+
+  async getTotalApiKeyCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(apiKeys);
+    return result.count;
+  }
+
+  async getDeviceTypeStats(): Promise<Array<{ type: string; count: number }>> {
+    const results = await db
+      .select({
+        type: sql<string>`device_make || ' ' || device_model`,
+        count: count()
+      })
+      .from(imeiSearches)
+      .where(sql`device_make IS NOT NULL AND device_model IS NOT NULL`)
+      .groupBy(sql`device_make || ' ' || device_model`)
+      .orderBy(desc(count()))
+      .limit(10);
+    return results.map(r => ({ type: r.type, count: r.count }));
+  }
+
+  async getLocationStatsAnonymized(): Promise<Array<{ city: string; state: string; country: string; searches: number }>> {
+    // Extract only city, state/province, country from location data for privacy
+    const results = await db
+      .select({
+        location: imeiSearches.searchLocation,
+        count: count()
+      })
+      .from(imeiSearches)
+      .where(sql`search_location IS NOT NULL AND search_location != 'Unknown'`)
+      .groupBy(imeiSearches.searchLocation)
+      .orderBy(desc(count()))
+      .limit(10);
+    
+    return results.map(r => {
+      // Parse location and extract only city/state/country
+      const locationParts = (r.location || '').split(',').map((p: any) => p.trim());
+      return {
+        city: locationParts[0] || 'Unknown City',
+        state: locationParts[1] || 'Unknown State',
+        country: locationParts[locationParts.length - 1] || 'Unknown Country',
+        searches: r.count
+      };
+    });
+  }
+
+  async getPopularDevices(): Promise<Array<{ brand: string; model: string; searches: number }>> {
+    const results = await db
+      .select({
+        brand: imeiSearches.deviceMake,
+        model: imeiSearches.deviceModel,
+        count: count()
+      })
+      .from(imeiSearches)
+      .where(sql`device_make IS NOT NULL AND device_model IS NOT NULL`)
+      .groupBy(imeiSearches.deviceMake, imeiSearches.deviceModel)
+      .orderBy(desc(count()))
+      .limit(10);
+    
+    return results.map(r => ({
+      brand: r.brand || 'Unknown',
+      model: r.model || 'Unknown',
+      searches: r.count
+    }));
+  }
+
+  async getCompatibilityStats(): Promise<{ compatible: number; incompatible: number; unknown: number }> {
+    // Since there's no direct compatibility field, we'll estimate from network capabilities
+    const results = await db
+      .select({
+        networkCapabilities: imeiSearches.networkCapabilities,
+        count: count()
+      })
+      .from(imeiSearches)
+      .where(sql`network_capabilities IS NOT NULL`)
+      .groupBy(imeiSearches.networkCapabilities)
+      .limit(100);
+    
+    let compatible = 0, incompatible = 0;
+    results.forEach(r => {
+      const caps = r.networkCapabilities as any;
+      if (caps && (caps.fourG || caps.fiveG || caps.volte)) {
+        compatible += r.count;
+      } else {
+        incompatible += r.count;
+      }
+    });
+    
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(imeiSearches)
+      .where(sql`network_capabilities IS NULL`);
+    
+    return {
+      compatible,
+      incompatible,
+      unknown: totalResult.count
+    };
+  }
+
+  async getApiUsageStatsPublic(): Promise<Array<{ apiKeyName: string; totalRequests: number; requestsLastHour: number; rateLimitViolations: number }>> {
+    // Get API usage without exposing sensitive information
+    const results = await db
+      .select({
+        apiKeyId: apiUsageTracking.apiKeyId,
+        totalRequests: count(),
+        rateLimitViolations: sql<number>`SUM(CASE WHEN rate_limit_exceeded THEN 1 ELSE 0 END)`
+      })
+      .from(apiUsageTracking)
+      .groupBy(apiUsageTracking.apiKeyId)
+      .orderBy(desc(count()))
+      .limit(10);
+    
+    const statsWithNames = [];
+    for (const result of results) {
+      // Get API key name without exposing the actual key
+      const [apiKey] = await db
+        .select({ name: apiKeys.name })
+        .from(apiKeys)
+        .where(eq(apiKeys.id, result.apiKeyId));
+      
+      // Get recent usage (last hour)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const [recentUsage] = await db
+        .select({ count: count() })
+        .from(apiUsageTracking)
+        .where(and(
+          eq(apiUsageTracking.apiKeyId, result.apiKeyId),
+          sql`timestamp >= ${oneHourAgo}`
+        ));
+      
+      statsWithNames.push({
+        apiKeyName: apiKey?.name || 'Unknown API Key',
+        totalRequests: result.totalRequests,
+        requestsLastHour: recentUsage.count,
+        rateLimitViolations: result.rateLimitViolations
+      });
+    }
+    
+    return statsWithNames;
+  }
+
+  async getRecentActivitySanitized(): Promise<Array<{ timestamp: string; action: string; details: string; location: string }>> {
+    // Get recent IMEI searches with sanitized location data
+    const recentSearches = await db
+      .select({
+        timestamp: imeiSearches.searchedAt,
+        deviceMake: imeiSearches.deviceMake,
+        deviceModel: imeiSearches.deviceModel,
+        location: imeiSearches.searchLocation,
+        networkCapabilities: imeiSearches.networkCapabilities
+      })
+      .from(imeiSearches)
+      .orderBy(desc(imeiSearches.searchedAt))
+      .limit(20);
+    
+    return recentSearches.map(search => {
+      // Sanitize location to city/state level only
+      const locationParts = (search.location || '').split(',').map((p: any) => p.trim());
+      const sanitizedLocation = locationParts.length >= 2 
+        ? `${locationParts[0]}, ${locationParts[1]}` 
+        : locationParts[0] || 'Unknown Location';
+      
+      // Determine compatibility from network capabilities
+      const caps = search.networkCapabilities as any;
+      const compatibilityText = caps && (caps.fourG || caps.fiveG || caps.volte) ? 'Compatible' : 'Unknown';
+      
+      return {
+        timestamp: search.timestamp?.toISOString() || new Date().toISOString(),
+        action: 'IMEI Analysis',
+        details: `${search.deviceMake || 'Unknown'} ${search.deviceModel || 'Device'} - ${compatibilityText}`,
+        location: sanitizedLocation
+      };
+    });
   }
 }
 
