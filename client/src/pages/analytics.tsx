@@ -95,9 +95,9 @@ export default function Analytics() {
         </nav>
 
         {/* Demo Access Request */}
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="max-w-md w-full mx-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="py-12">
+          <div className="max-w-md w-full mx-auto px-4">
+            <div className="bg-white rounded-2xl shadow-xl p-8 text-center mt-16">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <TrendingUp className="w-8 h-8 text-blue-600" />
               </div>
