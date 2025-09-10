@@ -119,7 +119,7 @@ export function LocationConsentDialog({ isOpen, onClose, onConsent }: LocationCo
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></span>
-                  <strong>Data deletion:</strong> Contact support@dotm.com to request all data deletion
+                  <strong>Data deletion:</strong> Contact rbm@dotmobile.app to request all data deletion
                 </li>
               </ul>
             </CardContent>

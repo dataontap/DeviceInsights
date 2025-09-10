@@ -299,7 +299,7 @@ export default function PolicyPDFDownload() {
                 <h3 className="text-xl font-semibold mb-4">Need Help?</h3>
                 <div className="space-y-2 text-blue-600 dark:text-blue-400 font-medium">
                   <div>📞 1-800-DOTM-HELP</div>
-                  <div>📧 support@dotm.com</div>
+                  <div>📧 rbm@dotmobile.app</div>
                   <div>💬 Live chat at dotm.com</div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">

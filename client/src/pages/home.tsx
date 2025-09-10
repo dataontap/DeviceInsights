@@ -39,7 +39,7 @@ export default function Home() {
                   <strong>Network Connectivity Pings:</strong> Every time you use our IMEI checking service, we automatically perform network connectivity pings to measure your current network performance and compatibility. This helps us provide accurate device analysis and network recommendations. No other private information is collected during these pings.
                 </p>
                 <p>
-                  <strong>Location Services (Optional):</strong> Location data is only collected with your explicit consent when you choose to enable location-based features for enhanced coverage analysis. You can request data deletion at any time by contacting support@dotm.com.
+                  <strong>Location Services (Optional):</strong> Location data is only collected with your explicit consent when you choose to enable location-based features for enhanced coverage analysis. You can request data deletion at any time by contacting rbm@dotmobile.app.
                 </p>
               </div>
             </div>
