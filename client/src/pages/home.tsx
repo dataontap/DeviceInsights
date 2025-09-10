@@ -7,7 +7,7 @@ import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
 import APIDocs from "@/components/api-docs";
 import { ProviderCoverageMaps } from "@/components/provider-coverage-maps";
-import { Loader2, Wifi } from "lucide-react";
+import { Loader2, Wifi, AlertTriangle } from "lucide-react";
 
 export default function Home() {
   const [result, setResult] = useState(null);
@@ -24,6 +24,25 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+      
+      {/* Alpha Service Notice */}
+      <section className="py-4 bg-orange-50 border-b border-orange-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-start gap-4 bg-white rounded-lg border border-orange-200 p-4">
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertTriangle className="w-4 h-4 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-orange-900 mb-2">Alpha Service</h3>
+              <div className="text-sm text-orange-800 space-y-1">
+                <p>
+                  Results are tentative and experimental. Use with caution. These are service terms: use under 100TPH. Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use case.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       
       {/* Privacy Notice */}
       <section className="py-8 bg-blue-50 border-b">
