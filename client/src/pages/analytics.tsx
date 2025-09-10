@@ -173,9 +173,6 @@ export default function Analytics() {
                 <Smartphone className="text-white w-4 h-4" />
               </div>
               <span className="text-xl font-semibold text-blue-900">Analytics Dashboard</span>
-              <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                Demo Access
-              </span>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -199,7 +196,12 @@ export default function Analytics() {
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">System Analytics</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">System Analytics</h1>
+              <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                Demo Access
+              </span>
+            </div>
             <p className="text-gray-600">Aggregate insights from all API keys with privacy-protected location data</p>
           </div>
           
