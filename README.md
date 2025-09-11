@@ -1,6 +1,8 @@
-# DOT Device and Network Services Compatibility, Insights and Coverage API
+# DOTM Device Compatibility API
 
-A comprehensive device and network services checker and network connectivity monitoring solution with AI-powered device identification, lightweight speed analytics, and automated email insights.
+A comprehensive IMEI device checker and network connectivity monitoring platform with AI-powered device identification, lightweight speed analytics, and automated email insights.
+
+**Last update: September 11, 2025**
 
 ## 🚀 Features
 
@@ -619,7 +621,7 @@ When limits are exceeded, you'll receive:
     "limit": 500,
     "windowMs": 3600000,
     "usage": 501,
-    "resetTime": "2024-01-01T15:00:00.000Z"
+    "resetTime": "2025-09-11T15:00:00.000Z"
   },
   "retryAfter": 3600
 }
@@ -697,10 +699,34 @@ Authorization: Bearer your_api_key
 
 ## 🔐 Admin Portal Access
 
-### Admin Access
+### Request Admin Access
 
-To access the admin SECTION for monitoring API usage, rate limits, and generating reports:
-Request magic link qwith the email that was used for API key and login
+To access the admin portal for monitoring API usage, rate limits, and generating reports:
+
+#### Email Request
+Send an email to: **admin-access@dotm.com**
+
+**Subject**: Admin Portal Access Request
+
+**Required Information**:
+```
+Company/Organization: [Your Organization]
+Email Address: [Your Email]
+API Key Name: [Your API Key Name]
+Use Case: [Brief description of your use case]
+Expected Monthly Volume: [Estimated requests per month]
+Technical Contact: [Primary technical contact]
+Billing Contact: [Billing/business contact]
+```
+
+#### Online Request Form
+Visit: **https://your-domain.com/admin-request**
+
+Fill out the admin access request form with:
+- Organization details
+- Technical requirements
+- Usage expectations
+- Billing information
 
 #### API Request
 ```http
@@ -728,6 +754,7 @@ Content-Type: application/json
 
 ### Admin Portal Features
 
+Once approved, you'll have access to:
 
 #### Dashboard
 - **Real-time Usage Metrics**: Current request rates, response times
@@ -803,9 +830,19 @@ async function makeAPICall(endpoint, data) {
 
 ## 📞 Support & Contact
 
+### Technical Support
+- **Email**: support@dotm.com
+- **Documentation**: https://your-domain.com/docs
+- **API Status**: https://status.dotm.com
+
+### Business Inquiries
+- **Sales**: sales@dotm.com
+- **Partnerships**: partners@dotm.com
+- **Admin Access**: admin-access@dotm.com
+
 ### Emergency Contact
 For critical issues affecting production services:
-- **Emergency Support**: rbm@dotmobile.app
+- **Emergency Support**: urgent@dotm.com
 - **Subject Line**: CRITICAL - [Brief Description]
 
 ---
@@ -820,6 +857,6 @@ This API is provided under commercial license. By using this service, you agree 
 
 ---
 
-*Last Updated: 09/09/2025*
+*Last Updated: January 2024*
 *API Version: 1.0.0*
 *Documentation Version: 1.0.0*
