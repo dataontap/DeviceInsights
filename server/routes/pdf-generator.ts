@@ -594,7 +594,7 @@ export function registerPDFRoutes(app: Express) {
         
         <div class="footer">
             <p><strong>DOTM Device Compatibility Policy</strong></p>
-            <p>Version 2.0 | Effective January 2025</p>
+            <p>Version 2.0 | Effective September 2025</p>
             <p>© 2025 DOTM Inc. All rights reserved.</p>
             <p style="margin-top: 1rem;">
                 This document is subject to change. Please visit dotm.com for the most current version.

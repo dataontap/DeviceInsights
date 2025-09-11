@@ -1683,6 +1683,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // === GITHUB UPLOAD TEST ===
+  
+  // Test GitHub integration and upload functionality
+  app.post("/api/github/test", async (req, res) => {
+    try {
+      const { testGitHubUpload } = await import('./github-upload');
+      const result = await testGitHubUpload();
+      
+      res.json({
+        success: true,
+        message: "GitHub integration test completed",
+        result
+      });
+    } catch (error) {
+      console.error("GitHub test error:", error);
+      res.status(500).json({
+        success: false,
+        error: "GitHub test failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // === ANALYTICS DEMO ENDPOINT ===
   
   // Demo analytics endpoint with aggregate insights and privacy-protected location data

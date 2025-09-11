@@ -310,7 +310,7 @@ export default function PolicyPDFDownload() {
               {/* Footer */}
               <div className="text-center pt-6 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
                 <p><strong>DOTM Device Compatibility Policy</strong></p>
-                <p>Version 2.0 | Effective January 2025</p>
+                <p>Version 2.0 | Effective September 2025</p>
                 <p>© 2025 DOTM Inc. All rights reserved.</p>
                 <p className="mt-2">
                   This document is subject to change. Please visit dotm.com for the most current version.
