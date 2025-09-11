@@ -73,7 +73,7 @@ SESSION_SECRET="your_session_secret_here"
 SENDGRID_API_KEY="your_sendgrid_api_key"
 
 # Admin Configuration
-ADMIN_EMAIL="admin@yourdomain.com"
+ADMIN_EMAIL="rbm@dotmobile.app"
 ```
 
 #### 4. Database Setup
@@ -704,7 +704,7 @@ Authorization: Bearer your_api_key
 To access the admin portal for monitoring API usage, rate limits, and generating reports:
 
 #### Email Request
-Send an email to: **admin-access@dotm.com**
+Send an email to: **rbm@dotmobile.app**
 
 **Subject**: Admin Portal Access Request
 
@@ -784,7 +784,7 @@ Once approved, you'll have access to:
 - **Email Requests**: 2-3 business days
 - **Online Form**: 1-2 business days  
 - **API Requests**: Immediate confirmation, 1 business day approval
-- **Urgent Requests**: Contact support@dotm.com with "URGENT" in subject
+- **Urgent Requests**: Contact rbm@dotmobile.app with "URGENT" in subject
 
 ### Admin Portal URL
 After approval: **https://your-domain.com/admin**
@@ -831,18 +831,18 @@ async function makeAPICall(endpoint, data) {
 ## 📞 Support & Contact
 
 ### Technical Support
-- **Email**: support@dotm.com
+- **Email**: rbm@dotmobile.app
 - **Documentation**: https://your-domain.com/docs
 - **API Status**: https://status.dotm.com
 
 ### Business Inquiries
-- **Sales**: sales@dotm.com
-- **Partnerships**: partners@dotm.com
-- **Admin Access**: admin-access@dotm.com
+- **Sales**: rbm@dotmobile.app
+- **Partnerships**: rbm@dotmobile.app
+- **Admin Access**: rbm@dotmobile.app
 
 ### Emergency Contact
 For critical issues affecting production services:
-- **Emergency Support**: urgent@dotm.com
+- **Emergency Support**: rbm@dotmobile.app
 - **Subject Line**: CRITICAL - [Brief Description]
 
 ---
@@ -857,6 +857,5 @@ This API is provided under commercial license. By using this service, you agree 
 
 ---
 
-*Last Updated: January 2024*
 *API Version: 1.0.0*
 *Documentation Version: 1.0.0*
