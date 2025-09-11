@@ -619,7 +619,7 @@ When limits are exceeded, you'll receive:
     "limit": 500,
     "windowMs": 3600000,
     "usage": 501,
-    "resetTime": "2024-01-01T15:00:00.000Z"
+    "resetTime": "2025-09-11T15:00:00.000Z"
   },
   "retryAfter": 3600
 }
