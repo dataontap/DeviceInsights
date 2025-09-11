@@ -1706,6 +1706,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Perform actual GitHub upload with README
+  app.post("/api/github/upload", async (req, res) => {
+    try {
+      const { owner, repo } = req.body;
+      
+      if (!owner || !repo) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required parameters: owner and repo"
+        });
+      }
+
+      const { GitHubUploader } = await import('./github-upload');
+      const uploader = new GitHubUploader({
+        owner,
+        repo,
+        commitMessage: `Updated README - ${new Date().toLocaleDateString()}`,
+        filesToUpload: ['README.md']
+      });
+
+      const result = await uploader.uploadFiles();
+      
+      res.json(result);
+    } catch (error) {
+      console.error("GitHub upload error:", error);
+      res.status(500).json({
+        success: false,
+        error: "GitHub upload failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // === ANALYTICS DEMO ENDPOINT ===
   
   // Demo analytics endpoint with aggregate insights and privacy-protected location data

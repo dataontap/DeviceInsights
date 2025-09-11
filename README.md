@@ -2,6 +2,8 @@
 
 A comprehensive IMEI device checker and network connectivity monitoring platform with AI-powered device identification, lightweight speed analytics, and automated email insights.
 
+**Last update: September 11, 2025**
+
 ## 🚀 Features
 
 - **AI-Powered IMEI Analysis** - Device identification using Google Gemini with intelligent fallback
