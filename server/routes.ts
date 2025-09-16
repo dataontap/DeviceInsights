@@ -1856,6 +1856,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
       
+      // Get language-appropriate voices
+      const languageVoices = await getVoicesForLanguage(lang);
+      
       // Handle different voice styles (4 and 5 voices get special prompts)
       if (voices >= 4) {
         // Multi-voice conversation for harmonizing/singing
@@ -1863,7 +1866,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "USSD Help", 
           voices, 
           location,
-          true // isUSSDHelp flag for special prompts
+          true, // isUSSDHelp flag for special prompts
+          lang, // language parameter
+          languageVoices // language-specific voices
         );
         
         // Generate audio for each message
@@ -1918,7 +1923,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
         }
         
-        const selectedVoice = voiceConfig || DEFAULT_VOICE_AGENTS[0];
+        // Get language-appropriate voices if not already fetched
+        const languageVoices = await getVoicesForLanguage(lang);
+        const selectedVoice = voiceConfig || languageVoices[0];
         const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
         
         res.json({

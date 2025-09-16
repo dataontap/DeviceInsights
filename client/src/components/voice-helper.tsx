@@ -43,16 +43,24 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
   const currentRequestVersion = useRef(0);
   
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
+  const savedPlaybackPosition = useRef<number>(0); // Store playback position for resuming
   const { toast } = useToast();
 
-  // Helper to stop current playback cleanly
+  // Helper to stop current playback cleanly while preserving position
   const stopCurrentPlayback = () => {
+    const currentAudio = audioRefs.current[currentTrackIndex];
+    if (currentAudio && !currentAudio.paused) {
+      // Save current playback position before stopping
+      savedPlaybackPosition.current = currentAudio.currentTime;
+      console.log('Saved playback position:', savedPlaybackPosition.current);
+    }
+    
     audioRefs.current.forEach(a => {
       if (a) {
         try {
           a.pause();
-          a.currentTime = 0;
           a.onended = null;
+          // Don't reset currentTime - let the new audio decide the position
         } catch {}
       }
     });
@@ -174,6 +182,11 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
           
           setTimeout(() => {
             if (newAudioRefs[0]) {
+              // Resume from saved position if available and valid
+              if (savedPlaybackPosition.current > 0 && savedPlaybackPosition.current < newAudioRefs[0].duration) {
+                console.log('Resuming from position:', savedPlaybackPosition.current);
+                newAudioRefs[0].currentTime = savedPlaybackPosition.current;
+              }
               newAudioRefs[0].play();
               setIsPlaying(true);
             }
@@ -199,6 +212,11 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
           setCurrentTrackIndex(0);
           
           setTimeout(() => {
+            // Resume from saved position if available and valid
+            if (savedPlaybackPosition.current > 0 && savedPlaybackPosition.current < audio.duration) {
+              console.log('Resuming single audio from position:', savedPlaybackPosition.current);
+              audio.currentTime = savedPlaybackPosition.current;
+            }
             audio.play();
             setIsPlaying(true);
           }, 100);

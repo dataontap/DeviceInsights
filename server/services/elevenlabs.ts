@@ -220,22 +220,26 @@ export function createMultiVoiceConversation(
   baseText: string,
   voiceCount: number,
   location?: { city?: string; country?: string; lat?: number; lng?: number },
-  isUSSDHelp: boolean = false
+  isUSSDHelp: boolean = false,
+  language: string = 'en',
+  languageVoices?: VoiceConfig[]
 ): ConversationMessage[] {
   const messages: ConversationMessage[] = [];
-  const selectedVoices = DEFAULT_VOICE_AGENTS.slice(0, voiceCount);
+  // Use language-specific voices if provided, otherwise fall back to default
+  const availableVoices = languageVoices || DEFAULT_VOICE_AGENTS;
+  const selectedVoices = availableVoices.slice(0, voiceCount);
 
   if (voiceCount === 1) {
     // Single voice - standard guidance
     messages.push({
-      text: location ? generateLocationBasedGreeting(location) : baseText,
+      text: location ? generateLocationBasedGreeting(location, language) : baseText,
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
   } else if (voiceCount === 2) {
     // Dual voice - question and answer
     messages.push({
-      text: location ? generateLocationBasedGreeting(location) : "How can I find my IMEI number?",
+      text: location ? generateLocationBasedGreeting(location, language) : "How can I find my IMEI number?",
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
@@ -247,7 +251,7 @@ export function createMultiVoiceConversation(
   } else if (voiceCount === 3) {
     // Panel discussion format
     messages.push({
-      text: location ? generateLocationBasedGreeting(location) : "Let's discuss the different ways to find your IMEI.",
+      text: location ? generateLocationBasedGreeting(location, language) : "Let's discuss the different ways to find your IMEI.",
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
