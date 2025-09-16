@@ -1716,6 +1716,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload README to GitHub
+  app.post("/api/github/upload-readme", async (req, res) => {
+    try {
+      const { owner, repo } = req.body;
+      
+      if (!owner || !repo) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required parameters: owner and repo"
+        });
+      }
+
+      console.log(`GitHub README upload request: ${owner}/${repo}`);
+
+      const { GitHubUploader } = await import('./github-upload');
+      const uploader = new GitHubUploader({
+        owner,
+        repo,
+        branch: 'main',
+        commitMessage: `📚 Update README with 30+ languages support and ElevenLabs voice synthesis integration`,
+        filesToUpload: ['README.md']
+      });
+
+      const result = await uploader.uploadFiles();
+      
+      console.log('GitHub README upload result:', result);
+      res.json(result);
+    } catch (error) {
+      console.error("GitHub README upload error:", error);
+      res.status(500).json({
+        success: false,
+        error: "GitHub README upload failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Perform actual GitHub upload with README
   app.post("/api/github/upload", async (req, res) => {
     try {
