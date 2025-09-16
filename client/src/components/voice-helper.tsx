@@ -180,6 +180,9 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
           setConversation(data.conversation);
           setCurrentTrackIndex(0);
           
+          // Force UI update to show new track count immediately
+          setTimeout(() => setCurrentTrackIndex(0), 0);
+          
           setTimeout(() => {
             if (newAudioRefs[0]) {
               // Resume from saved position if available and valid
@@ -210,6 +213,9 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
             message: { text: data.text, voiceConfig: data.voice }
           }]);
           setCurrentTrackIndex(0);
+          
+          // Force UI update to show new track count immediately  
+          setTimeout(() => setCurrentTrackIndex(0), 0);
           
           setTimeout(() => {
             // Resume from saved position if available and valid
@@ -451,7 +457,8 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
           {conversation.length > 0 && (
             <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
               <div className="text-sm font-medium">
-                Now Playing ({currentTrackIndex + 1}/{conversation.length}):
+                Now Playing ({currentTrackIndex + 1}/{conversation.length})
+                {ussdHelpMutation.isPending && <span className="text-blue-600 ml-2">🔄 Loading new audio...</span>}:
               </div>
               
               {currentMessage && (
