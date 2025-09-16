@@ -1,7 +1,8 @@
-import { ElevenLabsApi } from "@elevenlabs/elevenlabs-js";
+// Import ElevenLabs Client for API usage
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
 // Initialize ElevenLabs client
-const elevenlabs = new ElevenLabsApi({
+const elevenlabs = new ElevenLabsClient({
   apiKey: process.env.ELEVENLABS_API_KEY || ""
 });
 
@@ -116,12 +117,12 @@ export async function generateVoiceAudio(
   try {
     const audioResponse = await elevenlabs.textToSpeech.convert(voiceConfig.voiceId, {
       text,
-      model_id: "eleven_multilingual_v2", // Supports 30+ languages
-      voice_settings: {
+      modelId: "eleven_multilingual_v2", // Supports 30+ languages
+      voiceSettings: {
         stability: options.stability ?? 0.75,
-        similarity_boost: options.similarity_boost ?? 0.75,
+        similarityBoost: options.similarity_boost ?? 0.75,
         style: options.style ?? 0.5,
-        use_speaker_boost: options.use_speaker_boost ?? true
+        useSpeakerBoost: options.use_speaker_boost ?? true
       }
     });
 
@@ -337,6 +338,7 @@ export async function getVoicesForLanguage(language: string): Promise<VoiceConfi
     return filteredVoices.length > 0 ? filteredVoices : DEFAULT_VOICE_AGENTS;
   } catch (error) {
     console.error("Error fetching voices:", error);
+    // Return default agents if API fails
     return DEFAULT_VOICE_AGENTS;
   }
 }

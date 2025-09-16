@@ -13,6 +13,16 @@ import { storage } from "./storage";
 import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
+import { 
+  generateVoiceAudio, 
+  createMultiVoiceConversation, 
+  getUSSDInstructions, 
+  getVoicesForLanguage,
+  SUPPORTED_LANGUAGES,
+  DEFAULT_VOICE_AGENTS,
+  type VoiceConfig,
+  type ConversationMessage 
+} from './services/elevenlabs.js';
 import { analyzeIssueWithAI } from './services/issue-analyzer.js';
 import { standardRateLimit, mcpRateLimit, premiumRateLimit } from './middleware/enhanced-rate-limit';
 import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema } from "@shared/schema";
@@ -1834,6 +1844,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve the Coverage Maps API documentation
   app.get("/coverage-api-docs.md", (req, res) => {
     res.sendFile(path.join(__dirname, "../COVERAGE_MAPS_API_DOCUMENTATION.md"));
+  });
+
+  // === VOICE SERVICE ROUTES (ELEVENLABS INTEGRATION) ===
+  
+  // Get USSD instructions with voice (no API key required for public help)
+  app.post("/api/voice/ussd-help", async (req, res) => {
+    try {
+      const { language, voiceConfig, location } = req.body;
+      
+      const lang = language || 'en';
+      const instructions = getUSSDInstructions(lang);
+      
+      // Use location-based greeting if provided
+      let finalText = instructions;
+      if (location) {
+        const currentDate = new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        
+        const locationText = location.city ? `in ${location.city}` : '';
+        finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
+      }
+      
+      const selectedVoice = voiceConfig || DEFAULT_VOICE_AGENTS[0];
+      const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
+      
+      res.json({
+        success: true,
+        text: finalText,
+        audio: Buffer.from(audioBuffer).toString('base64'),
+        voice: selectedVoice,
+        language: lang
+      });
+      
+    } catch (error) {
+      console.error("USSD help error:", error);
+      res.status(500).json({
+        error: "USSD help failed",
+        message: "Unable to generate USSD voice instructions"
+      });
+    }
+  });
+
+  // Get available languages (no API key required)
+  app.get("/api/voice/languages", async (req, res) => {
+    try {
+      res.json({
+        success: true,
+        languages: SUPPORTED_LANGUAGES,
+        total: Object.keys(SUPPORTED_LANGUAGES).length
+      });
+    } catch (error) {
+      console.error("Languages fetch error:", error);
+      res.status(500).json({
+        error: "Languages fetch failed",
+        message: "Unable to fetch supported languages"
+      });
+    }
+  });
+
+  // Get available voice agents (no API key required)
+  app.get("/api/voice/agents", async (req, res) => {
+    try {
+      const { language } = req.query;
+      const lang = typeof language === 'string' ? language : 'en';
+      
+      const voices = await getVoicesForLanguage(lang);
+      
+      res.json({
+        success: true,
+        agents: voices,
+        default_agents: DEFAULT_VOICE_AGENTS,
+        language: lang
+      });
+    } catch (error) {
+      console.error("Voice agents fetch error:", error);
+      res.status(500).json({
+        error: "Voice agents fetch failed",
+        message: "Unable to fetch voice agents"
+      });
+    }
+  });
+
+  // Create multi-voice conversation (no API key required for demo)
+  app.post("/api/voice/multi-conversation", async (req, res) => {
+    try {
+      const { text, voiceCount, location, language } = req.body;
+      
+      if (!text || typeof text !== 'string') {
+        return res.status(400).json({
+          error: "Invalid text",
+          message: "Text is required and must be a string"
+        });
+      }
+
+      const count = Math.max(1, Math.min(5, parseInt(voiceCount) || 1));
+      
+      const conversation = createMultiVoiceConversation(text, count, location);
+      
+      // Generate audio for each message in the conversation
+      const audioPromises = conversation.map(async (message, index) => {
+        try {
+          const audioBuffer = await generateVoiceAudio(
+            message.text, 
+            message.voiceConfig,
+            {
+              stability: message.isHarmonizing ? 0.85 : 0.75,
+              similarity_boost: message.isSinging ? 0.9 : 0.75,
+              style: message.isSinging ? 0.8 : 0.5
+            }
+          );
+          
+          return {
+            index,
+            audio: Buffer.from(audioBuffer).toString('base64'),
+            message
+          };
+        } catch (error) {
+          console.error(`Error generating audio for message ${index}:`, error);
+          return null;
+        }
+      });
+      
+      const audioResults = await Promise.all(audioPromises);
+      const validResults = audioResults.filter(result => result !== null);
+      
+      res.json({
+        success: true,
+        conversation: validResults,
+        voiceCount: count,
+        isHarmonizing: count >= 4,
+        isSinging: count >= 5
+      });
+      
+    } catch (error) {
+      console.error("Multi-voice conversation error:", error);
+      res.status(500).json({
+        error: "Conversation generation failed",
+        message: "Unable to create multi-voice conversation"
+      });
+    }
   });
 
   // Register PDF generation routes

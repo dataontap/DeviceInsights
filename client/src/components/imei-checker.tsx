@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
 import BlacklistDrawer from "./blacklist-drawer";
+import VoiceHelper from "./voice-helper";
 import { API_CONFIG, getAuthHeaders } from "@/config/api";
 
 interface IMEICheckerProps {
@@ -309,7 +310,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               </div>
               <p className="text-sm text-gray-500 mt-2 flex items-center">
                 <Info className="w-4 h-4 mr-1 text-accent" />
-                To find your IMEI, dial <code className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1">*#06#</code> on your device
+                To find your IMEI, dial <code className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1">*#06#</code> on your device{" "}
+                <VoiceHelper />
               </p>
             </div>
 
