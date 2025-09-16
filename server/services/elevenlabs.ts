@@ -129,7 +129,7 @@ export async function generateVoiceAudio(
     });
 
     console.log("Audio response type:", typeof audioResponse);
-    console.log("Audio response constructor:", audioResponse.constructor.name);
+    console.log("Audio response constructor:", audioResponse.constructor?.name || 'unknown');
 
     // Check if it's a ReadableStream
     if (audioResponse instanceof ReadableStream) {
@@ -159,9 +159,9 @@ export async function generateVoiceAudio(
     }
 
     // If it's already an ArrayBuffer or different type, handle accordingly
-    if (audioResponse instanceof ArrayBuffer) {
-      console.log("Already an ArrayBuffer, size:", audioResponse.byteLength);
-      return audioResponse;
+    if (audioResponse && typeof audioResponse === 'object' && 'byteLength' in audioResponse) {
+      console.log("Already an ArrayBuffer, size:", (audioResponse as ArrayBuffer).byteLength);
+      return audioResponse as ArrayBuffer;
     }
 
     // Try to convert other types

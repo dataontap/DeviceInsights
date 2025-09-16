@@ -91,46 +91,6 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
     enabled: isOpen && !!selectedLanguage
   });
 
-  // Generate voice conversation
-  const conversationMutation = useMutation({
-    mutationFn: async ({ text, voiceCount, location, language }: {
-      text: string;
-      voiceCount: number;
-      location: any;
-      language: string;
-    }) => {
-      const response = await apiRequest('POST', '/api/voice/multi-conversation', {
-        text,
-        voiceCount,
-        location,
-        language
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success && data.conversation) {
-        setConversation(data.conversation);
-        // Prepare audio elements
-        audioRefs.current = data.conversation.map((item: ConversationItem) => {
-          const audio = new Audio(`data:audio/mpeg;base64,${item.audio}`);
-          audio.volume = volume[0];
-          return audio;
-        });
-        setCurrentTrackIndex(0);
-        toast({
-          title: "Voice Guide Ready",
-          description: `Generated ${data.voiceCount}-voice conversation for IMEI help${data.isHarmonizing ? ' with harmonizing' : ''}${data.isSinging ? ' in Canadian rock style' : ''}!`,
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Voice Generation Failed",
-        description: "Unable to generate voice assistance. Please try again.",
-        variant: "destructive"
-      });
-    }
-  });
 
   // Generate USSD help specifically
   const ussdHelpMutation = useMutation({
@@ -218,15 +178,29 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
     });
   };
 
-  const generateConversation = () => {
-    const text = "Help me find my IMEI number using USSD codes";
-    conversationMutation.mutate({
-      text,
-      voiceCount,
-      location,
-      language: selectedLanguage
-    });
-  };
+  // Real-time language switching - regenerate when language changes
+  useEffect(() => {
+    if (selectedLanguage && isOpen && conversation.length > 0) {
+      // Stop current audio and regenerate with new language
+      if (isPlaying) {
+        audioRefs.current[currentTrackIndex]?.pause();
+        setIsPlaying(false);
+      }
+      generateUSSDHelp();
+    }
+  }, [selectedLanguage]);
+
+  // Real-time voice switching - regenerate when voice count changes  
+  useEffect(() => {
+    if (voiceCount && isOpen && conversation.length > 0) {
+      // Stop current audio and regenerate with new voice setup
+      if (isPlaying) {
+        audioRefs.current[currentTrackIndex]?.pause();
+        setIsPlaying(false);
+      }
+      generateUSSDHelp();
+    }
+  }, [voiceCount]);
 
   const generateUSSDHelp = () => {
     ussdHelpMutation.mutate();
@@ -277,17 +251,15 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
               </div>
               
               <div>
-                <Label htmlFor="voices" data-testid="label-voice-count">Voices ({voiceCount})</Label>
+                <Label htmlFor="voices" data-testid="label-voice-style">Voice Style</Label>
                 <Select value={voiceCount.toString()} onValueChange={(value) => setVoiceCount(parseInt(value))}>
-                  <SelectTrigger data-testid="select-voice-count">
+                  <SelectTrigger data-testid="select-voice-style">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1" data-testid="option-voice-1">1 Voice - Standard</SelectItem>
-                    <SelectItem value="2" data-testid="option-voice-2">2 Voices - Q&A</SelectItem>
-                    <SelectItem value="3" data-testid="option-voice-3">3 Voices - Panel</SelectItem>
-                    <SelectItem value="4" data-testid="option-voice-4">4 Voices - Harmonizing <Music className="inline w-4 h-4 ml-1" /></SelectItem>
-                    <SelectItem value="5" data-testid="option-voice-5">5 Voices - Canadian Rock <Music className="inline w-4 h-4 ml-1" /></SelectItem>
+                    <SelectItem value="1" data-testid="option-voice-1">Standard Voice</SelectItem>
+                    <SelectItem value="4" data-testid="option-voice-4">Harmonizing Style <Music className="inline w-4 h-4 ml-1" /></SelectItem>
+                    <SelectItem value="5" data-testid="option-voice-5">Canadian Rock Style <Music className="inline w-4 h-4 ml-1" /></SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -301,7 +273,7 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
             )}
           </div>
 
-          {/* Quick Actions */}
+          {/* USSD Help Action */}
           <div className="space-y-2">
             <Button 
               onClick={generateUSSDHelp}
@@ -311,18 +283,6 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
             >
               {ussdHelpMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Generate USSD Help ({selectedLanguage.toUpperCase()})
-            </Button>
-            
-            <Button 
-              onClick={generateConversation}
-              disabled={conversationMutation.isPending}
-              variant="outline"
-              className="w-full"
-              data-testid="button-generate-conversation"
-            >
-              {conversationMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              <Users className="w-4 h-4 mr-2" />
-              Generate {voiceCount}-Voice Conversation
             </Button>
           </div>
 
