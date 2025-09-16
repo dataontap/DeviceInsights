@@ -514,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!apiKeyId) {
         return res.status(401).json({ error: "API key ID not found" });
       }
-      
+
       // Get stats only for this API key
       const stats = await storage.getSearchStatisticsByApiKey(apiKeyId);
       const popularDevices = await storage.getPopularDevicesByApiKey(apiKeyId, 5);
@@ -541,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const format = req.query.format as string || 'json';
       const limit = parseInt(req.query.limit as string) || 1000;
-      
+
       const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
       if (!apiKeyId) {
         return res.status(401).json({ error: "API key ID not found" });
@@ -937,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/send-temp-link", async (req, res) => {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
-      
+
       // Check if email has an API key (is registered)
       const apiKey = await storage.getApiKeyByEmail(email);
       if (!apiKey) {
@@ -946,21 +946,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "This email is not registered. Please generate an API key first." 
         });
       }
-      
+
       // Generate login token
       const token = nanoid(32);
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-      
+
       await storage.createLoginToken({
         email,
         token,
         expiresAt
       });
-      
+
       // Log the magic link for testing (in production, send via email)
       const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
       console.log(`🔐 Magic link for ${email}: ${magicLink}`);
-      
+
       res.json({ 
         success: true,
         message: "Magic link generated! Check console/logs for development link.",
@@ -979,14 +979,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/verify-temp-token", async (req, res) => {
     try {
       const { token } = req.body;
-      
+
       if (!token) {
         return res.status(400).json({ 
           error: "Token required",
           message: "Login token is required" 
         });
       }
-      
+
       // Verify login token
       const loginToken = await storage.getLoginTokenByToken(token);
       if (!loginToken || loginToken.used) {
@@ -995,10 +995,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Login token is invalid or has expired" 
         });
       }
-      
+
       // Mark token as used
       await storage.useLoginToken(token);
-      
+
       res.json({ 
         success: true,
         email: loginToken.email 
@@ -1044,21 +1044,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Firebase Messaging API Routes
-  
+
   // Send SMS notification (requires API key)
   app.post("/api/messaging/sms", validateApiKey, async (req, res) => {
     try {
       const { phoneNumber, message } = req.body;
-      
+
       if (!phoneNumber || !message) {
         return res.status(400).json({ 
           error: "Missing required fields",
           message: "Phone number and message are required" 
         });
       }
-      
+
       const success = await sendSMS(phoneNumber, message);
-      
+
       if (success) {
         res.json({ success: true, message: "SMS sent successfully" });
       } else {
@@ -1077,16 +1077,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/messaging/email", validateApiKey, async (req, res) => {
     try {
       const { email, subject, body } = req.body;
-      
+
       if (!email || !subject || !body) {
         return res.status(400).json({ 
           error: "Missing required fields",
           message: "Email, subject, and body are required" 
         });
       }
-      
+
       const success = await sendEmail(email, subject, body);
-      
+
       if (success) {
         res.json({ success: true, message: "Email sent successfully" });
       } else {
@@ -1105,16 +1105,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/messaging/push", validateApiKey, async (req, res) => {
     try {
       const { token, title, body, data } = req.body;
-      
+
       if (!token || !title || !body) {
         return res.status(400).json({ 
           error: "Missing required fields",
           message: "Token, title, and body are required" 
         });
       }
-      
+
       const success = await sendPushNotification(token, title, body, data);
-      
+
       if (success) {
         res.json({ success: true, message: "Push notification sent successfully" });
       } else {
@@ -1130,34 +1130,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Coverage Analysis API Endpoints
-  
+
   // Get comprehensive coverage analysis for a location
   app.post("/api/coverage/analyze", validateApiKey, async (req, res) => {
     try {
       const { lat, lng, address, provider } = req.body;
-      
+
       if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
         return res.status(400).json({ 
           error: "Invalid coordinates",
           message: "Valid latitude and longitude are required" 
         });
       }
-      
+
       if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
         return res.status(400).json({ 
           error: "Invalid coordinate range",
           message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
         });
       }
-      
+
       console.log(`Coverage analysis requested for: ${lat}, ${lng}`);
       const analysis = await getCoverageAnalysis(lat, lng, address, provider);
-      
+
       res.json({
         success: true,
         data: analysis
       });
-      
+
     } catch (error) {
       console.error("Coverage analysis error:", error);
       res.status(500).json({ 
@@ -1166,29 +1166,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Analyze reported issue and find similar patterns
   app.post("/api/coverage/analyze-issue", validateApiKey, async (req, res) => {
     try {
       const { lat, lng, address, issue_description, user_agent } = req.body;
-      
+
       if (!lat || !lng || !issue_description || isNaN(lat) || isNaN(lng)) {
         return res.status(400).json({ 
           error: "Missing required fields",
           message: "Latitude, longitude, and issue description are required" 
         });
       }
-      
+
       if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
         return res.status(400).json({ 
           error: "Invalid coordinate range",
           message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
         });
       }
-      
+
       console.log(`Issue analysis requested for: ${lat}, ${lng}`);
       console.log(`Issue description: ${issue_description}`);
-      
+
       // Analyze the issue using Gemini AI
       const analysis = await analyzeIssueWithAI({
         lat,
@@ -1197,12 +1197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         issue_description,
         user_agent
       });
-      
+
       res.json({
         success: true,
         data: analysis
       });
-      
+
     } catch (error) {
       console.error("Issue analysis error:", error);
       res.status(500).json({ 
@@ -1211,41 +1211,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get coverage analysis for a specific provider
   app.post("/api/coverage/provider", validateApiKey, async (req, res) => {
     try {
       const { provider, service_type, lat, lng } = req.body;
-      
+
       if (!provider || !service_type || !lat || !lng || isNaN(lat) || isNaN(lng)) {
         return res.status(400).json({ 
           error: "Missing required fields",
           message: "Provider name, service type (mobile/broadband), latitude, and longitude are required" 
         });
       }
-      
+
       if (!['mobile', 'broadband'].includes(service_type)) {
         return res.status(400).json({ 
           error: "Invalid service type",
           message: "Service type must be either 'mobile' or 'broadband'" 
         });
       }
-      
+
       if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
         return res.status(400).json({ 
           error: "Invalid coordinate range",
           message: "Latitude must be between -90 and 90, longitude between -180 and 180" 
         });
       }
-      
+
       console.log(`Provider coverage analysis for ${provider} (${service_type}) at: ${lat}, ${lng}`);
       const analysis = await getProviderCoverage(provider, service_type as 'mobile' | 'broadband', lat, lng);
-      
+
       res.json({
         success: true,
         data: analysis
       });
-      
+
     } catch (error) {
       console.error("Provider coverage analysis error:", error);
       res.status(500).json({ 
@@ -1256,12 +1256,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === USER REGISTRATION AND CONNECTIVITY MONITORING ROUTES ===
-  
+
   // User registration for monthly connectivity insights
   app.post("/api/users/register", async (req, res) => {
     try {
       const userData = userRegistrationSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getRegisteredUserByEmail(userData.email);
       if (existingUser) {
@@ -1270,7 +1270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "An account with this email address already exists"
         });
       }
-      
+
       // Create new user
       const newUser = await storage.createRegisteredUser({
         email: userData.email,
@@ -1285,7 +1285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timezone: userData.timezone || "UTC",
         location: userData.location
       });
-      
+
       res.status(201).json({
         success: true,
         message: "Registration successful! You'll start receiving monthly connectivity insights.",
@@ -1312,28 +1312,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Update user email preferences
   app.put("/api/users/:userId/preferences", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const { emailPreferences } = req.body;
-      
+
       if (!userId || isNaN(userId)) {
         return res.status(400).json({
           error: "Invalid user ID"
         });
       }
-      
+
       const user = await storage.getRegisteredUserById(userId);
       if (!user) {
         return res.status(404).json({
           error: "User not found"
         });
       }
-      
+
       await storage.updateUserEmailPreferences(userId, emailPreferences);
-      
+
       res.json({
         success: true,
         message: "Email preferences updated successfully"
@@ -1345,15 +1345,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Record connectivity metric (lightweight monitoring)
   app.post("/api/connectivity/record", async (req, res) => {
     try {
       const metricData = connectivityMetricSchema.parse(req.body);
       const userEmail = req.headers['x-user-email'] as string;
-      
+
       let userId: number | undefined;
-      
+
       // Try to find registered user by email if provided
       if (userEmail) {
         const user = await storage.getRegisteredUserByEmail(userEmail);
@@ -1363,17 +1363,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateRegisteredUser(user.id, {});
         }
       }
-      
+
       // Get IP address for logging
       const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'];
-      
+
       // Detect interruption based on metrics
       const isInterruption = metricData.isInterruption || 
         (metricData.latency && metricData.latency > 3000) || // > 3s latency
         (metricData.packetLoss && metricData.packetLoss > 5) || // > 5% packet loss
         (metricData.downloadSpeed && metricData.downloadSpeed < 1000); // < 1Mbps
-      
+
       const metric = await storage.recordConnectivityMetric({
         userId,
         sessionId: metricData.sessionId,
@@ -1392,13 +1392,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interruptionDuration: metricData.interruptionDuration,
         deviceInfo: req.body.deviceInfo
       });
-      
+
       // Create alert if significant interruption detected for registered users
       if (isInterruption && userId) {
         let alertTitle = "Connectivity Issue Detected";
         let alertMessage = "We've detected connectivity problems with your connection.";
         let severity: "low" | "medium" | "high" | "critical" = "medium";
-        
+
         if (metricData.latency && metricData.latency > 5000) {
           severity = "high";
           alertTitle = "High Latency Detected";
@@ -1412,7 +1412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           alertTitle = "Slow Connection Speed";
           alertMessage = `Very slow download speed detected (${metricData.downloadSpeed} kbps). This may impact your online activities.`;
         }
-        
+
         await storage.createConnectivityAlert({
           userId,
           alertType: "interruption",
@@ -1428,7 +1428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
-      
+
       res.json({
         success: true,
         message: "Connectivity metric recorded successfully",
@@ -1451,30 +1451,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get user connectivity stats
   app.get("/api/connectivity/:userId/stats", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const days = parseInt(req.query.days as string) || 30;
-      
+
       if (!userId || isNaN(userId)) {
         return res.status(400).json({
           error: "Invalid user ID"
         });
       }
-      
+
       const user = await storage.getRegisteredUserById(userId);
       if (!user) {
         return res.status(404).json({
           error: "User not found"
         });
       }
-      
+
       const stats = await storage.getAverageConnectivityStats(userId, days);
       const recentMetrics = await storage.getUserConnectivityMetrics(userId, 10);
       const interruptions = await storage.getConnectivityInterruptions(userId, 5);
-      
+
       res.json({
         success: true,
         user: {
@@ -1510,22 +1510,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get user alerts
   app.get("/api/users/:userId/alerts", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const unreadOnly = req.query.unread === 'true';
-      
+
       if (!userId || isNaN(userId)) {
         return res.status(400).json({
           error: "Invalid user ID"
         });
       }
-      
+
       const alerts = await storage.getUserAlerts(userId, unreadOnly);
       const unreadCount = await storage.getUnreadAlertCount(userId);
-      
+
       res.json({
         success: true,
         alerts: alerts.map(alert => ({
@@ -1549,20 +1549,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Mark alert as read
   app.put("/api/alerts/:alertId/read", async (req, res) => {
     try {
       const alertId = parseInt(req.params.alertId);
-      
+
       if (!alertId || isNaN(alertId)) {
         return res.status(400).json({
           error: "Invalid alert ID"
         });
       }
-      
+
       await storage.markAlertAsRead(alertId);
-      
+
       res.json({
         success: true,
         message: "Alert marked as read"
@@ -1574,16 +1574,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // === ADMIN ROUTES FOR RATE LIMIT MONITORING ===
-  
+
   // Get admin notifications (rate limit violations, API abuse)
   app.get("/api/admin/notifications", async (req, res) => {
     try {
       const unreadOnly = req.query.unread === 'true';
       const notifications = await storage.getAdminNotifications(unreadOnly);
       const unreadCount = await storage.getUnreadAdminNotificationCount();
-      
+
       res.json({
         success: true,
         notifications: notifications.map(notification => ({
@@ -1606,20 +1606,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Mark admin notification as read
   app.put("/api/admin/notifications/:id/read", async (req, res) => {
     try {
       const notificationId = parseInt(req.params.id);
-      
+
       if (!notificationId || isNaN(notificationId)) {
         return res.status(400).json({
           error: "Invalid notification ID"
         });
       }
-      
+
       await storage.markAdminNotificationRead(notificationId);
-      
+
       res.json({
         success: true,
         message: "Notification marked as read"
@@ -1631,23 +1631,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get API usage stats for specific API key
   app.get("/api/admin/usage/:apiKeyId", async (req, res) => {
     try {
       const apiKeyId = parseInt(req.params.apiKeyId);
       const hours = parseInt(req.query.hours as string) || 24;
-      
+
       if (!apiKeyId || isNaN(apiKeyId)) {
         return res.status(400).json({
           error: "Invalid API key ID"
         });
       }
-      
+
       const apiKey = await storage.getApiKeyByHash(""); // We'll need to get by ID
       const stats = await storage.getApiUsageStats(apiKeyId);
       const recentUsage = await storage.getApiUsageByKey(apiKeyId, hours);
-      
+
       res.json({
         success: true,
         apiKey: apiKey ? {
@@ -1674,7 +1674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Get all API keys with usage stats for admin dashboard
   app.get("/api/admin/api-keys", async (req, res) => {
     try {
@@ -1692,15 +1692,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // === GITHUB UPLOAD TEST ===
-  
+
   // Test GitHub integration and upload functionality
   app.post("/api/github/test", async (req, res) => {
     try {
       const { testGitHubUpload } = await import('./github-upload');
       const result = await testGitHubUpload();
-      
+
       res.json({
         success: true,
         message: "GitHub integration test completed",
@@ -1719,14 +1719,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload README to GitHub
   app.post("/api/github/upload-readme", async (req, res) => {
     try {
-      const { owner, repo } = req.body;
-      
-      if (!owner || !repo) {
-        return res.status(400).json({
-          success: false,
-          error: "Missing required parameters: owner and repo"
-        });
+      let { owner, repo } = req.body;
+
+      // Get authenticated user if owner not provided
+      if (!owner) {
+        const { getUncachableGitHubClient } = await import('../github-client');
+        const github = await getUncachableGitHubClient();
+        const { data: user } = await github.rest.users.getAuthenticated();
+        owner = user.login;
       }
+
+      // Use correct repo name
+      repo = repo || 'DeviceInsights';
 
       console.log(`GitHub README upload request: ${owner}/${repo}`);
 
@@ -1740,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await uploader.uploadFiles();
-      
+
       console.log('GitHub README upload result:', result);
       res.json(result);
     } catch (error) {
@@ -1757,7 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/github/upload", async (req, res) => {
     try {
       const { owner, repo, commitMessage, filesToUpload } = req.body;
-      
+
       if (!owner || !repo) {
         return res.status(400).json({
           success: false,
@@ -1784,7 +1788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await uploader.uploadFiles();
-      
+
       console.log('GitHub upload result:', result);
       res.json(result);
     } catch (error) {
@@ -1798,7 +1802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === ANALYTICS DEMO ENDPOINT ===
-  
+
   // Demo analytics endpoint with aggregate insights and privacy-protected location data
   app.get("/api/analytics/demo", async (req, res) => {
     try {
@@ -1806,25 +1810,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalSearches = await storage.getTotalSearchCount();
       const totalUsers = await storage.getTotalUserCount();
       const totalApiKeys = await storage.getTotalApiKeyCount();
-      
+
       // Get device type statistics
       const deviceTypes = await storage.getDeviceTypeStats();
-      
+
       // Get location statistics (anonymized to city/state/country level)
       const locationStats = await storage.getLocationStatsAnonymized();
-      
+
       // Get popular devices
       const popularDevices = await storage.getPopularDevices();
-      
+
       // Get compatibility statistics
       const compatibilityStats = await storage.getCompatibilityStats();
-      
+
       // Get API usage stats (without exposing sensitive data)
       const apiUsageStats = await storage.getApiUsageStatsPublic();
-      
+
       // Get recent activity (sanitized)
       const recentActivity = await storage.getRecentActivitySanitized();
-      
+
       res.json({
         success: true,
         data: {
@@ -1859,7 +1863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         technicalContact,
         billingContact
       } = req.body;
-      
+
       // Create admin notification for access request
       await storage.createAdminNotification({
         type: "admin_access_request",
@@ -1875,7 +1879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           monthlyVolume: monthlyVolume
         } as any
       });
-      
+
       res.json({
         success: true,
         message: "Admin access request submitted successfully. You will receive a response within 1-2 business days.",
@@ -1895,35 +1899,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === VOICE SERVICE ROUTES (ELEVENLABS INTEGRATION) ===
-  
+
   // Get USSD instructions with voice (no API key required for public help)
   app.post("/api/voice/ussd-help", async (req, res) => {
     try {
       const { language, voiceConfig, location, voiceCount } = req.body;
-      
+
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
-      
+
       // Generate cache key based on language, voice count, and location hash
       const locationStr = location ? `${location.city || ''}_${location.country || ''}` : 'default';
       const locationHash = Buffer.from(locationStr).toString('base64').substring(0, 10);
       const cacheKey = storage.generateVoiceCacheKey(lang, voices, locationHash);
-      
+
       // Check cache first
       console.log(`[CACHE] Checking cache for key: ${cacheKey} (lang: ${lang}, voices: ${voices}, location: ${locationStr})`);
       const cacheStartTime = Date.now();
       const cachedAudio = await storage.getCachedVoiceAudio(cacheKey);
       const cacheCheckTime = Date.now() - cacheStartTime;
-      
+
       if (cachedAudio) {
         const cacheAge = Math.floor((Date.now() - new Date(cachedAudio.cachedAt).getTime()) / 1000 / 60); // minutes
         const expiresIn = Math.floor((new Date(cachedAudio.expiresAt).getTime() - Date.now()) / 1000 / 60); // minutes
-        
+
         console.log(`[CACHE HIT] ✅ Voice cache hit! Key: ${cacheKey}`);
         console.log(`[CACHE HIT] Cache age: ${cacheAge} minutes, expires in: ${expiresIn} minutes`);
         console.log(`[CACHE HIT] Cache lookup time: ${cacheCheckTime}ms`);
         console.log(`[CACHE HIT] Content type: ${cachedAudio.conversation ? 'multi-voice conversation' : 'single voice'}`);
-        
+
         if (cachedAudio.conversation) {
           // Multi-voice cached result
           console.log(`[CACHE HIT] Returning ${cachedAudio.conversation.length} cached voice messages`);
@@ -1949,14 +1953,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       console.log(`[CACHE MISS] ❌ No cached audio found for key: ${cacheKey}`);
       console.log(`[CACHE MISS] Cache lookup time: ${cacheCheckTime}ms - proceeding with voice generation...`);
       console.log(`[CACHE MISS] Generating new audio for: lang=${lang}, voices=${voices}, location=${locationStr}`);
-      
+
       // Get language-appropriate voices
       const languageVoices = await getVoicesForLanguage(lang);
-      
+
       // Handle different voice styles (4 and 5 voices get special prompts)
       if (voices >= 4) {
         // Multi-voice conversation for harmonizing/singing
@@ -1968,7 +1972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lang, // language parameter
           languageVoices // language-specific voices
         );
-        
+
         // Generate audio for each message
         const audioPromises = conversation.map(async (message, index) => {
           try {
@@ -1981,7 +1985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 style: message.isSinging ? 0.8 : 0.5
               }
             );
-            
+
             return {
               index,
               audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
@@ -1992,15 +1996,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return null;
           }
         });
-        
+
         const audioResults = await Promise.all(audioPromises);
         const validResults = audioResults.filter(result => result !== null);
-        
+
         // Cache the multi-voice conversation result
         console.log(`[CACHE STORE] 💾 Storing multi-voice conversation in cache`);
         console.log(`[CACHE STORE] Key: ${cacheKey}, Messages: ${validResults.length}, Lang: ${lang}, Voices: ${voices}`);
         const cacheStoreStart = Date.now();
-        
+
         await storage.setCachedVoiceAudio(
           cacheKey,
           lang,
@@ -2010,10 +2014,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           undefined, // singleAudio
           2 // 2 hours expiration
         );
-        
+
         const cacheStoreTime = Date.now() - cacheStoreStart;
         console.log(`[CACHE STORE] ✅ Multi-voice conversation cached successfully in ${cacheStoreTime}ms`);
-        
+
         res.json({
           success: true,
           conversation: validResults,
@@ -2026,7 +2030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Single voice (1-3 voices) - standard USSD instructions
         const instructions = getUSSDInstructions(lang);
-        
+
         let finalText = instructions;
         if (location) {
           const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -2035,21 +2039,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             month: 'long', 
             day: 'numeric' 
           });
-          
+
           const locationText = location.city ? `in ${location.city}` : '';
           finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
         }
-        
+
         // Get language-appropriate voices if not already fetched
         const selectedVoice = voiceConfig || languageVoices[0];
         const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
         const audioBase64 = Buffer.from(new Uint8Array(audioBuffer)).toString('base64');
-        
+
         // Cache the single-voice result
         console.log(`[CACHE STORE] 💾 Storing single voice audio in cache`);
         console.log(`[CACHE STORE] Key: ${cacheKey}, Audio size: ${audioBase64.length} bytes, Lang: ${lang}`);
         const cacheStoreStart = Date.now();
-        
+
         await storage.setCachedVoiceAudio(
           cacheKey,
           lang,
@@ -2063,10 +2067,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, // singleAudio
           2 // 2 hours expiration
         );
-        
+
         const cacheStoreTime = Date.now() - cacheStoreStart;
         console.log(`[CACHE STORE] ✅ Single voice audio cached successfully in ${cacheStoreTime}ms`);
-        
+
         res.json({
           success: true,
           text: finalText,
@@ -2076,7 +2080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cached: false
         });
       }
-      
+
     } catch (error) {
       console.error("USSD help error:", error);
       res.status(500).json({
@@ -2108,9 +2112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { language } = req.query;
       const lang = typeof language === 'string' ? language : 'en';
-      
+
       const voices = await getVoicesForLanguage(lang);
-      
+
       res.json({
         success: true,
         agents: voices,
@@ -2130,7 +2134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/voice/multi-conversation", async (req, res) => {
     try {
       const { text, voiceCount, location, language } = req.body;
-      
+
       if (!text || typeof text !== 'string') {
         return res.status(400).json({
           error: "Invalid text",
@@ -2139,9 +2143,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const count = Math.max(1, Math.min(5, parseInt(voiceCount) || 1));
-      
+
       const conversation = createMultiVoiceConversation(text, count, location);
-      
+
       // Generate audio for each message in the conversation
       const audioPromises = conversation.map(async (message, index) => {
         try {
@@ -2154,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               style: message.isSinging ? 0.8 : 0.5
             }
           );
-          
+
           return {
             index,
             audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
@@ -2165,10 +2169,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         }
       });
-      
+
       const audioResults = await Promise.all(audioPromises);
       const validResults = audioResults.filter(result => result !== null);
-      
+
       res.json({
         success: true,
         conversation: validResults,
@@ -2176,7 +2180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isHarmonizing: count >= 4,
         isSinging: count >= 5
       });
-      
+
     } catch (error) {
       console.error("Multi-voice conversation error:", error);
       res.status(500).json({

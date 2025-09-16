@@ -26,7 +26,7 @@ export class GitHubUploader {
     try {
       console.log('Starting GitHub upload process...');
       const github = await getUncachableGitHubClient();
-      
+
       // Get current user info
       const { data: user } = await github.rest.users.getAuthenticated();
       console.log(`✅ Authenticated as: ${user.login}`);
@@ -94,7 +94,7 @@ export class GitHubUploader {
 
       // Create tree with files to upload
       const tree = [];
-      
+
       // Enhanced file selection
       const filesToProcess = this.options.filesToUpload!.length > 0 
         ? this.options.filesToUpload! 
@@ -113,14 +113,14 @@ export class GitHubUploader {
           const fullPath = path.resolve(filePath);
           if (fs.existsSync(fullPath)) {
             const content = fs.readFileSync(fullPath, 'utf8');
-            
+
             tree.push({
               path: filePath,
               mode: '100644' as const,
               type: 'blob' as const,
               content: content
             });
-            
+
             console.log(`✅ Added file to upload: ${filePath} (${content.length} chars)`);
           } else {
             console.warn(`⚠️ File not found: ${filePath}`);
@@ -207,7 +207,7 @@ export class GitHubUploader {
       const { data: repos } = await github.rest.repos.listForAuthenticatedUser({
         per_page: 1
       });
-      
+
       return {
         authenticated: true,
         user: {
@@ -226,28 +226,33 @@ export class GitHubUploader {
 // Test function for manual testing
 export async function testGitHubUpload() {
   console.log('Testing GitHub integration...');
-  
-  const uploader = new GitHubUploader({
-    owner: 'your-github-username', // Replace with actual username
-    repo: 'dotm-device-checker',    // Replace with actual repo name
-    commitMessage: `Test automated upload - ${new Date().toLocaleDateString()}`,
-    filesToUpload: ['README.md'] // Start with just README
-  });
 
-  // First, check access
-  const access = await uploader.checkAccess();
-  console.log('GitHub Access Check:', access);
+  try {
+    // Get authenticated user first
+    const github = await getUncachableGitHubClient();
+    const { data: user } = await github.rest.users.getAuthenticated();
+    console.log(`Authenticated as: ${user.login}`);
 
-  if (!access.authenticated) {
-    console.log('GitHub authentication failed');
+    const uploader = new GitHubUploader({
+      owner: user.login, // Use actual authenticated username
+      repo: 'DeviceInsights',
+      commitMessage: `Test automated upload - ${new Date().toLocaleDateString()}`,
+      filesToUpload: ['README.md']
+    });
+
+    // Check access and list repos
+    const access = await uploader.checkAccess();
+    console.log('GitHub Access Check:', access);
+
+    const repos = await uploader.listRepositories();
+    console.log(`Found ${repos.length} repositories`);
+
+    // For safety, let's not automatically upload - just test the connection
+    console.log('GitHub integration test completed successfully');
+    return true;
+
+  } catch (error) {
+    console.error('GitHub integration test failed:', error);
     return false;
   }
-
-  // List available repositories
-  const repos = await uploader.listRepositories();
-  console.log(`Found ${repos.length} repositories`);
-
-  // For safety, let's not automatically upload - just test the connection
-  console.log('GitHub integration test completed successfully');
-  return true;
 }
