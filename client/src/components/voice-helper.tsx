@@ -392,7 +392,7 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Volume2 className="w-5 h-5" />
-            ElevenLabs Voice Assistant
+            AI Voice Assistant
           </DialogTitle>
         </DialogHeader>
         
