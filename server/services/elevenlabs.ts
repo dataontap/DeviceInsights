@@ -202,12 +202,38 @@ export function generateLocationBasedGreeting(
     locationText = `at coordinates ${location.lat.toFixed(2)}, ${location.lng.toFixed(2)}`;
   }
 
-  // Base greeting in English - can be translated for other languages
+  // Base greeting in multiple languages  
   const greetings = {
     'en': `Hello! It's ${currentTime} on ${currentDate} ${locationText}. I'm here to help you discover your IMEI number using USSD codes. Would you like me to guide you through the process?`,
     'es': `¡Hola! Son las ${currentTime} del ${currentDate} ${locationText}. Estoy aquí para ayudarte a descubrir tu número IMEI usando códigos USSD. ¿Te gustaría que te guíe en el proceso?`,
     'fr': `Bonjour! Il est ${currentTime} le ${currentDate} ${locationText}. Je suis ici pour vous aider à découvrir votre numéro IMEI en utilisant les codes USSD. Souhaitez-vous que je vous guide ?`,
-    // Add more languages as needed
+    'pt': `Olá! São ${currentTime} de ${currentDate} ${locationText}. Estou aqui para ajudá-lo a descobrir o seu número IMEI usando códigos USSD. Gostaria que eu o orientasse no processo?`,
+    'de': `Hallo! Es ist ${currentTime} am ${currentDate} ${locationText}. Ich bin hier, um Ihnen zu helfen, Ihre IMEI-Nummer mit USSD-Codes zu entdecken. Möchten Sie, dass ich Sie durch den Prozess führe?`,
+    'it': `Ciao! Sono le ${currentTime} del ${currentDate} ${locationText}. Sono qui per aiutarti a scoprire il tuo numero IMEI usando i codici USSD. Vorresti che ti guidassi nel processo?`,
+    'ru': `Привет! Сейчас ${currentTime} ${currentDate} ${locationText}. Я здесь, чтобы помочь вам найти ваш номер IMEI с помощью USSD-кодов. Хотите, чтобы я провел вас через этот процесс?`,
+    'zh': `你好！现在是${currentDate} ${currentTime} ${locationText}。我在这里帮助您使用USSD代码找到您的IMEI号码。您想让我指导您完成这个过程吗？`,
+    'ja': `こんにちは！${currentDate} ${currentTime} ${locationText}です。USSD コードを使用して IMEI 番号を見つけるお手伝いをします。プロセスをご案内いたしましょうか？`,
+    'ar': `مرحبا! إنها ${currentTime} في ${currentDate} ${locationText}. أنا هنا لمساعدتك في اكتشاف رقم IMEI الخاص بك باستخدام رموز USSD. هل تريد مني أن أرشدك خلال العملية؟`,
+    'nl': `Hallo! Het is ${currentTime} op ${currentDate} ${locationText}. Ik ben hier om je te helpen je IMEI-nummer te ontdekken met behulp van USSD-codes. Wil je dat ik je door het proces leid?`,
+    'pl': `Cześć! Jest ${currentTime} w dniu ${currentDate} ${locationText}. Jestem tutaj, aby pomóc Ci odkryć Twój numer IMEI za pomocą kodów USSD. Czy chciałbyś, żebym przeprowadził Cię przez ten proces?`,
+    'tr': `Merhaba! Şu anda ${currentTime}, ${currentDate} ${locationText}. USSD kodları kullanarak IMEI numaranızı keşfetmenize yardımcı olmak için buradayım. Süreç boyunca size rehberlik etmemi ister misiniz?`,
+    'ko': `안녕하세요! 지금은 ${currentDate} ${currentTime} ${locationText}입니다. USSD 코드를 사용하여 IMEI 번호를 찾을 수 있도록 도와드리겠습니다. 과정을 안내해 드릴까요?`,
+    'hi': `नमस्ते! अभी ${currentDate} को ${currentTime} बजे हैं ${locationText}। मैं यहाँ USSD कोड का उपयोग करके आपका IMEI नंबर खोजने में आपकी मदद करने के लिए हूँ। क्या आप चाहेंगे कि मैं आपको इस प्रक्रिया के माध्यम से मार्गदर्शन करूँ?`,
+    'th': `สวัสดี! ตอนนี้เป็นเวลา ${currentTime} ของวันที่ ${currentDate} ${locationText} ฉันอยู่ที่นี่เพื่อช่วยคุณค้นหาหมายเลข IMEI โดยใช้รหัส USSD คุณต้องการให้ฉันแนะนำคุณผ่านกระบวนการนี้หรือไม่?`,
+    'vi': `Xin chào! Bây giờ là ${currentTime} ngày ${currentDate} ${locationText}. Tôi ở đây để giúp bạn khám phá số IMEI của mình bằng cách sử dụng mã USSD. Bạn có muốn tôi hướng dẫn bạn qua quy trình này không?`,
+    'id': `Halo! Sekarang pukul ${currentTime} pada ${currentDate} ${locationText}. Saya di sini untuk membantu Anda menemukan nomor IMEI menggunakan kode USSD. Apakah Anda ingin saya memandu Anda melalui prosesnya?`,
+    'sv': `Hej! Det är ${currentTime} den ${currentDate} ${locationText}. Jag är här för att hjälpa dig upptäcka ditt IMEI-nummer med hjälp av USSD-koder. Vill du att jag ska guida dig genom processen?`,
+    'no': `Hei! Det er ${currentTime} den ${currentDate} ${locationText}. Jeg er her for å hjelpe deg med å oppdage IMEI-nummeret ditt ved hjelp av USSD-koder. Vil du at jeg skal veilede deg gjennom prosessen?`,
+    'da': `Hej! Det er ${currentTime} den ${currentDate} ${locationText}. Jeg er her for at hjælpe dig med at opdage dit IMEI-nummer ved hjælp af USSD-koder. Vil du have, at jeg guider dig gennem processen?`,
+    'fi': `Hei! Kello on ${currentTime} ${currentDate} ${locationText}. Olen täällä auttamassa sinua löytämään IMEI-numerosi USSD-koodien avulla. Haluaisitko, että opastaisin sinut prosessin läpi?`,
+    'he': `שלום! השעה היא ${currentTime} ב-${currentDate} ${locationText}. אני כאן כדי לעזור לך לגלות את מספר ה-IMEI שלך באמצעות קודי USSD. האם תרצה שאדריך אותך בתהליך?`,
+    'el': `Γεια σας! Είναι ${currentTime} στις ${currentDate} ${locationText}. Είμαι εδώ για να σας βοηθήσω να ανακαλύψετε τον αριθμό IMEI σας χρησιμοποιώντας κωδικούς USSD. Θα θέλατε να σας καθοδηγήσω στη διαδικασία;`,
+    'cs': `Ahoj! Je ${currentTime} dne ${currentDate} ${locationText}. Jsem tady, abych vám pomohl objevit vaše IMEI číslo pomocí USSD kódů. Chtěli byste, abych vás provedl procesem?`,
+    'hu': `Szia! Most ${currentTime} van ${currentDate}-án ${locationText}. Itt vagyok, hogy segítsek felfedezni az IMEI számodat USSD kódok használatával. Szeretnéd, hogy végigvezesselek a folyamaton?`,
+    'ro': `Salut! Sunt ${currentTime} pe ${currentDate} ${locationText}. Sunt aici să te ajut să îți descoperi numărul IMEI folosind coduri USSD. Ai dori să te ghidez prin proces?`,
+    'bg': `Здравей! Сега е ${currentTime} на ${currentDate} ${locationText}. Тук съм, за да ви помогна да откриете вашия IMEI номер, използвайки USSD кодове. Бихте ли искали да ви направя през процеса?`,
+    'hr': `Bok! Sada je ${currentTime} na ${currentDate} ${locationText}. Tu sam da vam pomognem otkriti vaš IMEI broj koristeći USSD kodove. Želite li da vas vodim kroz proces?`,
+    'sk': `Ahoj! Je ${currentTime} dňa ${currentDate} ${locationText}. Som tu, aby som vám pomohol objaviť vaše IMEI číslo pomocou USSD kódov. Chceli by ste, aby som vás previedol procesom?`
   };
 
   return greetings[language as keyof typeof greetings] || greetings['en'];
@@ -414,7 +440,33 @@ export function getUSSDInstructions(language: string = 'en'): string {
     'en': "To find your IMEI number, simply dial *#06# on your phone's keypad. This universal code works on all mobile devices - smartphones, basic phones, and tablets with cellular capability. Your 15-digit IMEI number will appear on screen immediately. Write it down or take a screenshot for your records.",
     'es': "Para encontrar tu número IMEI, simplemente marca *#06# en el teclado de tu teléfono. Este código universal funciona en todos los dispositivos móviles. Tu número IMEI de 15 dígitos aparecerá en pantalla inmediatamente.",
     'fr': "Pour trouver votre numéro IMEI, composez simplement *#06# sur le clavier de votre téléphone. Ce code universel fonctionne sur tous les appareils mobiles. Votre numéro IMEI à 15 chiffres apparaîtra immédiatement à l'écran.",
-    // Add more languages as needed
+    'pt': "Para encontrar o seu número IMEI, basta discar *#06# no teclado do seu telefone. Este código universal funciona em todos os dispositivos móveis. O seu número IMEI de 15 dígitos aparecerá imediatamente no ecrã. Escreva-o ou tire uma captura de tela para os seus registros.",
+    'de': "Um Ihre IMEI-Nummer zu finden, wählen Sie einfach *#06# auf der Tastatur Ihres Telefons. Dieser universelle Code funktioniert auf allen Mobilgeräten. Ihre 15-stellige IMEI-Nummer wird sofort auf dem Bildschirm angezeigt.",
+    'it': "Per trovare il tuo numero IMEI, componi semplicemente *#06# sulla tastiera del tuo telefono. Questo codice universale funziona su tutti i dispositivi mobili. Il tuo numero IMEI di 15 cifre apparirà immediatamente sullo schermo.",
+    'ru': "Чтобы найти ваш номер IMEI, просто наберите *#06# на клавиатуре телефона. Этот универсальный код работает на всех мобильных устройствах. Ваш 15-значный номер IMEI появится на экране немедленно.",
+    'zh': "要查找您的IMEI号码，只需在手机键盘上拨打*#06#。这个通用代码适用于所有移动设备。您的15位IMEI号码将立即出现在屏幕上。",
+    'ja': "IMEI番号を見つけるには、携帯電話のキーパッドで*#06#をダイヤルするだけです。この汎用コードはすべてのモバイルデバイスで機能します。15桁のIMEI番号がすぐに画面に表示されます。",
+    'ar': "للعثور على رقم IMEI الخاص بك، ما عليك سوى الاتصال بـ *#06# على لوحة مفاتيح هاتفك. هذا الرمز العالمي يعمل على جميع الأجهزة المحمولة. سيظهر رقم IMEI المكون من 15 رقماً على الشاشة فوراً.",
+    'nl': "Om uw IMEI-nummer te vinden, toetst u eenvoudig *#06# in op het toetsenbord van uw telefoon. Deze universele code werkt op alle mobiele apparaten - smartphones, gewone telefoons en tablets met mobiele functionaliteit. Uw 15-cijferige IMEI-nummer verschijnt onmiddellijk op het scherm.",
+    'pl': "Aby znaleźć swój numer IMEI, po prostu wybierz *#06# na klawiaturze telefonu. Ten uniwersalny kod działa na wszystkich urządzeniach mobilnych - smartfonach, zwykłych telefonach i tabletach z funkcją komórkową. Twój 15-cyfrowy numer IMEI pojawi się natychmiast na ekranie.",
+    'tr': "IMEI numaranızı bulmak için telefonunuzun tuş takımında *#06# tuşlayın. Bu evrensel kod tüm mobil cihazlarda çalışır - akıllı telefonlar, temel telefonlar ve hücresel özellikli tabletler. 15 haneli IMEI numaranız ekranda hemen görünecektir.",
+    'ko': "IMEI 번호를 찾으려면 휴대폰 키패드에서 *#06#을 다이얼하기만 하면 됩니다. 이 범용 코드는 모든 모바일 기기에서 작동합니다 - 스마트폰, 기본 전화기, 셀룰러 기능이 있는 태블릿. 15자리 IMEI 번호가 화면에 즉시 나타납니다.",
+    'hi': "अपना IMEI नंबर खोजने के लिए, बस अपने फोन के कीपैड पर *#06# डायल करें। यह सार्वभौमिक कोड सभी मोबाइल उपकरणों पर काम करता है - स्मार्टफोन, बेसिक फोन, और सेल्यूलर क्षमता वाले टैबलेट। आपका 15-अंकीय IMEI नंबर तुरंत स्क्रीन पर दिखाई देगा।",
+    'th': "หากต้องการค้นหาหมายเลข IMEI ของคุณ เพียงกด *#06# บนแป้นพิมพ์ของโทรศัพท์ รหัสสากลนี้ใช้ได้กับอุปกรณ์มือถือทุกประเภท - สมาร์ทโฟน โทรศัพท์พื้นฐาน และแท็บเล็ตที่มีความสามารถทางเซลลูลาร์ หมายเลข IMEI 15 หลักของคุณจะปรากฏบนหน้าจอทันที",
+    'vi': "Để tìm số IMEI của bạn, chỉ cần quay số *#06# trên bàn phím điện thoại. Mã phổ quát này hoạt động trên tất cả các thiết bị di động - điện thoại thông minh, điện thoại cơ bản và máy tính bảng có khả năng di động. Số IMEI 15 chữ số của bạn sẽ xuất hiện ngay lập tức trên màn hình.",
+    'id': "Untuk menemukan nomor IMEI Anda, cukup tekan *#06# pada keypad ponsel Anda. Kode universal ini bekerja pada semua perangkat mobile - smartphone, ponsel dasar, dan tablet dengan kemampuan seluler. Nomor IMEI 15 digit Anda akan muncul di layar segera.",
+    'sv': "För att hitta ditt IMEI-nummer, ring helt enkelt *#06# på telefonens knappsats. Denna universella kod fungerar på alla mobila enheter - smartphones, grundtelefoner och surfplattor med cellulär kapacitet. Ditt 15-siffriga IMEI-nummer kommer att visas på skärmen omedelbart.",
+    'no': "For å finne ditt IMEI-nummer, ring ganske enkelt *#06# på telefonens tastatur. Denne universelle koden fungerer på alle mobile enheter - smarttelefoner, grunntelefoner og nettbrett med cellulær kapasitet. Ditt 15-sifrede IMEI-nummer vil vises på skjermen umiddelbart.",
+    'da': "For at finde dit IMEI-nummer skal du blot ringe *#06# på din telefons tastatur. Denne universelle kode virker på alle mobile enheder - smartphones, grundlæggende telefoner og tablets med cellulær kapacitet. Dit 15-cifrede IMEI-nummer vil vises på skærmen øjeblikkeligt.",
+    'fi': "Löytääksesi IMEI-numerosi, soita yksinkertaisesti *#06# puhelimesi näppäimistöllä. Tämä yleinen koodi toimii kaikissa mobiililaitteissa - älypuhelimissa, perusmatkapuhelimissa ja tableteissa, joissa on matkapuhelinominaisuus. 15-numeroinen IMEI-numerosi ilmestyy ruudulle välittömästi.",
+    'he': "כדי למצוא את מספר ה-IMEI שלך, פשוט חייג *#06# על המקלדת של הטלפון שלך. הקוד האוניברסלי הזה עובד על כל המכשירים הניידים - סמארטפונים, טלפונים בסיסיים וטאבלטים עם יכולת סלולרית. מספר ה-IMEI בן 15 הספרות שלך יופיע על המסך מיד.",
+    'el': "Για να βρείτε τον αριθμό IMEI σας, απλώς καλέστε *#06# στο πληκτρολόγιο του τηλεφώνου σας. Αυτός ο παγκόσμιος κωδικός λειτουργεί σε όλες τις κινητές συσκευές - smartphones, βασικά τηλέφωνα και tablets με κυψελοειδή δυνατότητα. Ο 15ψήφιος αριθμός IMEI σας θα εμφανιστεί στην οθόνη αμέσως.",
+    'cs': "Chcete-li najít své číslo IMEI, jednoduše vytočte *#06# na klávesnici telefonu. Tento univerzální kód funguje na všech mobilních zařízeních - chytrých telefonech, základních telefonech a tabletech s mobilní konektivitou. Vaše 15místné číslo IMEI se okamžitě zobrazí na obrazovce.",
+    'hu': "Az IMEI szám megtalálásához egyszerűen tárcsázza a *#06#-ot a telefon billentyűzetén. Ez az univerzális kód minden mobil eszközön működik - okostelefonokon, alapvető telefonokon és cellás képességű táblagépeken. A 15 jegyű IMEI száma azonnal megjelenik a képernyőn.",
+    'ro': "Pentru a găsi numărul dvs. IMEI, pur și simplu formați *#06# pe tastatura telefonului. Acest cod universal funcționează pe toate dispozitivele mobile - smartphone-uri, telefoane de bază și tablete cu capacitate celulară. Numărul dvs. IMEI de 15 cifre va apărea pe ecran imediat.",
+    'bg': "За да намерите вашия IMEI номер, просто наберете *#06# на клавиатурата на телефона. Този универсален код работи на всички мобилни устройства - смартфони, основни телефони и таблети с клетъчна възможност. Вашият 15-цифрен IMEI номер ще се появи на екрана веднага.",
+    'hr': "Da biste pronašli svoj IMEI broj, jednostavno naberite *#06# na tipkovnici telefona. Ovaj univerzalni kod radi na svim mobilnim uređajima - pametnim telefonima, osnovnim telefonima i tabletima s mobilnim mogućnostima. Vaš 15-znamenkasti IMEI broj pojavit će se na zaslonu odmah.",
+    'sk': "Ak chcete nájsť svoje IMEI číslo, jednoducho vytočte *#06# na klávesnici telefónu. Tento univerzálny kód funguje na všetkých mobilných zariadeniach - smartfónoch, základných telefónoch a tabletoch s mobilnou konektivitou. Vaše 15-miestne IMEI číslo sa okamžite zobrazí na obrazovke."
   };
 
   return instructions[language as keyof typeof instructions] || instructions['en'];

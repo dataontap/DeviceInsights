@@ -153,7 +153,7 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
           });
           
           // Set up auto-advance handlers for all tracks
-          newAudioRefs.forEach((audio, index) => {
+          newAudioRefs.forEach((audio: HTMLAudioElement | null, index: number) => {
             if (audio) {
               audio.onended = () => {
                 if (index < newAudioRefs.length - 1) {
