@@ -6,6 +6,8 @@ A comprehensive IMEI device checker and network connectivity monitoring platform
 
 ## 🚀 Features
 
+- **🌍 30+ Languages Support** - Complete multilingual experience with voice synthesis in 30+ languages including English, Spanish, French, German, Japanese, Chinese, Arabic, and more
+- **🎙️ ElevenLabs Voice Synthesis** - Advanced AI voice generation with harmonizing modes, singing styles, and Canadian rock ballads for USSD instructions
 - **AI-Powered IMEI Analysis** - Device identification using Google Gemini with intelligent fallback
 - **Network Connectivity Monitoring** - Lightweight speed analytics and interruption detection
 - **Monthly Email Insights** - Automated connectivity reports for registered users
@@ -644,6 +646,53 @@ Rate limit violations automatically generate admin notifications:
     "userAgent": "MCP-DOTM-Connector/1.0"
   }
 }
+```
+
+## 🎙️ Voice Synthesis & Multilingual Support
+
+### Supported Languages (30+)
+The platform supports voice synthesis and localized content in over 30 languages:
+
+**European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Swedish, Norwegian, Danish, Finnish, Polish, Czech, Hungarian, Romanian, Bulgarian, Croatian, Slovak
+
+**Asian**: Japanese, Korean, Chinese (Mandarin), Chinese (Cantonese), Hindi, Thai, Vietnamese, Indonesian, Malay
+
+**Middle Eastern & African**: Arabic, Hebrew, Turkish
+
+**Americas**: Portuguese (Brazilian), Spanish (Latin American)
+
+### Voice Synthesis Features
+- **Multiple Voice Styles**: Standard voice, harmonizing style, Canadian rock style
+- **ElevenLabs Integration**: High-quality AI voice generation with emotional expression
+- **Singing Modes**: Christmas song style, harmonizing vocals, rock ballads
+- **Real-time Generation**: Dynamic voice content based on user location and preferences
+- **USSD Instructions**: Voice-guided help for finding IMEI numbers in any supported language
+
+### Voice API Endpoints
+
+#### Get USSD Voice Instructions
+```http
+POST /api/voice/ussd-help
+Content-Type: application/json
+
+{
+  "language": "es",
+  "voiceCount": 4,
+  "location": {
+    "city": "Madrid",
+    "country": "Spain"
+  }
+}
+```
+
+#### Get Available Languages
+```http
+GET /api/voice/languages
+```
+
+#### Get Voice Agents
+```http
+GET /api/voice/agents?language=fr
 ```
 
 ## 🔧 API Endpoints
