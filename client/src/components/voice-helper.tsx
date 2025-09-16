@@ -39,9 +39,25 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
   const [voiceCount, setVoiceCount] = useState(1);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
   const [location, setLocation] = useState<{city?: string; country?: string} | null>(null);
+  const [requestVersion, setRequestVersion] = useState(0);
+  const currentRequestVersion = useRef(0);
   
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const { toast } = useToast();
+
+  // Helper to stop current playback cleanly
+  const stopCurrentPlayback = () => {
+    audioRefs.current.forEach(a => {
+      if (a) {
+        try {
+          a.pause();
+          a.currentTime = 0;
+          a.onended = null;
+        } catch {}
+      }
+    });
+    setIsPlaying(false);
+  };
 
   // Get user location on component mount
   useEffect(() => {
@@ -95,32 +111,104 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
   // Generate USSD help specifically
   const ussdHelpMutation = useMutation({
     mutationFn: async () => {
+      // Increment request version to prevent race conditions
+      currentRequestVersion.current += 1;
+      const thisRequestVersion = currentRequestVersion.current;
+      
       const response = await apiRequest('POST', '/api/voice/ussd-help', {
         language: selectedLanguage,
-        location
+        location,
+        voiceCount, // Include voice count for special prompts
+        requestVersion: thisRequestVersion
       });
-      return response.json();
+      const data = await response.json();
+      return { ...data, requestVersion: thisRequestVersion };
     },
     onSuccess: (data) => {
+      // Check if this response is still current (prevent race conditions)
+      if (data.requestVersion && data.requestVersion < currentRequestVersion.current) {
+        console.log('Ignoring stale response:', data.requestVersion, 'current:', currentRequestVersion.current);
+        return;
+      }
+      
       if (data.success) {
-        // Create single audio item for USSD help
-        const audio = new Audio(`data:audio/mpeg;base64,${data.audio}`);
-        audio.volume = volume[0];
-        audioRefs.current = [audio];
+        // Always stop current audio first to prevent overlaps
+        stopCurrentPlayback();
         
-        setConversation([{
-          index: 0,
-          audio: data.audio,
-          message: {
-            text: data.text,
-            voiceConfig: data.voice
-          }
-        }]);
+        // Handle different responses for single vs multi-voice
+        if (data.conversation) {
+          // Multi-voice response (harmonizing/singing)
+          const newAudioRefs = data.conversation.map((item: ConversationItem) => {
+            const audio = new Audio(`data:audio/mpeg;base64,${item.audio}`);
+            audio.volume = volume[0];
+            return audio;
+          });
+          
+          // Set up auto-advance handlers for all tracks
+          newAudioRefs.forEach((audio, index) => {
+            if (audio) {
+              audio.onended = () => {
+                if (index < newAudioRefs.length - 1) {
+                  // Auto-advance to next track
+                  setCurrentTrackIndex(index + 1);
+                  setTimeout(() => {
+                    const nextAudio = newAudioRefs[index + 1];
+                    if (nextAudio) {
+                      nextAudio.volume = volume[0];
+                      nextAudio.play();
+                      setIsPlaying(true);
+                    }
+                  }, 100);
+                } else {
+                  // End of playlist
+                  setIsPlaying(false);
+                }
+              };
+            }
+          });
+          
+          // Replace audio refs and start playing
+          audioRefs.current = newAudioRefs;
+          setConversation(data.conversation);
+          setCurrentTrackIndex(0);
+          
+          setTimeout(() => {
+            if (newAudioRefs[0]) {
+              newAudioRefs[0].play();
+              setIsPlaying(true);
+            }
+          }, 100);
+          
+        } else {
+          // Single voice response
+          const audio = new Audio(`data:audio/mpeg;base64,${data.audio}`);
+          audio.volume = volume[0];
+          
+          // Single voice doesn't need auto-advance onended handler
+          audio.onended = () => {
+            setIsPlaying(false);
+          };
+          
+          // Replace audio refs and start playing
+          audioRefs.current = [audio];
+          setConversation([{
+            index: 0,
+            audio: data.audio,
+            message: { text: data.text, voiceConfig: data.voice }
+          }]);
+          setCurrentTrackIndex(0);
+          
+          setTimeout(() => {
+            audio.play();
+            setIsPlaying(true);
+          }, 100);
+        }
         
-        setCurrentTrackIndex(0);
         toast({
           title: "USSD Voice Guide Ready",
-          description: "AI assistant ready to help you find your IMEI number!",
+          description: voiceCount >= 4 ? 
+            (voiceCount === 5 ? "Christmas song about first phones!" : "Harmonizing voice assistance!") :
+            "AI assistant ready to help you find your IMEI number!",
         });
       }
     },
@@ -133,6 +221,31 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
     }
   });
 
+  // Auto-advance to next track
+  const playNextTrack = () => {
+    if (currentTrackIndex < conversation.length - 1) {
+      const nextIndex = currentTrackIndex + 1;
+      setCurrentTrackIndex(nextIndex);
+      
+      setTimeout(() => {
+        const nextAudio = audioRefs.current[nextIndex];
+        if (nextAudio) {
+          nextAudio.volume = volume[0];
+          nextAudio.play();
+          setIsPlaying(true);
+          
+          // Set onended handler for the new track
+          nextAudio.onended = () => {
+            playNextTrack();
+          };
+        }
+      }, 100);
+    } else {
+      // End of playlist
+      setIsPlaying(false);
+    }
+  };
+
   const playPause = () => {
     const currentAudio = audioRefs.current[currentTrackIndex];
     if (!currentAudio) return;
@@ -141,33 +254,64 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
       currentAudio.pause();
       setIsPlaying(false);
     } else {
+      currentAudio.volume = volume[0];
       currentAudio.play();
       setIsPlaying(true);
       
-      // Handle audio end
-      currentAudio.onended = () => {
-        if (currentTrackIndex < conversation.length - 1) {
-          setCurrentTrackIndex(currentTrackIndex + 1);
-        } else {
-          setIsPlaying(false);
-        }
-      };
+      // Set onended handler for auto-advance (only if not already set)
+      if (!currentAudio.onended) {
+        currentAudio.onended = () => {
+          playNextTrack();
+        };
+      }
     }
   };
 
   const skipForward = () => {
     if (currentTrackIndex < conversation.length - 1) {
       audioRefs.current[currentTrackIndex]?.pause();
-      setCurrentTrackIndex(currentTrackIndex + 1);
+      const nextIndex = currentTrackIndex + 1;
+      setCurrentTrackIndex(nextIndex);
       setIsPlaying(false);
+      
+      // Auto-play next track
+      setTimeout(() => {
+        const nextAudio = audioRefs.current[nextIndex];
+        if (nextAudio) {
+          nextAudio.volume = volume[0];
+          nextAudio.play();
+          setIsPlaying(true);
+          
+          // Set onended handler for auto-advance
+          nextAudio.onended = () => {
+            playNextTrack();
+          };
+        }
+      }, 100);
     }
   };
 
   const skipBack = () => {
     if (currentTrackIndex > 0) {
       audioRefs.current[currentTrackIndex]?.pause();
-      setCurrentTrackIndex(currentTrackIndex - 1);
+      const prevIndex = currentTrackIndex - 1;
+      setCurrentTrackIndex(prevIndex);
       setIsPlaying(false);
+      
+      // Auto-play previous track
+      setTimeout(() => {
+        const prevAudio = audioRefs.current[prevIndex];
+        if (prevAudio) {
+          prevAudio.volume = volume[0];
+          prevAudio.play();
+          setIsPlaying(true);
+          
+          // Set onended handler for auto-advance
+          prevAudio.onended = () => {
+            playNextTrack();
+          };
+        }
+      }, 100);
     }
   };
 
@@ -178,27 +322,25 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
     });
   };
 
-  // Real-time language switching - regenerate when language changes
+  // Auto-generate and play when dialog opens
+  useEffect(() => {
+    if (isOpen && conversation.length === 0) {
+      // Initial load - auto-generate EN Standard voice
+      generateUSSDHelp();
+    }
+  }, [isOpen]);
+
+  // Real-time language switching
   useEffect(() => {
     if (selectedLanguage && isOpen && conversation.length > 0) {
-      // Stop current audio and regenerate with new language
-      if (isPlaying) {
-        audioRefs.current[currentTrackIndex]?.pause();
-        setIsPlaying(false);
-      }
-      generateUSSDHelp();
+      ussdHelpMutation.mutate();
     }
   }, [selectedLanguage]);
 
-  // Real-time voice switching - regenerate when voice count changes  
+  // Real-time voice style switching
   useEffect(() => {
     if (voiceCount && isOpen && conversation.length > 0) {
-      // Stop current audio and regenerate with new voice setup
-      if (isPlaying) {
-        audioRefs.current[currentTrackIndex]?.pause();
-        setIsPlaying(false);
-      }
-      generateUSSDHelp();
+      ussdHelpMutation.mutate();
     }
   }, [voiceCount]);
 
@@ -282,8 +424,9 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
               data-testid="button-generate-ussd-help"
             >
               {ussdHelpMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Generate USSD Help ({selectedLanguage.toUpperCase()})
+              {ussdHelpMutation.isPending ? `Loading ${selectedLanguage.toUpperCase()}...` : `Generate USSD Help (${selectedLanguage.toUpperCase()})`}
             </Button>
+            
           </div>
 
           {/* Playback Controls */}

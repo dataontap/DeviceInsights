@@ -219,7 +219,8 @@ export function generateLocationBasedGreeting(
 export function createMultiVoiceConversation(
   baseText: string,
   voiceCount: number,
-  location?: { city?: string; country?: string; lat?: number; lng?: number }
+  location?: { city?: string; country?: string; lat?: number; lng?: number },
+  isUSSDHelp: boolean = false
 ): ConversationMessage[] {
   const messages: ConversationMessage[] = [];
   const selectedVoices = DEFAULT_VOICE_AGENTS.slice(0, voiceCount);
@@ -261,78 +262,141 @@ export function createMultiVoiceConversation(
       timestamp: Date.now() + 2000
     });
   } else if (voiceCount === 4) {
-    // Harmonizing mode
-    messages.push({
-      text: location ? generateLocationBasedGreeting(location) : "Welcome to our harmonized IMEI discovery experience!",
-      voiceConfig: selectedVoices[0],
-      timestamp: Date.now(),
-      isHarmonizing: true
-    });
-    // Add harmonic variations
-    messages.push({
-      text: "Dial *#06# on your device", // Main melody
-      voiceConfig: selectedVoices[0],
-      timestamp: Date.now() + 2000,
-      isHarmonizing: true
-    });
-    messages.push({
-      text: "This magical code reveals", // Perfect fifth harmony
-      voiceConfig: selectedVoices[1],
-      timestamp: Date.now() + 2000,
-      isHarmonizing: true
-    });
-    messages.push({
-      text: "Your unique identifier", // Major third harmony
-      voiceConfig: selectedVoices[2],
-      timestamp: Date.now() + 2000,
-      isHarmonizing: true
-    });
-    messages.push({
-      text: "The IMEI number", // Octave doubling
-      voiceConfig: selectedVoices[3],
-      timestamp: Date.now() + 2000,
-      isHarmonizing: true
-    });
+    // Harmonizing mode - actual 4-voice harmonized IMEI discovery
+    if (isUSSDHelp) {
+      const locationGreeting = location ? `Hello from ${location.city || 'your location'}! ` : "Hello! ";
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+      });
+      
+      // Voice 1 - Lead harmony with intro
+      messages.push({
+        text: `${locationGreeting}Today is ${currentDate}. Let us harmonize to help you discover your IMEI! 🎵 Welcome to our four-voice harmony experience! 🎵`,
+        voiceConfig: selectedVoices[0], // Lead harmony
+        timestamp: Date.now(),
+        isHarmonizing: true
+      });
+      
+      // Voice 2 - Alto harmony with USSD explanation
+      messages.push({
+        text: `🎵 Star-hash-zero-six-hash, the magical IMEI code! This universal sequence works on every phone, from basic to smart, you're never alone! 🎵`,
+        voiceConfig: selectedVoices[1], // Alto harmony
+        timestamp: Date.now() + 1000,
+        isHarmonizing: true
+      });
+      
+      // Voice 3 - Tenor harmony with device compatibility
+      messages.push({
+        text: `🎵 Together we sing, your device's unique song, fifteen digits strong, helping you along! Android or iPhone, it doesn't matter at all! 🎵`,
+        voiceConfig: selectedVoices[2], // Tenor harmony
+        timestamp: Date.now() + 2000,
+        isHarmonizing: true
+      });
+      
+      // Voice 4 - Bass harmony with final instructions
+      messages.push({
+        text: `🎵 This universal key works on every phone! Write it down safe, screenshot it too, your IMEI number will always help you! Let's harmonize together! 🎵`,
+        voiceConfig: selectedVoices[3], // Bass harmony
+        timestamp: Date.now() + 3000,
+        isHarmonizing: true
+      });
+      
+    } else {
+      // Original harmonizing for non-USSD help
+      messages.push({
+        text: location ? generateLocationBasedGreeting(location) : "Welcome to our harmonized IMEI discovery experience!",
+        voiceConfig: selectedVoices[0],
+        timestamp: Date.now(),
+        isHarmonizing: true
+      });
+      
+      // Add harmonizing voices for non-USSD help
+      messages.push({
+        text: "🎵 Together we'll guide you through the process of finding your device's unique identifier! 🎵",
+        voiceConfig: selectedVoices[1],
+        timestamp: Date.now() + 1000,
+        isHarmonizing: true
+      });
+      
+      messages.push({
+        text: "🎵 Multiple methods await you - USSD codes and settings menus, all harmonizing to help! 🎵",
+        voiceConfig: selectedVoices[2],
+        timestamp: Date.now() + 2000,
+        isHarmonizing: true
+      });
+      
+      messages.push({
+        text: "🎵 Your IMEI journey begins now, with our voices guiding you every step of the way! 🎵",
+        voiceConfig: selectedVoices[3],
+        timestamp: Date.now() + 3000,
+        isHarmonizing: true
+      });
+    }
   } else if (voiceCount === 5) {
-    // Canadian rock singing mode
-    messages.push({
-      text: location ? generateLocationBasedGreeting(location) : "🎸 Welcome to the IMEI Rock Experience! 🎸",
-      voiceConfig: selectedVoices[4], // Josh - Canadian accent lead
-      timestamp: Date.now(),
-      isSinging: true
-    });
-    
-    // Rock choir arrangement for IMEI discovery
-    messages.push({
-      text: "🎵 Dial star-hash-zero-six-hash, that's the way to find your code! 🎵", // Raspy lead vocal
-      voiceConfig: selectedVoices[4],
-      timestamp: Date.now() + 3000,
-      isSinging: true
-    });
-    messages.push({
-      text: "🎵 Find that number, find it now! 🎵", // Melodic Christmas ballad harmony
-      voiceConfig: selectedVoices[0],
-      timestamp: Date.now() + 3000,
-      isSinging: true
-    });
-    messages.push({
-      text: "🎵 Your device's identity! 🎵", // Second harmony
-      voiceConfig: selectedVoices[1], 
-      timestamp: Date.now() + 3000,
-      isSinging: true
-    });
-    messages.push({
-      text: "🎵 IMEI revelation! 🎵", // Bass foundation
-      voiceConfig: selectedVoices[2],
-      timestamp: Date.now() + 3000,
-      isSinging: true
-    });
-    messages.push({
-      text: "🎵 Technology's Christmas miracle! 🎵", // High soaring harmony
-      voiceConfig: selectedVoices[3],
-      timestamp: Date.now() + 3000,
-      isSinging: true
-    });
+    // Christmas song style - each voice sings about their first phone
+    if (isUSSDHelp) {
+      const locationGreeting = location ? `Greetings from ${location.city || 'your location'}! ` : "Hello friends! ";
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+      });
+      
+      // Voice 1 - Lead singer about first flip phone
+      messages.push({
+        text: `🎄 ${locationGreeting}It's ${currentDate}, and we're singing about phones! My first device was a silver flip phone, small and sleek, with buttons that clicked, the IMEI was hidden but star-hash-zero-six made it quick! 🎄`,
+        voiceConfig: selectedVoices[0],
+        timestamp: Date.now(),
+        isSinging: true
+      });
+      
+      // Voice 2 - About first smartphone  
+      messages.push({
+        text: `🎄 My first smartphone, oh what a sight! Touch screen glowing in the morning light! Android or iPhone, it didn't matter, star-hash-zero-six made the digits scatter! IMEI numbers, fifteen long, helping us sing this mobile phone song! 🎄`,
+        voiceConfig: selectedVoices[1],
+        timestamp: Date.now() + 1000,
+        isSinging: true
+      });
+      
+      // Voice 3 - About old Nokia brick phone
+      messages.push({
+        text: `🎄 Back when Nokia ruled the day, brick phones thick but built to stay! Snake game playing, battery lasting, star-hash-zero-six, no time for wasting! Those IMEI codes, so reliable and true, helping connect me and helping you! 🎄`,
+        voiceConfig: selectedVoices[2],
+        timestamp: Date.now() + 2000,
+        isSinging: true
+      });
+      
+      // Voice 4 - About first camera phone
+      messages.push({
+        text: `🎄 First camera phone, pixels so low, but memories captured, oh how we'd glow! Blurry pictures but hearts so bright, star-hash-zero-six in morning light! IMEI magic, network connection, bringing us joy and phone protection! 🎄`,
+        voiceConfig: selectedVoices[3],
+        timestamp: Date.now() + 3000,
+        isSinging: true
+      });
+      
+      // Voice 5 - Canadian rock lead with Christmas spirit
+      messages.push({
+        text: `🎸🎄 From the great white north, let me tell ya 'bout phones, eh! My first device had me singing like the holiday bells that ring! Star-hash-zero-six, that's the magic code, whether you're in Toronto or down the road! IMEI numbers, fifteen digits strong, like a Christmas carol, a beautiful song! Dial it now, don't hesitate, your phone's identity, let's celebrate! 🎄🎸`,
+        voiceConfig: selectedVoices[4], // Canadian rock singer
+        timestamp: Date.now() + 4000,
+        isSinging: true
+      });
+      
+      // Chorus - All voices together
+      messages.push({
+        text: `🎄🎵 All together now! Star-hash-zero-six-hash, the IMEI way! Every phone, every day! From flip to smart, from old to new, this magic code will see you through! Merry mobile Christmas, hip hip hooray! 🎵🎄`,
+        voiceConfig: selectedVoices[0], // Lead for chorus
+        timestamp: Date.now() + 5000,
+        isSinging: true
+      });
+    } else {
+      // Original rock arrangement for non-USSD help
+      messages.push({
+        text: location ? generateLocationBasedGreeting(location) : "🎸 Welcome to the IMEI Rock Experience! 🎸",
+        voiceConfig: selectedVoices[4],
+        timestamp: Date.now(),
+        isSinging: true
+      });
+      // Add other rock messages...
+    }
   }
 
   return messages;

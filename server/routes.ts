@@ -1851,35 +1851,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get USSD instructions with voice (no API key required for public help)
   app.post("/api/voice/ussd-help", async (req, res) => {
     try {
-      const { language, voiceConfig, location } = req.body;
+      const { language, voiceConfig, location, voiceCount } = req.body;
       
       const lang = language || 'en';
-      const instructions = getUSSDInstructions(lang);
+      const voices = parseInt(voiceCount) || 1;
       
-      // Use location-based greeting if provided
-      let finalText = instructions;
-      if (location) {
-        const currentDate = new Date().toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
+      // Handle different voice styles (4 and 5 voices get special prompts)
+      if (voices >= 4) {
+        // Multi-voice conversation for harmonizing/singing
+        const conversation = createMultiVoiceConversation(
+          "USSD Help", 
+          voices, 
+          location,
+          true // isUSSDHelp flag for special prompts
+        );
+        
+        // Generate audio for each message
+        const audioPromises = conversation.map(async (message, index) => {
+          try {
+            const audioBuffer = await generateVoiceAudio(
+              message.text, 
+              message.voiceConfig,
+              {
+                stability: message.isHarmonizing ? 0.85 : 0.75,
+                similarity_boost: message.isSinging ? 0.9 : 0.75,
+                style: message.isSinging ? 0.8 : 0.5
+              }
+            );
+            
+            return {
+              index,
+              audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
+              message
+            };
+          } catch (error) {
+            console.error(`Error generating audio for message ${index}:`, error);
+            return null;
+          }
         });
         
-        const locationText = location.city ? `in ${location.city}` : '';
-        finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
+        const audioResults = await Promise.all(audioPromises);
+        const validResults = audioResults.filter(result => result !== null);
+        
+        res.json({
+          success: true,
+          conversation: validResults,
+          voiceCount: voices,
+          isHarmonizing: voices >= 4,
+          isSinging: voices >= 5,
+          language: lang
+        });
+      } else {
+        // Single voice (1-3 voices) - standard USSD instructions
+        const instructions = getUSSDInstructions(lang);
+        
+        let finalText = instructions;
+        if (location) {
+          const currentDate = new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          
+          const locationText = location.city ? `in ${location.city}` : '';
+          finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
+        }
+        
+        const selectedVoice = voiceConfig || DEFAULT_VOICE_AGENTS[0];
+        const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
+        
+        res.json({
+          success: true,
+          text: finalText,
+          audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
+          voice: selectedVoice,
+          language: lang
+        });
       }
-      
-      const selectedVoice = voiceConfig || DEFAULT_VOICE_AGENTS[0];
-      const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
-      
-      res.json({
-        success: true,
-        text: finalText,
-        audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
-        voice: selectedVoice,
-        language: lang
-      });
       
     } catch (error) {
       console.error("USSD help error:", error);
