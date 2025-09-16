@@ -24,25 +24,14 @@ export class GitHubUploader {
 
   async uploadFiles(): Promise<{ success: boolean; message: string; url?: string }> {
     try {
+      console.log('Starting GitHub upload process...');
       const github = await getUncachableGitHubClient();
       
       // Get current user info
       const { data: user } = await github.rest.users.getAuthenticated();
-      console.log(`Authenticated as: ${user.login}`);
+      console.log(`✅ Authenticated as: ${user.login}`);
 
-      // List repositories to verify access
-      const { data: repos } = await github.rest.repos.listForAuthenticatedUser({
-        visibility: 'all',
-        sort: 'updated',
-        per_page: 10
-      });
-
-      console.log(`Available repositories (${repos.length}):`);
-      repos.forEach(repo => {
-        console.log(`- ${repo.full_name} (${repo.private ? 'private' : 'public'})`);
-      });
-
-      // Check if target repository exists
+      // Check if target repository exists or create it
       let targetRepo;
       try {
         const { data: repo } = await github.rest.repos.get({
@@ -50,59 +39,105 @@ export class GitHubUploader {
           repo: this.options.repo
         });
         targetRepo = repo;
-        console.log(`Target repository found: ${targetRepo.full_name}`);
+        console.log(`✅ Target repository found: ${targetRepo.full_name}`);
       } catch (error: any) {
         if (error.status === 404) {
-          return {
-            success: false,
-            message: `Repository ${this.options.owner}/${this.options.repo} not found or no access`
-          };
+          console.log(`Repository ${this.options.owner}/${this.options.repo} not found, creating it...`);
+          try {
+            const { data: newRepo } = await github.rest.repos.createForAuthenticatedUser({
+              name: this.options.repo,
+              description: '🌍🎙️ DOTM Device Insights Platform - AI-powered IMEI compatibility checker with 30+ languages support and ElevenLabs voice synthesis',
+              private: false,
+              auto_init: true
+            });
+            targetRepo = newRepo;
+            console.log(`✅ Repository created: ${targetRepo.full_name}`);
+          } catch (createError: any) {
+            return {
+              success: false,
+              message: `Failed to create repository: ${createError.message}`
+            };
+          }
+        } else {
+          throw error;
         }
-        throw error;
       }
 
       // Get current commit SHA for the branch
-      const { data: branch } = await github.rest.repos.getBranch({
-        owner: this.options.owner,
-        repo: this.options.repo,
-        branch: this.options.branch!
-      });
+      let currentCommitSha;
+      try {
+        const { data: branch } = await github.rest.repos.getBranch({
+          owner: this.options.owner,
+          repo: this.options.repo,
+          branch: this.options.branch!
+        });
+        currentCommitSha = branch.commit.sha;
+      } catch (error: any) {
+        if (error.status === 404) {
+          // Branch doesn't exist, get default branch
+          const { data: repo } = await github.rest.repos.get({
+            owner: this.options.owner,
+            repo: this.options.repo
+          });
+          const { data: defaultBranch } = await github.rest.repos.getBranch({
+            owner: this.options.owner,
+            repo: this.options.repo,
+            branch: repo.default_branch
+          });
+          currentCommitSha = defaultBranch.commit.sha;
+        } else {
+          throw error;
+        }
+      }
 
-      const currentCommitSha = branch.commit.sha;
       console.log(`Current commit SHA: ${currentCommitSha}`);
 
       // Create tree with files to upload
       const tree = [];
       
-      // Add specific files or use defaults
+      // Enhanced file selection
       const filesToProcess = this.options.filesToUpload!.length > 0 
         ? this.options.filesToUpload! 
-        : ['README.md', 'package.json', 'client/src/pages/home.tsx'];
+        : [
+            'README.md',
+            'package.json', 
+            'API_DOCUMENTATION.md',
+            'CONTRIBUTING.md',
+            'LICENSE',
+            '.gitignore',
+            '.env.example'
+          ];
 
       for (const filePath of filesToProcess) {
         try {
           const fullPath = path.resolve(filePath);
-          const content = fs.readFileSync(fullPath, 'utf8');
-          
-          tree.push({
-            path: filePath,
-            mode: '100644' as const,
-            type: 'blob' as const,
-            content: content
-          });
-          
-          console.log(`Added file to upload: ${filePath}`);
+          if (fs.existsSync(fullPath)) {
+            const content = fs.readFileSync(fullPath, 'utf8');
+            
+            tree.push({
+              path: filePath,
+              mode: '100644' as const,
+              type: 'blob' as const,
+              content: content
+            });
+            
+            console.log(`✅ Added file to upload: ${filePath} (${content.length} chars)`);
+          } else {
+            console.warn(`⚠️ File not found: ${filePath}`);
+          }
         } catch (error) {
-          console.warn(`Warning: Could not read file ${filePath}:`, error);
+          console.warn(`⚠️ Could not read file ${filePath}:`, error);
         }
       }
 
       if (tree.length === 0) {
         return {
           success: false,
-          message: 'No files were prepared for upload'
+          message: 'No files were prepared for upload. Check if files exist.'
         };
       }
+
+      console.log(`📦 Uploading ${tree.length} files...`);
 
       // Create new tree
       const { data: newTree } = await github.rest.git.createTree({
@@ -111,6 +146,8 @@ export class GitHubUploader {
         tree: tree,
         base_tree: currentCommitSha
       });
+
+      console.log(`✅ Tree created: ${newTree.sha}`);
 
       // Create new commit
       const { data: newCommit } = await github.rest.git.createCommit({
@@ -121,6 +158,8 @@ export class GitHubUploader {
         parents: [currentCommitSha]
       });
 
+      console.log(`✅ Commit created: ${newCommit.sha}`);
+
       // Update branch reference
       await github.rest.git.updateRef({
         owner: this.options.owner,
@@ -129,17 +168,19 @@ export class GitHubUploader {
         sha: newCommit.sha
       });
 
+      console.log(`✅ Branch updated successfully`);
+
       return {
         success: true,
-        message: `Successfully uploaded ${tree.length} files to ${this.options.owner}/${this.options.repo}`,
+        message: `🎉 Successfully uploaded ${tree.length} files to ${this.options.owner}/${this.options.repo}`,
         url: `https://github.com/${this.options.owner}/${this.options.repo}/commit/${newCommit.sha}`
       };
 
     } catch (error: any) {
-      console.error('GitHub upload error:', error);
+      console.error('❌ GitHub upload error:', error);
       return {
         success: false,
-        message: `Upload failed: ${error.message || 'Unknown error'}`
+        message: `Upload failed: ${error.message || 'Unknown error'}. Check console for details.`
       };
     }
   }

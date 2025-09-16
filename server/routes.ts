@@ -1719,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Perform actual GitHub upload with README
   app.post("/api/github/upload", async (req, res) => {
     try {
-      const { owner, repo } = req.body;
+      const { owner, repo, commitMessage, filesToUpload } = req.body;
       
       if (!owner || !repo) {
         return res.status(400).json({
@@ -1728,16 +1728,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log(`GitHub upload request: ${owner}/${repo}`);
+      console.log(`Files to upload:`, filesToUpload || 'default files');
+
       const { GitHubUploader } = await import('./github-upload');
       const uploader = new GitHubUploader({
         owner,
         repo,
-        commitMessage: `Updated README - ${new Date().toLocaleDateString()}`,
-        filesToUpload: ['README.md']
+        branch: 'main',
+        commitMessage: commitMessage || `🌍🎙️ Add 30+ Languages Support & ElevenLabs Voice Synthesis Integration - ${new Date().toLocaleDateString()}`,
+        filesToUpload: filesToUpload || [
+          'README.md',
+          'package.json',
+          'API_DOCUMENTATION.md', 
+          'CONTRIBUTING.md',
+          'LICENSE'
+        ]
       });
 
       const result = await uploader.uploadFiles();
       
+      console.log('GitHub upload result:', result);
       res.json(result);
     } catch (error) {
       console.error("GitHub upload error:", error);
