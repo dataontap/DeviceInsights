@@ -115,6 +115,8 @@ export async function generateVoiceAudio(
   } = {}
 ): Promise<ArrayBuffer> {
   try {
+    console.log("Generating voice audio for:", text.substring(0, 50) + "...");
+    
     const audioResponse = await elevenlabs.textToSpeech.convert(voiceConfig.voiceId, {
       text,
       modelId: "eleven_multilingual_v2", // Supports 30+ languages
@@ -126,6 +128,44 @@ export async function generateVoiceAudio(
       }
     });
 
+    console.log("Audio response type:", typeof audioResponse);
+    console.log("Audio response constructor:", audioResponse.constructor.name);
+
+    // Check if it's a ReadableStream
+    if (audioResponse instanceof ReadableStream) {
+      console.log("Converting ReadableStream to ArrayBuffer");
+      
+      const reader = audioResponse.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      
+      // Combine all chunks into a single Uint8Array
+      const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
+      console.log("Converted to ArrayBuffer, size:", result.buffer.byteLength);
+      return result.buffer;
+    }
+
+    // If it's already an ArrayBuffer or different type, handle accordingly
+    if (audioResponse instanceof ArrayBuffer) {
+      console.log("Already an ArrayBuffer, size:", audioResponse.byteLength);
+      return audioResponse;
+    }
+
+    // Try to convert other types
+    console.log("Attempting to convert unknown type to ArrayBuffer");
     return audioResponse as ArrayBuffer;
   } catch (error) {
     console.error("ElevenLabs API error:", error);

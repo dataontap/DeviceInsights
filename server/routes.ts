@@ -1876,7 +1876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         text: finalText,
-        audio: Buffer.from(audioBuffer).toString('base64'),
+        audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
         voice: selectedVoice,
         language: lang
       });
@@ -1961,7 +1961,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           return {
             index,
-            audio: Buffer.from(audioBuffer).toString('base64'),
+            audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
             message
           };
         } catch (error) {
