@@ -448,7 +448,7 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
               data-testid="button-generate-ussd-help"
             >
               {ussdHelpMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {ussdHelpMutation.isPending ? `Loading ${selectedLanguage.toUpperCase()}...` : `Generate USSD Help (${selectedLanguage.toUpperCase()})`}
+              {ussdHelpMutation.isPending ? `Loading ${selectedLanguage.toUpperCase()}...` : `Get Help (${selectedLanguage.toUpperCase()})`}
             </Button>
             
           </div>
