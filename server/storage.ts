@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -79,6 +79,27 @@ export interface IStorage {
       description: string;
     }>;
   }, hoursToExpire?: number): Promise<void>;
+
+  // Voice Cache
+  getCachedVoiceAudio(cacheKey: string): Promise<VoiceCache | null>;
+  setCachedVoiceAudio(
+    cacheKey: string,
+    language: string,
+    voiceCount: number,
+    locationHash: string,
+    conversation?: Array<{
+      index: number;
+      audio: string;
+      message: any;
+    }>,
+    singleAudio?: {
+      audio: string;
+      text: string;
+      voice: any;
+    },
+    hoursToExpire?: number
+  ): Promise<void>;
+  generateVoiceCacheKey(language: string, voiceCount: number, locationHash?: string): string;
   
   // Login Tokens & Admin Sessions
   createLoginToken(token: InsertLoginToken): Promise<LoginToken>;
@@ -471,6 +492,89 @@ export class DatabaseStorage implements IStorage {
       console.error(`Error caching carriers for ${country}:`, error);
       throw error;
     }
+  }
+
+  // Voice Cache implementation
+  async getCachedVoiceAudio(cacheKey: string): Promise<VoiceCache | null> {
+    const [result] = await db
+      .select()
+      .from(voiceCache)
+      .where(and(
+        eq(voiceCache.cacheKey, cacheKey),
+        sql`expires_at > NOW()`
+      ));
+    
+    return result || null;
+  }
+
+  async setCachedVoiceAudio(
+    cacheKey: string,
+    language: string,
+    voiceCount: number,
+    locationHash: string,
+    conversation?: Array<{
+      index: number;
+      audio: string;
+      message: any;
+    }>,
+    singleAudio?: {
+      audio: string;
+      text: string;
+      voice: any;
+    },
+    hoursToExpire: number = 2
+  ): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + hoursToExpire);
+
+      console.log(`Caching voice audio with key: ${cacheKey}`);
+
+      // Check if entry exists first
+      const [existing] = await db
+        .select()
+        .from(voiceCache)
+        .where(eq(voiceCache.cacheKey, cacheKey));
+
+      if (existing) {
+        // Update existing entry
+        await db
+          .update(voiceCache)
+          .set({
+            language,
+            voiceCount,
+            locationHash,
+            conversation,
+            singleAudio,
+            cachedAt: new Date(),
+            expiresAt
+          })
+          .where(eq(voiceCache.cacheKey, cacheKey));
+        console.log(`Updated voice cache for key: ${cacheKey}`);
+      } else {
+        // Insert new entry
+        await db
+          .insert(voiceCache)
+          .values({
+            cacheKey,
+            language,
+            voiceCount,
+            locationHash,
+            conversation,
+            singleAudio,
+            expiresAt
+          });
+        console.log(`Inserted new voice cache entry for key: ${cacheKey}`);
+      }
+    } catch (error) {
+      console.error(`Error caching voice audio for ${cacheKey}:`, error);
+      throw error;
+    }
+  }
+
+  generateVoiceCacheKey(language: string, voiceCount: number, locationHash?: string): string {
+    const location = locationHash || 'default';
+    return `voice_${language}_${voiceCount}_${location}`;
   }
 
   // API Key specific isolation methods

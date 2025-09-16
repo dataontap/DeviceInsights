@@ -97,6 +97,46 @@ export const carrierCache = pgTable("carrier_cache", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// Voice Audio Cache for session-based storage
+export const voiceCache = pgTable("voice_cache", {
+  id: serial("id").primaryKey(),
+  cacheKey: text("cache_key").notNull().unique(),
+  language: text("language").notNull(),
+  voiceCount: integer("voice_count").notNull(),
+  locationHash: text("location_hash"),
+  conversation: jsonb("conversation").$type<Array<{
+    index: number;
+    audio: string;
+    message: {
+      text: string;
+      voiceConfig: {
+        voiceId: string;
+        name: string;
+        personality: string;
+        language: string;
+        gender: string;
+        accent: string;
+      };
+      isHarmonizing?: boolean;
+      isSinging?: boolean;
+    };
+  }>>(),
+  singleAudio: jsonb("single_audio").$type<{
+    audio: string;
+    text: string;
+    voice: {
+      voiceId: string;
+      name: string;
+      personality: string;
+      language: string;
+      gender: string;
+      accent: string;
+    };
+  }>(),
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 // User Registration and Account Management
 export const registeredUsers = pgTable("registered_users", {
   id: serial("id").primaryKey(),
@@ -492,3 +532,12 @@ export type InsertApiUsageTracking = z.infer<typeof insertApiUsageTrackingSchema
 export type ApiUsageTracking = typeof apiUsageTracking.$inferSelect;
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+// Voice Cache schema and types
+export const insertVoiceCacheSchema = createInsertSchema(voiceCache).omit({
+  id: true,
+  cachedAt: true,
+});
+
+export type InsertVoiceCache = z.infer<typeof insertVoiceCacheSchema>;
+export type VoiceCache = typeof voiceCache.$inferSelect;

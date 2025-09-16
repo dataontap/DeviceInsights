@@ -1856,6 +1856,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
       
+      // Generate cache key based on language, voice count, and location hash
+      const locationStr = location ? `${location.city || ''}_${location.country || ''}` : 'default';
+      const locationHash = Buffer.from(locationStr).toString('base64').substring(0, 10);
+      const cacheKey = storage.generateVoiceCacheKey(lang, voices, locationHash);
+      
+      // Check cache first
+      console.log(`[CACHE] Checking cache for key: ${cacheKey} (lang: ${lang}, voices: ${voices}, location: ${locationStr})`);
+      const cacheStartTime = Date.now();
+      const cachedAudio = await storage.getCachedVoiceAudio(cacheKey);
+      const cacheCheckTime = Date.now() - cacheStartTime;
+      
+      if (cachedAudio) {
+        const cacheAge = Math.floor((Date.now() - new Date(cachedAudio.cachedAt).getTime()) / 1000 / 60); // minutes
+        const expiresIn = Math.floor((new Date(cachedAudio.expiresAt).getTime() - Date.now()) / 1000 / 60); // minutes
+        
+        console.log(`[CACHE HIT] ✅ Voice cache hit! Key: ${cacheKey}`);
+        console.log(`[CACHE HIT] Cache age: ${cacheAge} minutes, expires in: ${expiresIn} minutes`);
+        console.log(`[CACHE HIT] Cache lookup time: ${cacheCheckTime}ms`);
+        console.log(`[CACHE HIT] Content type: ${cachedAudio.conversation ? 'multi-voice conversation' : 'single voice'}`);
+        
+        if (cachedAudio.conversation) {
+          // Multi-voice cached result
+          console.log(`[CACHE HIT] Returning ${cachedAudio.conversation.length} cached voice messages`);
+          return res.json({
+            success: true,
+            conversation: cachedAudio.conversation,
+            voiceCount: voices,
+            isHarmonizing: voices >= 4,
+            isSinging: voices >= 5,
+            language: lang,
+            cached: true
+          });
+        } else if (cachedAudio.singleAudio) {
+          // Single voice cached result
+          console.log(`[CACHE HIT] Returning cached single voice audio (${cachedAudio.singleAudio.audio.length} bytes)`);
+          return res.json({
+            success: true,
+            text: cachedAudio.singleAudio.text,
+            audio: cachedAudio.singleAudio.audio,
+            voice: cachedAudio.singleAudio.voice,
+            language: lang,
+            cached: true
+          });
+        }
+      }
+      
+      console.log(`[CACHE MISS] ❌ No cached audio found for key: ${cacheKey}`);
+      console.log(`[CACHE MISS] Cache lookup time: ${cacheCheckTime}ms - proceeding with voice generation...`);
+      console.log(`[CACHE MISS] Generating new audio for: lang=${lang}, voices=${voices}, location=${locationStr}`);
+      
       // Get language-appropriate voices
       const languageVoices = await getVoicesForLanguage(lang);
       
@@ -1898,13 +1948,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const audioResults = await Promise.all(audioPromises);
         const validResults = audioResults.filter(result => result !== null);
         
+        // Cache the multi-voice conversation result
+        console.log(`[CACHE STORE] 💾 Storing multi-voice conversation in cache`);
+        console.log(`[CACHE STORE] Key: ${cacheKey}, Messages: ${validResults.length}, Lang: ${lang}, Voices: ${voices}`);
+        const cacheStoreStart = Date.now();
+        
+        await storage.setCachedVoiceAudio(
+          cacheKey,
+          lang,
+          voices,
+          locationHash,
+          validResults, // conversation
+          undefined, // singleAudio
+          2 // 2 hours expiration
+        );
+        
+        const cacheStoreTime = Date.now() - cacheStoreStart;
+        console.log(`[CACHE STORE] ✅ Multi-voice conversation cached successfully in ${cacheStoreTime}ms`);
+        
         res.json({
           success: true,
           conversation: validResults,
           voiceCount: voices,
           isHarmonizing: voices >= 4,
           isSinging: voices >= 5,
-          language: lang
+          language: lang,
+          cached: false
         });
       } else {
         // Single voice (1-3 voices) - standard USSD instructions
@@ -1924,16 +1993,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Get language-appropriate voices if not already fetched
-        const languageVoices = await getVoicesForLanguage(lang);
         const selectedVoice = voiceConfig || languageVoices[0];
         const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
+        const audioBase64 = Buffer.from(new Uint8Array(audioBuffer)).toString('base64');
+        
+        // Cache the single-voice result
+        console.log(`[CACHE STORE] 💾 Storing single voice audio in cache`);
+        console.log(`[CACHE STORE] Key: ${cacheKey}, Audio size: ${audioBase64.length} bytes, Lang: ${lang}`);
+        const cacheStoreStart = Date.now();
+        
+        await storage.setCachedVoiceAudio(
+          cacheKey,
+          lang,
+          voices,
+          locationHash,
+          undefined, // conversation
+          {
+            audio: audioBase64,
+            text: finalText,
+            voice: selectedVoice
+          }, // singleAudio
+          2 // 2 hours expiration
+        );
+        
+        const cacheStoreTime = Date.now() - cacheStoreStart;
+        console.log(`[CACHE STORE] ✅ Single voice audio cached successfully in ${cacheStoreTime}ms`);
         
         res.json({
           success: true,
           text: finalText,
-          audio: Buffer.from(new Uint8Array(audioBuffer)).toString('base64'),
+          audio: audioBase64,
           voice: selectedVoice,
-          language: lang
+          language: lang,
+          cached: false
         });
       }
       
