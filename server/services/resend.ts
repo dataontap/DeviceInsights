@@ -17,7 +17,7 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<bool
     }
 
     const { data: result, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'admin@dotmobile.app',
+      from: process.env.RESEND_FROM_EMAIL || 'rbm@dotmobile.app',
       to: [data.email],
       subject: `Admin Login - ${data.appName || 'Device Insights'}`,
       html: createMagicLinkEmailTemplate(data),
@@ -163,7 +163,7 @@ export async function sendAdminNotificationEmail(
     }
 
     const { data: result, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'notifications@dotmobile.app',
+      from: process.env.RESEND_FROM_EMAIL || 'rbm@dotmobile.app',
       to: [email],
       subject: subject,
       html: `
