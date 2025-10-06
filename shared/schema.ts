@@ -82,6 +82,18 @@ export const adminSessions = pgTable("admin_sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const adminUsers = pgTable("admin_users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  role: text("role").notNull().default("admin"), // "admin", "super_admin"
+  isActive: boolean("is_active").default(true).notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: text("created_by").notNull().default("system"),
+});
+
 export const carrierCache = pgTable("carrier_cache", {
   id: serial("id").primaryKey(),
   country: text("country").notNull().unique(),
@@ -461,6 +473,15 @@ export const insertAdminSessionSchema = createInsertSchema(adminSessions).pick({
   expiresAt: true,
 });
 
+export const insertAdminUserSchema = createInsertSchema(adminUsers).pick({
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  isActive: true,
+  createdBy: true,
+});
+
 export const magicLinkRequestSchema = z.object({
   email: z.string()
     .email("Please enter a valid email address")
@@ -518,6 +539,8 @@ export type InsertLoginToken = z.infer<typeof insertLoginTokenSchema>;
 export type LoginToken = typeof loginTokens.$inferSelect;
 export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
 export type AdminSession = typeof adminSessions.$inferSelect;
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertRegisteredUser = z.infer<typeof insertRegisteredUserSchema>;
 export type RegisteredUser = typeof registeredUsers.$inferSelect;
 export type InsertConnectivityMetric = z.infer<typeof insertConnectivityMetricSchema>;

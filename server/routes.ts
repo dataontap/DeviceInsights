@@ -849,18 +849,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
 
-      // Check if email has an API key (is registered)
-      const apiKey = await storage.getApiKeyByEmail(email);
-      if (!apiKey) {
+      // Check if email is a valid admin user
+      const adminUser = await storage.getAdminUserByEmail(email);
+      if (!adminUser) {
         return res.status(404).json({ 
-          error: "Email not found",
-          message: "This email is not registered. Please generate an API key first." 
+          error: "Admin not found",
+          message: "This email is not registered as an admin user." 
         });
       }
 
       res.json({ 
         success: true,
-        message: "Email is registered" 
+        message: "Admin email is valid",
+        adminInfo: {
+          email: adminUser.email,
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+          role: adminUser.role
+        }
       });
     } catch (error) {
       console.error("Email validation error:", error);
@@ -882,14 +888,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verify email has an API key (is registered)
-      const apiKey = await storage.getApiKeyByEmail(email);
-      if (!apiKey) {
+      // Verify email is a valid admin user
+      const adminUser = await storage.getAdminUserByEmail(email);
+      if (!adminUser) {
         return res.status(404).json({ 
-          error: "Email not found",
-          message: "This email is not registered. Please generate an API key first." 
+          error: "Admin not found",
+          message: "This email is not registered as an admin user." 
         });
       }
+
+      // Update last login timestamp
+      await storage.updateAdminLastLogin(email);
 
       // Create admin session
       const sessionToken = nanoid(32);
@@ -938,12 +947,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
 
-      // Check if email has an API key (is registered)
-      const apiKey = await storage.getApiKeyByEmail(email);
-      if (!apiKey) {
+      // Check if email is a valid admin user
+      const adminUser = await storage.getAdminUserByEmail(email);
+      if (!adminUser) {
         return res.status(404).json({ 
-          error: "Email not found",
-          message: "This email is not registered. Please generate an API key first." 
+          error: "Admin not found",
+          message: "This email is not registered as an admin user." 
         });
       }
 
@@ -957,16 +966,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt
       });
 
-      // Log the magic link for testing (in production, send via email)
+      // Create magic link
       const magicLink = `${req.protocol}://${req.get('host')}/admin?token=${token}`;
-      console.log(`🔐 Magic link for ${email}: ${magicLink}`);
-
-      res.json({ 
-        success: true,
-        message: "Magic link generated! Check console/logs for development link.",
-        devNote: `Development mode: ${magicLink}`,
-        isDevMode: true
-      });
+      
+      // Send magic link via Resend email
+      try {
+        const { sendMagicLinkEmail } = await import('./services/resend.js');
+        const emailSent = await sendMagicLinkEmail({
+          email,
+          magicLink,
+          appName: 'Device Insights Admin'
+        });
+        
+        if (emailSent) {
+          console.log(`✅ Magic link email sent successfully to ${email}`);
+          res.json({ 
+            success: true,
+            message: "Magic link sent to your email! Please check your inbox and click the link to login.",
+            emailSent: true
+          });
+        } else {
+          console.error(`❌ Failed to send magic link email to ${email}`);
+          // Fallback to development mode
+          console.log(`🔐 Development fallback - Magic link for ${email}: ${magicLink}`);
+          res.json({ 
+            success: true,
+            message: "Email sending failed. Development link logged to console.",
+            devNote: `Development mode: ${magicLink}`,
+            isDevMode: true
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending magic link email:', emailError);
+        // Fallback to development mode
+        console.log(`🔐 Development fallback - Magic link for ${email}: ${magicLink}`);
+        res.json({ 
+          success: true,
+          message: "Email service unavailable. Development link logged to console.",
+          devNote: `Development mode: ${magicLink}`,
+          isDevMode: true
+        });
+      }
     } catch (error) {
       console.error("Temp magic link error:", error);
       res.status(400).json({ 

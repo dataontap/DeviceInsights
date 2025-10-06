@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -110,6 +110,15 @@ export interface IStorage {
   deleteAdminSession(sessionToken: string): Promise<void>;
   getApiKeyByEmail(email: string): Promise<ApiKey | undefined>;
   
+  // Admin User Management
+  createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
+  getAdminUserByEmail(email: string): Promise<AdminUser | undefined>;
+  getAdminUserById(id: number): Promise<AdminUser | undefined>;
+  updateAdminUser(id: number, updates: Partial<InsertAdminUser>): Promise<AdminUser>;
+  getAllAdminUsers(): Promise<AdminUser[]>;
+  isAdminUser(email: string): Promise<boolean>;
+  updateAdminLastLogin(email: string): Promise<void>;
+  
   // User Registration & Management
   createRegisteredUser(user: InsertRegisteredUser): Promise<RegisteredUser>;
   getRegisteredUserByEmail(email: string): Promise<RegisteredUser | undefined>;
@@ -169,7 +178,7 @@ export interface IStorage {
   getTotalApiKeyCount(): Promise<number>;
   getDeviceTypeStats(): Promise<Array<{ type: string; count: number }>>;
   getLocationStatsAnonymized(): Promise<Array<{ city: string; state: string; country: string; searches: number }>>;
-  getPopularDevices(): Promise<Array<{ brand: string; model: string; searches: number }>>;
+  getPopularDevicesAnalytics(): Promise<Array<{ brand: string; model: string; searches: number }>>;
   getCompatibilityStats(): Promise<{ compatible: number; incompatible: number; unknown: number }>;
   getApiUsageStatsPublic(): Promise<Array<{ apiKeyName: string; totalRequests: number; requestsLastHour: number; rateLimitViolations: number }>>;
   getRecentActivitySanitized(): Promise<Array<{ timestamp: string; action: string; details: string; location: string }>>;
@@ -723,12 +732,75 @@ export class DatabaseStorage implements IStorage {
       .where(eq(apiKeys.email, email));
     return result || undefined;
   }
+
+  // Admin User Management Implementation
+  async createAdminUser(user: InsertAdminUser): Promise<AdminUser> {
+    const [result] = await db
+      .insert(adminUsers)
+      .values(user)
+      .returning();
+    return result;
+  }
+
+  async getAdminUserByEmail(email: string): Promise<AdminUser | undefined> {
+    const [result] = await db
+      .select()
+      .from(adminUsers)
+      .where(and(
+        eq(adminUsers.email, email),
+        eq(adminUsers.isActive, true)
+      ));
+    return result || undefined;
+  }
+
+  async getAdminUserById(id: number): Promise<AdminUser | undefined> {
+    const [result] = await db
+      .select()
+      .from(adminUsers)
+      .where(and(
+        eq(adminUsers.id, id),
+        eq(adminUsers.isActive, true)
+      ));
+    return result || undefined;
+  }
+
+  async updateAdminUser(id: number, updates: Partial<InsertAdminUser>): Promise<AdminUser> {
+    const [result] = await db
+      .update(adminUsers)
+      .set(updates)
+      .where(eq(adminUsers.id, id))
+      .returning();
+    return result;
+  }
+
+  async getAllAdminUsers(): Promise<AdminUser[]> {
+    return await db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.isActive, true))
+      .orderBy(desc(adminUsers.createdAt));
+  }
+
+  async isAdminUser(email: string): Promise<boolean> {
+    const admin = await this.getAdminUserByEmail(email);
+    return !!admin;
+  }
+
+  async updateAdminLastLogin(email: string): Promise<void> {
+    await db
+      .update(adminUsers)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(adminUsers.email, email));
+  }
   
   // User Registration & Management Implementation
   async createRegisteredUser(user: InsertRegisteredUser): Promise<RegisteredUser> {
     const [result] = await db
       .insert(registeredUsers)
-      .values(user)
+      .values([{
+        ...user,
+        deviceInfo: user.deviceInfo as { primaryDevice?: string; carrier?: string; networkType?: string; } | null
+      }])
       .returning();
     return result;
   }
@@ -752,7 +824,11 @@ export class DatabaseStorage implements IStorage {
   async updateRegisteredUser(id: number, updates: Partial<InsertRegisteredUser>): Promise<RegisteredUser> {
     const [result] = await db
       .update(registeredUsers)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ 
+        ...updates, 
+        updatedAt: new Date(),
+        deviceInfo: updates.deviceInfo as { primaryDevice?: string; carrier?: string; networkType?: string; } | null | undefined
+      })
       .where(eq(registeredUsers.id, id))
       .returning();
     return result;
@@ -780,7 +856,10 @@ export class DatabaseStorage implements IStorage {
   async recordConnectivityMetric(metric: InsertConnectivityMetric): Promise<ConnectivityMetric> {
     const [result] = await db
       .insert(connectivityMetrics)
-      .values(metric)
+      .values([{
+        ...metric,
+        deviceInfo: metric.deviceInfo as { make?: string; model?: string; os?: string; osVersion?: string; } | null
+      }])
       .returning();
     return result;
   }
@@ -883,7 +962,19 @@ export class DatabaseStorage implements IStorage {
   async createEmailReport(report: InsertEmailReport): Promise<EmailReport> {
     const [result] = await db
       .insert(emailReports)
-      .values(report)
+      .values([{
+        ...report,
+        reportData: report.reportData as {
+          averageDownloadSpeed?: number;
+          averageUploadSpeed?: number;
+          averageLatency?: number;
+          totalInterruptions?: number;
+          totalDowntime?: number;
+          connectionQualityScore?: number;
+          recommendations?: string[];
+          comparisonData?: any;
+        } | null
+      }])
       .returning();
     return result;
   }
@@ -944,7 +1035,17 @@ export class DatabaseStorage implements IStorage {
   async createConnectivityAlert(alert: InsertConnectivityAlert): Promise<ConnectivityAlert> {
     const [result] = await db
       .insert(connectivityAlerts)
-      .values(alert)
+      .values([{
+        ...alert,
+        alertData: alert.alertData as {
+          location?: string;
+          carrier?: string;
+          duration?: number;
+          affectedMetric?: string;
+          previousValue?: number;
+          currentValue?: number;
+        } | null
+      }])
       .returning();
     return result;
   }
@@ -1090,7 +1191,16 @@ export class DatabaseStorage implements IStorage {
   async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
     const [result] = await db
       .insert(adminNotifications)
-      .values(notification)
+      .values([{
+        ...notification,
+        metadata: notification.metadata as {
+          requestCount?: number;
+          ipAddress?: string;
+          userAgent?: string;
+          endpoint?: string;
+          timeWindow?: string;
+        } | null
+      }])
       .returning();
     return result;
   }
@@ -1184,7 +1294,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getPopularDevices(): Promise<Array<{ brand: string; model: string; searches: number }>> {
+  async getPopularDevicesAnalytics(): Promise<Array<{ brand: string; model: string; searches: number }>> {
     const results = await db
       .select({
         brand: imeiSearches.deviceMake,

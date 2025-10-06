@@ -99,31 +99,22 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<boo
   }
 }
 
-// Email Messaging (via Firebase Extensions or third-party service)
+// Email Messaging (via Resend service)
 export async function sendEmail(email: string, subject: string, body: string): Promise<boolean> {
   try {
-    const app = initializeFirebaseAdmin();
-    if (!app) {
-      console.log('Firebase Admin not available for email');
-      return false;
+    // Import Resend service dynamically to avoid circular imports
+    const { sendAdminNotificationEmail } = await import('./resend.js');
+    
+    // Use Resend service for sending emails
+    const success = await sendAdminNotificationEmail(email, subject, body);
+    
+    if (success) {
+      console.log(`Email sent successfully to ${email}: ${subject}`);
+    } else {
+      console.error(`Failed to send email to ${email}: ${subject}`);
     }
-
-    // Note: Firebase doesn't have direct email support
-    // You would typically use SendGrid, Mailgun, or Firebase Extensions
-    console.log(`Email would be sent to ${email}: ${subject}`);
     
-    // Placeholder for actual email implementation
-    // Example with SendGrid:
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    // await sgMail.send({
-    //   to: email,
-    //   from: 'noreply@yourdomain.com',
-    //   subject: subject,
-    //   html: body,
-    // });
-    
-    return true;
+    return success;
   } catch (error) {
     console.error('Error sending email:', error);
     return false;
