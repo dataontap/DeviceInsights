@@ -1948,10 +1948,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
 
-      // Generate cache key based on language, voice count, and location hash
+      // Generate cache key based on language, voice count, location hash, and device type
       const locationStr = location ? `${location.city || ''}_${location.country || ''}` : 'default';
       const locationHash = Buffer.from(locationStr).toString('base64').substring(0, 10);
-      const cacheKey = storage.generateVoiceCacheKey(lang, voices, locationHash);
+      const deviceStr = deviceInfo?.make ? `${deviceInfo.make}_${deviceInfo.model || ''}` : 'default';
+      const deviceHash = Buffer.from(deviceStr).toString('base64').substring(0, 10);
+      const cacheKey = storage.generateVoiceCacheKey(lang, voices, `${locationHash}_${deviceHash}`);
 
       // Check cache first
       console.log(`[CACHE] Checking cache for key: ${cacheKey} (lang: ${lang}, voices: ${voices}, location: ${locationStr})`);
