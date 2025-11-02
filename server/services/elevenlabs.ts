@@ -572,11 +572,12 @@ export async function generateVoiceAudio(
 }
 
 /**
- * Generate location-based conversation starter
+ * Generate location-based conversation starter with device personalization
  */
 export function generateLocationBasedGreeting(
   location: { city?: string; country?: string; lat?: number; lng?: number },
-  language: string = 'en'
+  language: string = 'en',
+  deviceInfo?: { make?: string; model?: string; year?: string | number }
 ): string {
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -600,9 +601,19 @@ export function generateLocationBasedGreeting(
     locationText = `at coordinates ${location.lat.toFixed(2)}, ${location.lng.toFixed(2)}`;
   }
 
+  // Add device personalization
+  const deviceType = deviceInfo?.make ? getDeviceType(deviceInfo.make) : null;
+  const devicePrefix = deviceType === 'Android'
+    ? "Let us help you with your Android device. "
+    : deviceType === 'Apple'
+    ? "Let us help you with your Apple device. "
+    : deviceInfo?.make && deviceInfo?.model
+    ? `Let us help you with your ${deviceInfo.make} ${deviceInfo.model}. `
+    : "";
+
   // Base greeting in multiple languages  
   const greetings = {
-    'en': `Hello! It's ${currentTime} on ${currentDate} ${locationText}. I'm here to help you discover your IMEI number using USSD codes. Would you like me to guide you through the process?`,
+    'en': `${devicePrefix}Hello! It's ${currentTime} on ${currentDate} ${locationText}. I'm here to help you discover your IMEI number using USSD codes. Would you like me to guide you through the process?`,
     'es': `¡Hola! Son las ${currentTime} del ${currentDate} ${locationText}. Estoy aquí para ayudarte a descubrir tu número IMEI usando códigos USSD. ¿Te gustaría que te guíe en el proceso?`,
     'fr': `Bonjour! Il est ${currentTime} le ${currentDate} ${locationText}. Je suis ici pour vous aider à découvrir votre numéro IMEI en utilisant les codes USSD. Souhaitez-vous que je vous guide ?`,
     'pt': `Olá! São ${currentTime} de ${currentDate} ${locationText}. Estou aqui para ajudá-lo a descobrir o seu número IMEI usando códigos USSD. Gostaria que eu o orientasse no processo?`,
@@ -646,7 +657,8 @@ export function createMultiVoiceConversation(
   location?: { city?: string; country?: string; lat?: number; lng?: number },
   isUSSDHelp: boolean = false,
   language: string = 'en',
-  languageVoices?: VoiceConfig[]
+  languageVoices?: VoiceConfig[],
+  deviceInfo?: { make?: string; model?: string; year?: string | number }
 ): ConversationMessage[] {
   const messages: ConversationMessage[] = [];
   // Use language-specific voices if provided, otherwise fall back to default
@@ -656,14 +668,14 @@ export function createMultiVoiceConversation(
   if (voiceCount === 1) {
     // Single voice - standard guidance
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language) : baseText,
+      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : baseText,
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
   } else if (voiceCount === 2) {
     // Dual voice - question and answer
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language) : "How can I find my IMEI number?",
+      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : "How can I find my IMEI number?",
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
@@ -675,7 +687,7 @@ export function createMultiVoiceConversation(
   } else if (voiceCount === 3) {
     // Panel discussion format
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language) : "Let's discuss the different ways to find your IMEI.",
+      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : "Let's discuss the different ways to find your IMEI.",
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
@@ -833,9 +845,36 @@ export function createMultiVoiceConversation(
 }
 
 /**
- * Get USSD code instructions in specified language
+ * Determine device type from make
  */
-export function getUSSDInstructions(language: string = 'en'): string {
+function getDeviceType(deviceMake?: string): 'Android' | 'Apple' | 'device' {
+  if (!deviceMake) return 'device';
+  const make = deviceMake.toLowerCase();
+  if (make.includes('apple') || make.includes('iphone') || make.includes('ipad')) {
+    return 'Apple';
+  }
+  // Most other manufacturers are Android
+  return 'Android';
+}
+
+/**
+ * Get USSD code instructions in specified language with device personalization
+ */
+export function getUSSDInstructions(language: string = 'en', deviceInfo?: { make?: string; model?: string; year?: string | number }): string {
+  const deviceType = deviceInfo?.make ? getDeviceType(deviceInfo.make) : null;
+  const deviceName = deviceInfo?.make && deviceInfo?.model 
+    ? `${deviceInfo.make} ${deviceInfo.model}` 
+    : null;
+  
+  // Create personalized greeting
+  const greeting = deviceType === 'Android' 
+    ? "Let us help you with your Android device. " 
+    : deviceType === 'Apple' 
+    ? "Let us help you with your Apple device. "
+    : deviceName
+    ? `Let us help you with your ${deviceName}. `
+    : "";
+  
   const instructions = {
     'en': "To find your IMEI number, simply dial *#06# on your phone's keypad. This universal code works on all mobile devices - smartphones, basic phones, and tablets with cellular capability. Your 15-digit IMEI number will appear on screen immediately. Write it down or take a screenshot for your records.",
     'es': "Para encontrar tu número IMEI, simplemente marca *#06# en el teclado de tu teléfono. Este código universal funciona en todos los dispositivos móviles. Tu número IMEI de 15 dígitos aparecerá en pantalla inmediatamente.",
@@ -869,7 +908,8 @@ export function getUSSDInstructions(language: string = 'en'): string {
     'sk': "Ak chcete nájsť svoje IMEI číslo, jednoducho vytočte *#06# na klávesnici telefónu. Tento univerzálny kód funguje na všetkých mobilných zariadeniach - smartfónoch, základných telefónoch a tabletoch s mobilnou konektivitou. Vaše 15-miestne IMEI číslo sa okamžite zobrazí na obrazovke."
   };
 
-  return instructions[language as keyof typeof instructions] || instructions['en'];
+  const baseInstructions = instructions[language as keyof typeof instructions] || instructions['en'];
+  return greeting + baseInstructions;
 }
 
 /**

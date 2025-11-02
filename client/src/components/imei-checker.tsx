@@ -321,7 +321,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 </code>{" "}
                 on your device
               </p>
-              {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} />}
+              {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} deviceInfo={deviceResult?.device} />}
             </div>
 
             {/* Location Section */}

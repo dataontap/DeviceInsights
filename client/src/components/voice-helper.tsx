@@ -12,6 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 interface VoiceHelperProps {
   trigger?: React.ReactNode;
   autoOpen?: boolean;
+  deviceInfo?: {
+    make?: string;
+    model?: string;
+    year?: string | number;
+  };
 }
 
 interface VoiceConfig {
@@ -31,7 +36,7 @@ interface ConversationItem {
   };
 }
 
-export default function VoiceHelper({ trigger, autoOpen = false }: VoiceHelperProps) {
+export default function VoiceHelper({ trigger, autoOpen = false, deviceInfo }: VoiceHelperProps) {
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -128,6 +133,7 @@ export default function VoiceHelper({ trigger, autoOpen = false }: VoiceHelperPr
         language: selectedLanguage,
         location,
         voiceCount, // Include voice count for special prompts
+        deviceInfo, // Include device info for personalization
         requestVersion: thisRequestVersion
       });
       const data = await response.json();

@@ -1943,7 +1943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get USSD instructions with voice (no API key required for public help)
   app.post("/api/voice/ussd-help", async (req, res) => {
     try {
-      const { language, voiceConfig, location, voiceCount } = req.body;
+      const { language, voiceConfig, location, voiceCount, deviceInfo } = req.body;
 
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
@@ -2010,7 +2010,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           location,
           true, // isUSSDHelp flag for special prompts
           lang, // language parameter
-          languageVoices // language-specific voices
+          languageVoices, // language-specific voices
+          deviceInfo // device information for personalization
         );
 
         // Generate audio for each message
@@ -2069,7 +2070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Single voice (1-3 voices) - standard USSD instructions
-        const instructions = getUSSDInstructions(lang);
+        const instructions = getUSSDInstructions(lang, deviceInfo);
 
         let finalText = instructions;
         if (location) {
