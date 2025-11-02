@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import RecentSearches from "@/components/recent-searches";
 import { NotificationManager } from "@/components/notification-manager";
+import NpsMetrics from "@/components/nps-metrics";
 
 interface StatsData {
   totalSearches: number;
@@ -133,6 +134,11 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
               </Card>
             );
           })}
+        </div>
+
+        {/* NPS Metrics Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <NpsMetrics />
         </div>
 
         {/* Charts Grid */}
