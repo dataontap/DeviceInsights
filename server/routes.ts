@@ -1994,7 +1994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[CACHE MISS] ❌ No cached audio found for key: ${cacheKey}`);
       console.log(`[CACHE MISS] Cache lookup time: ${cacheCheckTime}ms - proceeding with voice generation...`);
-      console.log(`[CACHE MISS] Generating new audio for: lang=${lang}, voices=${voices}, location=${locationStr}`);
+      console.log(`[CACHE MISS] Generating new template audio for: lang=${lang}, voices=${voices}`);
 
       // Get language-appropriate voices
       const languageVoices = await getVoicesForLanguage(lang);
