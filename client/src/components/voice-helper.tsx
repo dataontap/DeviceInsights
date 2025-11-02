@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface VoiceHelperProps {
   trigger?: React.ReactNode;
+  autoOpen?: boolean;
 }
 
 interface VoiceConfig {
@@ -30,8 +31,8 @@ interface ConversationItem {
   };
 }
 
-export default function VoiceHelper({ trigger }: VoiceHelperProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function VoiceHelper({ trigger, autoOpen = false }: VoiceHelperProps) {
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [volume, setVolume] = useState([0.7]);
@@ -376,17 +377,19 @@ export default function VoiceHelper({ trigger }: VoiceHelperProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button
-            variant="link"
-            className="p-0 h-auto text-blue-600 hover:text-blue-800 underline"
-            data-testid="link-voice-help"
-          >
-            (Get AI to Help)
-          </Button>
-        )}
-      </DialogTrigger>
+      {trigger !== null && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button
+              variant="link"
+              className="p-0 h-auto text-blue-600 hover:text-blue-800 underline"
+              data-testid="link-voice-help"
+            >
+              (Get AI to Help)
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       
       <DialogContent className="sm:max-w-md" data-testid="dialog-voice-helper">
         <DialogHeader>

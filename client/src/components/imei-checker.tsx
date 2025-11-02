@@ -35,6 +35,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [carriersLoading, setCarriersLoading] = useState(false);
   const [showBlacklistDrawer, setShowBlacklistDrawer] = useState(false);
   const [blacklistInfo, setBlacklistInfo] = useState<{imei?: string; reason?: string}>({});
+  const [showVoiceHelper, setShowVoiceHelper] = useState(false);
   const { toast } = useToast();
 
   // Fetch carriers when location changes
@@ -310,9 +311,17 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               </div>
               <p className="text-sm text-gray-500 mt-2 flex items-center">
                 <Info className="w-4 h-4 mr-1 text-accent" />
-                To find your IMEI, dial <code className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1">*#06#</code> on your device{" "}
-                <VoiceHelper />
+                To find your IMEI, dial{" "}
+                <code 
+                  className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1 cursor-pointer hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                  onClick={() => setShowVoiceHelper(true)}
+                  data-testid="code-imei-help"
+                >
+                  *#06#
+                </code>{" "}
+                on your device
               </p>
+              {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} />}
             </div>
 
             {/* Location Section */}
