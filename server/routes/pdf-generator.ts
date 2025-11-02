@@ -2,6 +2,7 @@ import { Express } from "express";
 import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
 export function registerPDFRoutes(app: Express) {
   app.get("/api/generate-policy-pdf", async (req, res) => {
@@ -604,9 +605,19 @@ export function registerPDFRoutes(app: Express) {
 </body>
 </html>`;
 
+      // Find chromium executable dynamically
+      let chromiumPath: string | undefined;
+      try {
+        chromiumPath = execSync('which chromium || ls /nix/store/*/bin/chromium 2>/dev/null | head -1', {
+          encoding: 'utf-8'
+        }).trim();
+      } catch (error) {
+        console.warn('Could not find chromium path, using Puppeteer default');
+      }
+
       const browser = await puppeteer.launch({
         headless: true,
-        executablePath: '/nix/store/chromium-*/bin/chromium',
+        ...(chromiumPath && { executablePath: chromiumPath }),
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
