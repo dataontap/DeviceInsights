@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navigation from "@/components/navigation";
 import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
+import NpsFeedback from "@/components/nps-feedback";
 
 import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
@@ -85,7 +86,15 @@ export default function Home() {
         </section>
       )}
       
-      {result && !isLoading && (result as any)?.success !== false && <DeviceResults result={result} />}
+      {result && !isLoading && (result as any)?.success !== false && (
+        <>
+          <DeviceResults result={result} />
+          <NpsFeedback 
+            searchId={(result as any)?.searchId} 
+            onComplete={() => console.log('NPS feedback completed')} 
+          />
+        </>
+      )}
       
       {/* Coverage Maps Section */}
       <section className="py-12 bg-gray-50">
