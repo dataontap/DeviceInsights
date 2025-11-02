@@ -298,6 +298,17 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Net Promoter Score (NPS) Feedback
+export const npsResponses = pgTable("nps_responses", {
+  id: serial("id").primaryKey(),
+  searchId: integer("search_id").references(() => imeiSearches.id),
+  rating: integer("rating").notNull(), // 0-10 scale
+  feedback: text("feedback"), // Optional text feedback
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],
@@ -473,6 +484,14 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
   metadata: true,
 });
 
+export const insertNpsResponseSchema = createInsertSchema(npsResponses).pick({
+  searchId: true,
+  rating: true,
+  feedback: true,
+  ipAddress: true,
+  userAgent: true,
+});
+
 export const insertLoginTokenSchema = createInsertSchema(loginTokens).pick({
   email: true,
   token: true,
@@ -579,6 +598,8 @@ export type InsertApiUsageTracking = z.infer<typeof insertApiUsageTrackingSchema
 export type ApiUsageTracking = typeof apiUsageTracking.$inferSelect;
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
+export type InsertNpsResponse = z.infer<typeof insertNpsResponseSchema>;
+export type NpsResponse = typeof npsResponses.$inferSelect;
 
 // Voice Cache schema and types
 export const insertVoiceCacheSchema = createInsertSchema(voiceCache).omit({
