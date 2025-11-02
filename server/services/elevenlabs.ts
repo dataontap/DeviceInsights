@@ -572,93 +572,55 @@ export async function generateVoiceAudio(
 }
 
 /**
- * Generate location-based conversation starter with device personalization
+ * Generate generic greeting for USSD help (template-based, no personalization)
  */
-export function generateLocationBasedGreeting(
-  location: { city?: string; country?: string; lat?: number; lng?: number },
-  language: string = 'en',
-  deviceInfo?: { make?: string; model?: string; year?: string | number }
-): string {
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  
-  const currentTime = new Date().toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  let locationText = '';
-  if (location.city && location.country) {
-    locationText = `in ${location.city}, ${location.country}`;
-  } else if (location.country) {
-    locationText = `in ${location.country}`;
-  } else if (location.lat && location.lng) {
-    locationText = `at coordinates ${location.lat.toFixed(2)}, ${location.lng.toFixed(2)}`;
-  }
-
-  // Add device personalization
-  const deviceType = deviceInfo?.make ? getDeviceType(deviceInfo.make) : null;
-  const devicePrefix = deviceType === 'Android'
-    ? "Let us help you with your Android device. "
-    : deviceType === 'Apple'
-    ? "Let us help you with your Apple device. "
-    : deviceInfo?.make && deviceInfo?.model
-    ? `Let us help you with your ${deviceInfo.make} ${deviceInfo.model}. `
-    : "";
-
-  // Base greeting in multiple languages  
+export function generateGenericGreeting(language: string = 'en'): string {
+  // Generic greetings in multiple languages (no location/device/time personalization)
   const greetings = {
-    'en': `${devicePrefix}Hello! It's ${currentTime} on ${currentDate} ${locationText}. I'm here to help you discover your IMEI number using USSD codes. Would you like me to guide you through the process?`,
-    'es': `¡Hola! Son las ${currentTime} del ${currentDate} ${locationText}. Estoy aquí para ayudarte a descubrir tu número IMEI usando códigos USSD. ¿Te gustaría que te guíe en el proceso?`,
-    'fr': `Bonjour! Il est ${currentTime} le ${currentDate} ${locationText}. Je suis ici pour vous aider à découvrir votre numéro IMEI en utilisant les codes USSD. Souhaitez-vous que je vous guide ?`,
-    'pt': `Olá! São ${currentTime} de ${currentDate} ${locationText}. Estou aqui para ajudá-lo a descobrir o seu número IMEI usando códigos USSD. Gostaria que eu o orientasse no processo?`,
-    'de': `Hallo! Es ist ${currentTime} am ${currentDate} ${locationText}. Ich bin hier, um Ihnen zu helfen, Ihre IMEI-Nummer mit USSD-Codes zu entdecken. Möchten Sie, dass ich Sie durch den Prozess führe?`,
-    'it': `Ciao! Sono le ${currentTime} del ${currentDate} ${locationText}. Sono qui per aiutarti a scoprire il tuo numero IMEI usando i codici USSD. Vorresti che ti guidassi nel processo?`,
-    'ru': `Привет! Сейчас ${currentTime} ${currentDate} ${locationText}. Я здесь, чтобы помочь вам найти ваш номер IMEI с помощью USSD-кодов. Хотите, чтобы я провел вас через этот процесс?`,
-    'zh': `你好！现在是${currentDate} ${currentTime} ${locationText}。我在这里帮助您使用USSD代码找到您的IMEI号码。您想让我指导您完成这个过程吗？`,
-    'ja': `こんにちは！${currentDate} ${currentTime} ${locationText}です。USSD コードを使用して IMEI 番号を見つけるお手伝いをします。プロセスをご案内いたしましょうか？`,
-    'ar': `مرحبا! إنها ${currentTime} في ${currentDate} ${locationText}. أنا هنا لمساعدتك في اكتشاف رقم IMEI الخاص بك باستخدام رموز USSD. هل تريد مني أن أرشدك خلال العملية؟`,
-    'nl': `Hallo! Het is ${currentTime} op ${currentDate} ${locationText}. Ik ben hier om je te helpen je IMEI-nummer te ontdekken met behulp van USSD-codes. Wil je dat ik je door het proces leid?`,
-    'pl': `Cześć! Jest ${currentTime} w dniu ${currentDate} ${locationText}. Jestem tutaj, aby pomóc Ci odkryć Twój numer IMEI za pomocą kodów USSD. Czy chciałbyś, żebym przeprowadził Cię przez ten proces?`,
-    'tr': `Merhaba! Şu anda ${currentTime}, ${currentDate} ${locationText}. USSD kodları kullanarak IMEI numaranızı keşfetmenize yardımcı olmak için buradayım. Süreç boyunca size rehberlik etmemi ister misiniz?`,
-    'ko': `안녕하세요! 지금은 ${currentDate} ${currentTime} ${locationText}입니다. USSD 코드를 사용하여 IMEI 번호를 찾을 수 있도록 도와드리겠습니다. 과정을 안내해 드릴까요?`,
-    'hi': `नमस्ते! अभी ${currentDate} को ${currentTime} बजे हैं ${locationText}। मैं यहाँ USSD कोड का उपयोग करके आपका IMEI नंबर खोजने में आपकी मदद करने के लिए हूँ। क्या आप चाहेंगे कि मैं आपको इस प्रक्रिया के माध्यम से मार्गदर्शन करूँ?`,
-    'th': `สวัสดี! ตอนนี้เป็นเวลา ${currentTime} ของวันที่ ${currentDate} ${locationText} ฉันอยู่ที่นี่เพื่อช่วยคุณค้นหาหมายเลข IMEI โดยใช้รหัส USSD คุณต้องการให้ฉันแนะนำคุณผ่านกระบวนการนี้หรือไม่?`,
-    'vi': `Xin chào! Bây giờ là ${currentTime} ngày ${currentDate} ${locationText}. Tôi ở đây để giúp bạn khám phá số IMEI của mình bằng cách sử dụng mã USSD. Bạn có muốn tôi hướng dẫn bạn qua quy trình này không?`,
-    'id': `Halo! Sekarang pukul ${currentTime} pada ${currentDate} ${locationText}. Saya di sini untuk membantu Anda menemukan nomor IMEI menggunakan kode USSD. Apakah Anda ingin saya memandu Anda melalui prosesnya?`,
-    'sv': `Hej! Det är ${currentTime} den ${currentDate} ${locationText}. Jag är här för att hjälpa dig upptäcka ditt IMEI-nummer med hjälp av USSD-koder. Vill du att jag ska guida dig genom processen?`,
-    'no': `Hei! Det er ${currentTime} den ${currentDate} ${locationText}. Jeg er her for å hjelpe deg med å oppdage IMEI-nummeret ditt ved hjelp av USSD-koder. Vil du at jeg skal veilede deg gjennom prosessen?`,
-    'da': `Hej! Det er ${currentTime} den ${currentDate} ${locationText}. Jeg er her for at hjælpe dig med at opdage dit IMEI-nummer ved hjælp af USSD-koder. Vil du have, at jeg guider dig gennem processen?`,
-    'fi': `Hei! Kello on ${currentTime} ${currentDate} ${locationText}. Olen täällä auttamassa sinua löytämään IMEI-numerosi USSD-koodien avulla. Haluaisitko, että opastaisin sinut prosessin läpi?`,
-    'he': `שלום! השעה היא ${currentTime} ב-${currentDate} ${locationText}. אני כאן כדי לעזור לך לגלות את מספר ה-IMEI שלך באמצעות קודי USSD. האם תרצה שאדריך אותך בתהליך?`,
-    'el': `Γεια σας! Είναι ${currentTime} στις ${currentDate} ${locationText}. Είμαι εδώ για να σας βοηθήσω να ανακαλύψετε τον αριθμό IMEI σας χρησιμοποιώντας κωδικούς USSD. Θα θέλατε να σας καθοδηγήσω στη διαδικασία;`,
-    'cs': `Ahoj! Je ${currentTime} dne ${currentDate} ${locationText}. Jsem tady, abych vám pomohl objevit vaše IMEI číslo pomocí USSD kódů. Chtěli byste, abych vás provedl procesem?`,
-    'hu': `Szia! Most ${currentTime} van ${currentDate}-án ${locationText}. Itt vagyok, hogy segítsek felfedezni az IMEI számodat USSD kódok használatával. Szeretnéd, hogy végigvezesselek a folyamaton?`,
-    'ro': `Salut! Sunt ${currentTime} pe ${currentDate} ${locationText}. Sunt aici să te ajut să îți descoperi numărul IMEI folosind coduri USSD. Ai dori să te ghidez prin proces?`,
-    'bg': `Здравей! Сега е ${currentTime} на ${currentDate} ${locationText}. Тук съм, за да ви помогна да откриете вашия IMEI номер, използвайки USSD кодове. Бихте ли искали да ви направя през процеса?`,
-    'hr': `Bok! Sada je ${currentTime} na ${currentDate} ${locationText}. Tu sam da vam pomognem otkriti vaš IMEI broj koristeći USSD kodove. Želite li da vas vodim kroz proces?`,
-    'sk': `Ahoj! Je ${currentTime} dňa ${currentDate} ${locationText}. Som tu, aby som vám pomohol objaviť vaše IMEI číslo pomocou USSD kódov. Chceli by ste, aby som vás previedol procesom?`
+    'en': "Welcome! I'm here to help you discover your IMEI number using USSD codes. Would you like me to guide you through the process?",
+    'es': "¡Bienvenido! Estoy aquí para ayudarte a descubrir tu número IMEI usando códigos USSD. ¿Te gustaría que te guíe en el proceso?",
+    'fr': "Bienvenue! Je suis ici pour vous aider à découvrir votre numéro IMEI en utilisant les codes USSD. Souhaitez-vous que je vous guide?",
+    'pt': "Bem-vindo! Estou aqui para ajudá-lo a descobrir o seu número IMEI usando códigos USSD. Gostaria que eu o orientasse no processo?",
+    'de': "Willkommen! Ich bin hier, um Ihnen zu helfen, Ihre IMEI-Nummer mit USSD-Codes zu entdecken. Möchten Sie, dass ich Sie durch den Prozess führe?",
+    'it': "Benvenuto! Sono qui per aiutarti a scoprire il tuo numero IMEI usando i codici USSD. Vorresti che ti guidassi nel processo?",
+    'ru': "Добро пожаловать! Я здесь, чтобы помочь вам найти ваш номер IMEI с помощью USSD-кодов. Хотите, чтобы я провел вас через этот процесс?",
+    'zh': "欢迎！我在这里帮助您使用USSD代码找到您的IMEI号码。您想让我指导您完成这个过程吗？",
+    'ja': "ようこそ！USSD コードを使用して IMEI 番号を見つけるお手伝いをします。プロセスをご案内いたしましょうか？",
+    'ar': "مرحبا! أنا هنا لمساعدتك في اكتشاف رقم IMEI الخاص بك باستخدام رموز USSD. هل تريد مني أن أرشدك خلال العملية؟",
+    'nl': "Welkom! Ik ben hier om je te helpen je IMEI-nummer te ontdekken met behulp van USSD-codes. Wil je dat ik je door het proces leid?",
+    'pl': "Witaj! Jestem tutaj, aby pomóc Ci odkryć Twój numer IMEI za pomocą kodów USSD. Czy chciałbyś, żebym przeprowadził Cię przez ten proces?",
+    'tr': "Hoş geldiniz! USSD kodları kullanarak IMEI numaranızı keşfetmenize yardımcı olmak için buradayım. Süreç boyunca size rehberlik etmemi ister misiniz?",
+    'ko': "환영합니다! USSD 코드를 사용하여 IMEI 번호를 찾을 수 있도록 도와드리겠습니다. 과정을 안내해 드릴까요?",
+    'hi': "स्वागत है! मैं यहाँ USSD कोड का उपयोग करके आपका IMEI नंबर खोजने में आपकी मदद करने के लिए हूँ। क्या आप चाहेंगे कि मैं आपको इस प्रक्रिया के माध्यम से मार्गदर्शन करूँ?",
+    'th': "ยินดีต้อนรับ! ฉันอยู่ที่นี่เพื่อช่วยคุณค้นหาหมายเลข IMEI โดยใช้รหัส USSD คุณต้องการให้ฉันแนะนำคุณผ่านกระบวนการนี้หรือไม่?",
+    'vi': "Chào mừng! Tôi ở đây để giúp bạn khám phá số IMEI của mình bằng cách sử dụng mã USSD. Bạn có muốn tôi hướng dẫn bạn qua quy trình này không?",
+    'id': "Selamat datang! Saya di sini untuk membantu Anda menemukan nomor IMEI menggunakan kode USSD. Apakah Anda ingin saya memandu Anda melalui prosesnya?",
+    'sv': "Välkommen! Jag är här för att hjälpa dig upptäcka ditt IMEI-nummer med hjälp av USSD-koder. Vill du att jag ska guida dig genom processen?",
+    'no': "Velkommen! Jeg er her for å hjelpe deg med å oppdage IMEI-nummeret ditt ved hjelp av USSD-koder. Vil du at jeg skal veilede deg gjennom prosessen?",
+    'da': "Velkommen! Jeg er her for at hjælpe dig med at opdage dit IMEI-nummer ved hjælp af USSD-koder. Vil du have, at jeg guider dig gennem processen?",
+    'fi': "Tervetuloa! Olen täällä auttamassa sinua löytämään IMEI-numerosi USSD-koodien avulla. Haluaisitko, että opastaisin sinut prosessin läpi?",
+    'he': "ברוך הבא! אני כאן כדי לעזור לך לגלות את מספר ה-IMEI שלך באמצעות קודי USSD. האם תרצה שאדריך אותך בתהליך?",
+    'el': "Καλώς ήρθατε! Είμαι εδώ για να σας βοηθήσω να ανακαλύψετε τον αριθμό IMEI σας χρησιμοποιώντας κωδικούς USSD. Θα θέλατε να σας καθοδηγήσω στη διαδικασία;",
+    'cs': "Vítejte! Jsem tady, abych vám pomohl objevit vaše IMEI číslo pomocí USSD kódů. Chtěli byste, abych vás provedl procesem?",
+    'hu': "Üdvözöljük! Itt vagyok, hogy segítsek felfedezni az IMEI számodat USSD kódok használatával. Szeretnéd, hogy végigvezesselek a folyamaton?",
+    'ro': "Bun venit! Sunt aici să te ajut să îți descoperi numărul IMEI folosind coduri USSD. Ai dori să te ghidez prin proces?",
+    'bg': "Добре дошли! Тук съм, за да ви помогна да откриете вашия IMEI номер, използвайки USSD кодове. Бихте ли искали да ви направя през процеса?",
+    'hr': "Dobrodošli! Tu sam da vam pomognem otkriti vaš IMEI broj koristeći USSD kodove. Želite li da vas vodim kroz proces?",
+    'sk': "Vitajte! Som tu, aby som vám pomohol objaviť vaše IMEI číslo pomocou USSD kódov. Chceli by ste, aby som vás previedol procesom?"
   };
 
   return greetings[language as keyof typeof greetings] || greetings['en'];
 }
 
 /**
- * Create multi-voice conversation with harmonizing and singing modes
+ * Create multi-voice conversation with harmonizing and singing modes (template-based)
  */
 export function createMultiVoiceConversation(
   baseText: string,
   voiceCount: number,
-  location?: { city?: string; country?: string; lat?: number; lng?: number },
   isUSSDHelp: boolean = false,
   language: string = 'en',
-  languageVoices?: VoiceConfig[],
-  deviceInfo?: { make?: string; model?: string; year?: string | number }
+  languageVoices?: VoiceConfig[]
 ): ConversationMessage[] {
   const messages: ConversationMessage[] = [];
   // Use language-specific voices if provided, otherwise fall back to default
@@ -668,14 +630,14 @@ export function createMultiVoiceConversation(
   if (voiceCount === 1) {
     // Single voice - standard guidance
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : baseText,
+      text: generateGenericGreeting(language),
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
   } else if (voiceCount === 2) {
     // Dual voice - question and answer
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : "How can I find my IMEI number?",
+      text: generateGenericGreeting(language),
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
@@ -687,7 +649,7 @@ export function createMultiVoiceConversation(
   } else if (voiceCount === 3) {
     // Panel discussion format
     messages.push({
-      text: location ? generateLocationBasedGreeting(location, language, deviceInfo) : "Let's discuss the different ways to find your IMEI.",
+      text: generateGenericGreeting(language),
       voiceConfig: selectedVoices[0],
       timestamp: Date.now()
     });
@@ -845,36 +807,9 @@ export function createMultiVoiceConversation(
 }
 
 /**
- * Determine device type from make
+ * Get USSD code instructions in specified language (generic template)
  */
-function getDeviceType(deviceMake?: string): 'Android' | 'Apple' | 'device' {
-  if (!deviceMake) return 'device';
-  const make = deviceMake.toLowerCase();
-  if (make.includes('apple') || make.includes('iphone') || make.includes('ipad')) {
-    return 'Apple';
-  }
-  // Most other manufacturers are Android
-  return 'Android';
-}
-
-/**
- * Get USSD code instructions in specified language with device personalization
- */
-export function getUSSDInstructions(language: string = 'en', deviceInfo?: { make?: string; model?: string; year?: string | number }): string {
-  const deviceType = deviceInfo?.make ? getDeviceType(deviceInfo.make) : null;
-  const deviceName = deviceInfo?.make && deviceInfo?.model 
-    ? `${deviceInfo.make} ${deviceInfo.model}` 
-    : null;
-  
-  // Create personalized greeting
-  const greeting = deviceType === 'Android' 
-    ? "Let us help you with your Android device. " 
-    : deviceType === 'Apple' 
-    ? "Let us help you with your Apple device. "
-    : deviceName
-    ? `Let us help you with your ${deviceName}. `
-    : "";
-  
+export function getUSSDInstructions(language: string = 'en'): string {
   const instructions = {
     'en': "To find your IMEI number, simply dial *#06# on your phone's keypad. This universal code works on all mobile devices - smartphones, basic phones, and tablets with cellular capability. Your 15-digit IMEI number will appear on screen immediately. Write it down or take a screenshot for your records.",
     'es': "Para encontrar tu número IMEI, simplemente marca *#06# en el teclado de tu teléfono. Este código universal funciona en todos los dispositivos móviles. Tu número IMEI de 15 dígitos aparecerá en pantalla inmediatamente.",
@@ -908,8 +843,7 @@ export function getUSSDInstructions(language: string = 'en', deviceInfo?: { make
     'sk': "Ak chcete nájsť svoje IMEI číslo, jednoducho vytočte *#06# na klávesnici telefónu. Tento univerzálny kód funguje na všetkých mobilných zariadeniach - smartfónoch, základných telefónoch a tabletoch s mobilnou konektivitou. Vaše 15-miestne IMEI číslo sa okamžite zobrazí na obrazovke."
   };
 
-  const baseInstructions = instructions[language as keyof typeof instructions] || instructions['en'];
-  return greeting + baseInstructions;
+  return instructions[language as keyof typeof instructions] || instructions['en'];
 }
 
 /**

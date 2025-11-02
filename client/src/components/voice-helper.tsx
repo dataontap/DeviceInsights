@@ -131,9 +131,7 @@ export default function VoiceHelper({ trigger, autoOpen = false, deviceInfo }: V
       
       const response = await apiRequest('POST', '/api/voice/ussd-help', {
         language: selectedLanguage,
-        location,
         voiceCount, // Include voice count for special prompts
-        deviceInfo, // Include device info for personalization
         requestVersion: thisRequestVersion
       });
       const data = await response.json();

@@ -1943,20 +1943,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get USSD instructions with voice (no API key required for public help)
   app.post("/api/voice/ussd-help", async (req, res) => {
     try {
-      const { language, voiceConfig, location, voiceCount, deviceInfo } = req.body;
+      const { language, voiceCount } = req.body;
 
       const lang = language || 'en';
       const voices = parseInt(voiceCount) || 1;
 
-      // Generate cache key based on language, voice count, location hash, and device type
-      const locationStr = location ? `${location.city || ''}_${location.country || ''}` : 'default';
-      const locationHash = Buffer.from(locationStr).toString('base64').substring(0, 10);
-      const deviceStr = deviceInfo?.make ? `${deviceInfo.make}_${deviceInfo.model || ''}` : 'default';
-      const deviceHash = Buffer.from(deviceStr).toString('base64').substring(0, 10);
-      const cacheKey = storage.generateVoiceCacheKey(lang, voices, `${locationHash}_${deviceHash}`);
+      // Generate simple cache key based only on language and voice count (template-based)
+      const cacheKey = storage.generateVoiceCacheKey(lang, voices, 'template');
 
       // Check cache first
-      console.log(`[CACHE] Checking cache for key: ${cacheKey} (lang: ${lang}, voices: ${voices}, location: ${locationStr})`);
+      console.log(`[CACHE] Checking cache for key: ${cacheKey} (lang: ${lang}, voices: ${voices})`);
       const cacheStartTime = Date.now();
       const cachedAudio = await storage.getCachedVoiceAudio(cacheKey);
       const cacheCheckTime = Date.now() - cacheStartTime;
@@ -2005,15 +2001,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle different voice styles (4 and 5 voices get special prompts)
       if (voices >= 4) {
-        // Multi-voice conversation for harmonizing/singing
+        // Multi-voice conversation for harmonizing/singing (template-based)
         const conversation = createMultiVoiceConversation(
           "USSD Help", 
-          voices, 
-          location,
+          voices,
           true, // isUSSDHelp flag for special prompts
           lang, // language parameter
-          languageVoices, // language-specific voices
-          deviceInfo // device information for personalization
+          languageVoices // language-specific voices
         );
 
         // Generate audio for each message
@@ -2044,7 +2038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validResults = audioResults.filter(result => result !== null);
 
         // Cache the multi-voice conversation result
-        console.log(`[CACHE STORE] 💾 Storing multi-voice conversation in cache`);
+        console.log(`[CACHE STORE] 💾 Storing multi-voice conversation template in cache`);
         console.log(`[CACHE STORE] Key: ${cacheKey}, Messages: ${validResults.length}, Lang: ${lang}, Voices: ${voices}`);
         const cacheStoreStart = Date.now();
 
@@ -2052,14 +2046,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cacheKey,
           lang,
           voices,
-          locationHash,
+          'template', // Simple template identifier
           validResults, // conversation
           undefined, // singleAudio
-          2 // 2 hours expiration
+          24 * 30 // 30 days expiration for templates (reuse aggressively)
         );
 
         const cacheStoreTime = Date.now() - cacheStoreStart;
-        console.log(`[CACHE STORE] ✅ Multi-voice conversation cached successfully in ${cacheStoreTime}ms`);
+        console.log(`[CACHE STORE] ✅ Multi-voice conversation template cached successfully in ${cacheStoreTime}ms (30-day expiration)`);
 
         res.json({
           success: true,
@@ -2071,29 +2065,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cached: false
         });
       } else {
-        // Single voice (1-3 voices) - standard USSD instructions
-        const instructions = getUSSDInstructions(lang, deviceInfo);
-
-        let finalText = instructions;
-        if (location) {
-          const currentDate = new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          });
-
-          const locationText = location.city ? `in ${location.city}` : '';
-          finalText = `Hello! Today is ${currentDate} ${locationText}. ${instructions}`;
-        }
+        // Single voice (1-3 voices) - standard USSD instructions (template-based)
+        const finalText = getUSSDInstructions(lang);
 
         // Get language-appropriate voices if not already fetched
-        const selectedVoice = voiceConfig || languageVoices[0];
+        const selectedVoice = languageVoices[0];
         const audioBuffer = await generateVoiceAudio(finalText, selectedVoice);
         const audioBase64 = Buffer.from(new Uint8Array(audioBuffer)).toString('base64');
 
         // Cache the single-voice result
-        console.log(`[CACHE STORE] 💾 Storing single voice audio in cache`);
+        console.log(`[CACHE STORE] 💾 Storing single voice audio template in cache`);
         console.log(`[CACHE STORE] Key: ${cacheKey}, Audio size: ${audioBase64.length} bytes, Lang: ${lang}`);
         const cacheStoreStart = Date.now();
 
@@ -2101,18 +2082,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cacheKey,
           lang,
           voices,
-          locationHash,
+          'template', // Simple template identifier
           undefined, // conversation
           {
             audio: audioBase64,
             text: finalText,
             voice: selectedVoice
           }, // singleAudio
-          2 // 2 hours expiration
+          24 * 30 // 30 days expiration for templates (reuse aggressively)
         );
 
         const cacheStoreTime = Date.now() - cacheStoreStart;
-        console.log(`[CACHE STORE] ✅ Single voice audio cached successfully in ${cacheStoreTime}ms`);
+        console.log(`[CACHE STORE] ✅ Single voice audio template cached successfully in ${cacheStoreTime}ms (30-day expiration)`);
 
         res.json({
           success: true,
