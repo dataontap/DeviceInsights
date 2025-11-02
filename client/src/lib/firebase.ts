@@ -40,74 +40,44 @@ export { auth, messaging };
 
 // Email link authentication
 export async function sendMagicLink(email: string): Promise<void> {
-  if (!hasFirebaseConfig || !auth) {
-    // Fallback: Send request to backend for temporary magic link
-    const response = await fetch('/api/admin/send-temp-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to send magic link');
-    }
-    
-    return;
-  }
-
-  const actionCodeSettings = {
-    url: `${window.location.origin}/admin`,
-    handleCodeInApp: true,
-  };
+  // Always use backend magic link via Resend email to avoid Firebase domain whitelist issues
+  // The Replit development domain changes frequently and may not be whitelisted in Firebase
+  const response = await fetch('/api/admin/send-temp-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
   
-  await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-  window.localStorage.setItem('emailForSignIn', email);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to send magic link');
+  }
+  
+  return;
 }
 
 export function isMagicLinkSignIn(): boolean {
-  if (!hasFirebaseConfig || !auth) {
-    // Check for temporary token in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    return !!urlParams.get('token');
-  }
-  
-  return isSignInWithEmailLink(auth, window.location.href);
+  // Always use backend temporary token approach
+  const urlParams = new URLSearchParams(window.location.search);
+  return !!urlParams.get('token');
 }
 
 export async function completeMagicLinkSignIn(): Promise<string | null> {
-  if (!hasFirebaseConfig || !auth) {
-    // Handle temporary token
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+  // Always use backend temporary token approach
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (token) {
+    const response = await fetch('/api/admin/verify-temp-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
     
-    if (token) {
-      const response = await fetch('/api/admin/verify-temp-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.email;
-      }
+    if (response.ok) {
+      const data = await response.json();
+      return data.email;
     }
-    
-    return null;
-  }
-
-  if (!isMagicLinkSignIn()) return null;
-  
-  let email = window.localStorage.getItem('emailForSignIn');
-  if (!email) {
-    email = window.prompt('Please provide your email for confirmation');
-  }
-  
-  if (email) {
-    const result = await signInWithEmailLink(auth, email, window.location.href);
-    window.localStorage.removeItem('emailForSignIn');
-    return result.user.email;
   }
   
   return null;
