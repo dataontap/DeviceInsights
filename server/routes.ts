@@ -1774,6 +1774,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === NPS (NET PROMOTER SCORE) ENDPOINTS ===
+
+  // Submit NPS feedback (public endpoint)
+  app.post("/api/nps/submit", async (req, res) => {
+    try {
+      const { searchId, rating, feedback } = req.body;
+
+      // Validate rating is between 0-10
+      if (typeof rating !== 'number' || rating < 0 || rating > 10) {
+        return res.status(400).json({
+          error: "Invalid rating",
+          message: "Rating must be a number between 0 and 10"
+        });
+      }
+
+      // Capture request metadata
+      const ipAddress = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown') as string;
+      const userAgent = req.headers['user-agent'] || undefined;
+
+      const npsResponse = await storage.createNpsResponse({
+        searchId: searchId || undefined,
+        rating,
+        feedback: feedback || undefined,
+        ipAddress: ipAddress.split(',')[0].trim(),
+        userAgent
+      });
+
+      res.json({
+        success: true,
+        message: "Thank you for your feedback!",
+        response: {
+          id: npsResponse.id,
+          rating: npsResponse.rating
+        }
+      });
+    } catch (error) {
+      console.error("Submit NPS feedback error:", error);
+      res.status(500).json({
+        error: "Failed to submit feedback"
+      });
+    }
+  });
+
+  // Get NPS statistics (admin only)
+  app.get("/api/admin/nps/stats", async (req, res) => {
+    try {
+      const stats = await storage.getNpsStats();
+
+      res.json({
+        success: true,
+        stats
+      });
+    } catch (error) {
+      console.error("Get NPS stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch NPS statistics"
+      });
+    }
+  });
+
+  // Get recent NPS responses (admin only)
+  app.get("/api/admin/nps/responses", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const responses = await storage.getNpsResponses(limit);
+
+      res.json({
+        success: true,
+        responses: responses.map(r => ({
+          id: r.id,
+          searchId: r.searchId,
+          rating: r.rating,
+          feedback: r.feedback,
+          createdAt: r.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error("Get NPS responses error:", error);
+      res.status(500).json({
+        error: "Failed to fetch NPS responses"
+      });
+    }
+  });
+
   // === GITHUB UPLOAD TEST ===
 
   // Test GitHub integration and upload functionality
