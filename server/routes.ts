@@ -947,9 +947,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = magicLinkRequestSchema.parse(req.body);
 
+      // Capture session information
+      const ipAddress = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown') as string;
+      const userAgent = req.headers['user-agent'] || undefined;
+      const referer = req.headers['referer'] || undefined;
+
       // Check if email is a valid admin user
       const adminUser = await storage.getAdminUserByEmail(email);
-      if (!adminUser) {
+      const isExistingAdmin = !!adminUser;
+      
+      // Track access request for email campaigns
+      let emailSent = false;
+      
+      if (!isExistingAdmin) {
+        // Record the access request even for non-admin users
+        await storage.createAdminAccessRequest({
+          email,
+          ipAddress: ipAddress.split(',')[0].trim(),
+          userAgent,
+          referer,
+          isExistingAdmin: false,
+          emailSent: false
+        });
+        
         return res.status(404).json({ 
           error: "Admin not found",
           message: "This email is not registered as an admin user." 
@@ -972,10 +992,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send magic link via Resend email
       try {
         const { sendMagicLinkEmail } = await import('./services/resend.js');
-        const emailSent = await sendMagicLinkEmail({
+        emailSent = await sendMagicLinkEmail({
           email,
           magicLink,
           appName: 'Device Insights Admin'
+        });
+        
+        // Record the access request with email status
+        await storage.createAdminAccessRequest({
+          email,
+          ipAddress: ipAddress.split(',')[0].trim(),
+          userAgent,
+          referer,
+          isExistingAdmin: true,
+          emailSent
         });
         
         if (emailSent) {
@@ -998,6 +1028,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (emailError) {
         console.error('Error sending magic link email:', emailError);
+        
+        // Record the access request even if email fails
+        await storage.createAdminAccessRequest({
+          email,
+          ipAddress: ipAddress.split(',')[0].trim(),
+          userAgent,
+          referer,
+          isExistingAdmin: true,
+          emailSent: false
+        });
+        
         // Fallback to development mode
         console.log(`🔐 Development fallback - Magic link for ${email}: ${magicLink}`);
         res.json({ 
