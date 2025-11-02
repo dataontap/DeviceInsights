@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -118,6 +118,11 @@ export interface IStorage {
   getAllAdminUsers(): Promise<AdminUser[]>;
   isAdminUser(email: string): Promise<boolean>;
   updateAdminLastLogin(email: string): Promise<void>;
+  
+  // Admin Access Request Tracking
+  createAdminAccessRequest(request: InsertAdminAccessRequest): Promise<AdminAccessRequest>;
+  getAdminAccessRequests(limit?: number): Promise<AdminAccessRequest[]>;
+  getAdminAccessRequestsByEmail(email: string): Promise<AdminAccessRequest[]>;
   
   // User Registration & Management
   createRegisteredUser(user: InsertRegisteredUser): Promise<RegisteredUser>;
@@ -791,6 +796,33 @@ export class DatabaseStorage implements IStorage {
       .update(adminUsers)
       .set({ lastLoginAt: new Date() })
       .where(eq(adminUsers.email, email));
+  }
+  
+  // Admin Access Request Tracking Implementation
+  async createAdminAccessRequest(request: InsertAdminAccessRequest): Promise<AdminAccessRequest> {
+    const [result] = await db
+      .insert(adminAccessRequests)
+      .values(request)
+      .returning();
+    return result;
+  }
+  
+  async getAdminAccessRequests(limit: number = 100): Promise<AdminAccessRequest[]> {
+    const results = await db
+      .select()
+      .from(adminAccessRequests)
+      .orderBy(desc(adminAccessRequests.requestedAt))
+      .limit(limit);
+    return results;
+  }
+  
+  async getAdminAccessRequestsByEmail(email: string): Promise<AdminAccessRequest[]> {
+    const results = await db
+      .select()
+      .from(adminAccessRequests)
+      .where(eq(adminAccessRequests.email, email))
+      .orderBy(desc(adminAccessRequests.requestedAt));
+    return results;
   }
   
   // User Registration & Management Implementation
