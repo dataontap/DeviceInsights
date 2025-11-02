@@ -666,15 +666,12 @@ export function createMultiVoiceConversation(
   } else if (voiceCount === 4) {
     // Harmonizing mode - actual 4-voice harmonized IMEI discovery
     if (isUSSDHelp) {
-      const harmonyContent = HARMONIZING_CONTENT[language] || HARMONIZING_CONTENT['en'];
-      const locationGreeting = location ? `Hello from ${location.city || 'your location'}! ` : "Hello! ";
-      const currentDate = new Date().toLocaleDateString('en-US', { 
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
-      });
+      const harmonyContent = (HARMONIZING_CONTENT as any)[language] || HARMONIZING_CONTENT['en'];
+      const locationGreeting = "Hello! ";
       
       // Voice 1 - Lead harmony with intro (multilingual)
       messages.push({
-        text: `${locationGreeting}Today is ${currentDate}. Let us harmonize to help you discover your IMEI! ${harmonyContent.voice1}`,
+        text: `${locationGreeting}Let us harmonize to help you discover your IMEI! ${harmonyContent.voice1}`,
         voiceConfig: selectedVoices[0], // Lead harmony
         timestamp: Date.now(),
         isHarmonizing: true
@@ -707,7 +704,7 @@ export function createMultiVoiceConversation(
     } else {
       // Original harmonizing for non-USSD help
       messages.push({
-        text: location ? generateLocationBasedGreeting(location) : "Welcome to our harmonized IMEI discovery experience!",
+        text: "Welcome to our harmonized IMEI discovery experience!",
         voiceConfig: selectedVoices[0],
         timestamp: Date.now(),
         isHarmonizing: true
@@ -738,15 +735,12 @@ export function createMultiVoiceConversation(
   } else if (voiceCount === 5) {
     // Christmas song style - each voice sings about their first phone
     if (isUSSDHelp) {
-      const rockContent = CHRISTMAS_ROCK_CONTENT[language] || CHRISTMAS_ROCK_CONTENT['en'];
-      const locationGreeting = location ? `Greetings from ${location.city || 'your location'}! ` : "Hello friends! ";
-      const currentDate = new Date().toLocaleDateString('en-US', { 
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
-      });
+      const rockContent = (CHRISTMAS_ROCK_CONTENT as any)[language] || CHRISTMAS_ROCK_CONTENT['en'];
+      const locationGreeting = "Hello friends! ";
       
       // Voice 1 - Lead singer (multilingual)
       messages.push({
-        text: `${locationGreeting}It's ${currentDate}, and we're singing about phones! ${rockContent.voice1}`,
+        text: `${locationGreeting}We're singing about phones! ${rockContent.voice1}`,
         voiceConfig: selectedVoices[0],
         timestamp: Date.now(),
         isSinging: true
@@ -794,7 +788,7 @@ export function createMultiVoiceConversation(
     } else {
       // Original rock arrangement for non-USSD help
       messages.push({
-        text: location ? generateLocationBasedGreeting(location) : "🎸 Welcome to the IMEI Rock Experience! 🎸",
+        text: "🎸 Welcome to the IMEI Rock Experience! 🎸",
         voiceConfig: selectedVoices[4],
         timestamp: Date.now(),
         isSinging: true

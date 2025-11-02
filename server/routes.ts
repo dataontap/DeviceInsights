@@ -2168,7 +2168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const count = Math.max(1, Math.min(5, parseInt(voiceCount) || 1));
 
-      const conversation = createMultiVoiceConversation(text, count, location);
+      const conversation = createMultiVoiceConversation(text, count, false, language);
 
       // Generate audio for each message in the conversation
       const audioPromises = conversation.map(async (message, index) => {
