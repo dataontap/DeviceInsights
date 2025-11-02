@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -176,6 +176,21 @@ export interface IStorage {
   getAdminNotifications(unreadOnly?: boolean): Promise<AdminNotification[]>;
   markAdminNotificationRead(notificationId: number): Promise<void>;
   getUnreadAdminNotificationCount(): Promise<number>;
+  
+  // NPS (Net Promoter Score) Feedback
+  createNpsResponse(response: InsertNpsResponse): Promise<NpsResponse>;
+  getNpsResponses(limit?: number): Promise<NpsResponse[]>;
+  getNpsStats(): Promise<{
+    totalResponses: number;
+    averageScore: number;
+    npsScore: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+    promoterPercentage: number;
+    passivePercentage: number;
+    detractorPercentage: number;
+  }>;
   
   // Analytics Methods for Demo
   getTotalSearchCount(): Promise<number>;
@@ -1263,6 +1278,82 @@ export class DatabaseStorage implements IStorage {
       .from(adminNotifications)
       .where(eq(adminNotifications.isRead, false));
     return result.count;
+  }
+  
+  // NPS (Net Promoter Score) Feedback Implementation
+  async createNpsResponse(response: InsertNpsResponse): Promise<NpsResponse> {
+    const [result] = await db
+      .insert(npsResponses)
+      .values(response)
+      .returning();
+    return result;
+  }
+  
+  async getNpsResponses(limit: number = 100): Promise<NpsResponse[]> {
+    const results = await db
+      .select()
+      .from(npsResponses)
+      .orderBy(desc(npsResponses.createdAt))
+      .limit(limit);
+    return results;
+  }
+  
+  async getNpsStats(): Promise<{
+    totalResponses: number;
+    averageScore: number;
+    npsScore: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+    promoterPercentage: number;
+    passivePercentage: number;
+    detractorPercentage: number;
+  }> {
+    const responses = await db.select().from(npsResponses);
+    const totalResponses = responses.length;
+    
+    if (totalResponses === 0) {
+      return {
+        totalResponses: 0,
+        averageScore: 0,
+        npsScore: 0,
+        promoters: 0,
+        passives: 0,
+        detractors: 0,
+        promoterPercentage: 0,
+        passivePercentage: 0,
+        detractorPercentage: 0,
+      };
+    }
+    
+    // Calculate average score
+    const totalScore = responses.reduce((sum, r) => sum + r.rating, 0);
+    const averageScore = totalScore / totalResponses;
+    
+    // Categorize responses
+    const promoters = responses.filter(r => r.rating >= 9).length;
+    const passives = responses.filter(r => r.rating >= 7 && r.rating <= 8).length;
+    const detractors = responses.filter(r => r.rating <= 6).length;
+    
+    // Calculate percentages
+    const promoterPercentage = (promoters / totalResponses) * 100;
+    const passivePercentage = (passives / totalResponses) * 100;
+    const detractorPercentage = (detractors / totalResponses) * 100;
+    
+    // Calculate NPS Score: (% Promoters - % Detractors)
+    const npsScore = promoterPercentage - detractorPercentage;
+    
+    return {
+      totalResponses,
+      averageScore: Math.round(averageScore * 10) / 10,
+      npsScore: Math.round(npsScore),
+      promoters,
+      passives,
+      detractors,
+      promoterPercentage: Math.round(promoterPercentage * 10) / 10,
+      passivePercentage: Math.round(passivePercentage * 10) / 10,
+      detractorPercentage: Math.round(detractorPercentage * 10) / 10,
+    };
   }
   
   // Analytics Methods Implementation
