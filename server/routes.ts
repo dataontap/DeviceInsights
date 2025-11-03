@@ -1817,6 +1817,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get overall statistics (admin only)
+  app.get("/api/admin/stats", validateAdminSession, async (req, res) => {
+    try {
+      // Get overall system stats (not limited to specific API key)
+      const allSearches = await storage.getImeiSearches(10000);
+      const totalSearches = allSearches.length;
+      
+      // Calculate unique devices
+      const uniqueDevices = new Set(
+        allSearches
+          .filter((s: any) => s.deviceMake && s.deviceModel)
+          .map((s: any) => `${s.deviceMake}-${s.deviceModel}`)
+      ).size;
+
+      // Calculate success rate (searches with device info)
+      const successfulSearches = allSearches.filter((s: any) => s.deviceMake && s.deviceModel).length;
+      const successRate = totalSearches > 0 
+        ? Math.round((successfulSearches / totalSearches) * 100) 
+        : 0;
+
+      // Get popular devices across all searches
+      const deviceCounts: { [key: string]: { make: string; model: string; count: number } } = {};
+      allSearches.forEach((search: any) => {
+        if (search.deviceMake && search.deviceModel) {
+          const key = `${search.deviceMake}-${search.deviceModel}`;
+          if (!deviceCounts[key]) {
+            deviceCounts[key] = {
+              make: search.deviceMake,
+              model: search.deviceModel,
+              count: 0
+            };
+          }
+          deviceCounts[key].count++;
+        }
+      });
+
+      const popularDevices = Object.values(deviceCounts)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+        .map(device => ({
+          name: `${device.make} ${device.model}`,
+          manufacturer: device.make,
+          searches: device.count
+        }));
+
+      res.json({
+        totalSearches,
+        uniqueDevices,
+        successRate,
+        apiCalls: totalSearches, // For consistency with the v1 API
+        popularDevices
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch statistics"
+      });
+    }
+  });
+
   // Get NPS statistics (admin only)
   app.get("/api/admin/nps/stats", async (req, res) => {
     try {

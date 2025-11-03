@@ -28,7 +28,21 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
   const { data: stats, isLoading, error } = useQuery<StatsData>({
-    queryKey: ['/api/v1/stats'],
+    queryKey: ['/api/admin/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+      
+      return response.json();
+    },
   });
 
   if (isLoading) {
