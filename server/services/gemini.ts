@@ -131,6 +131,42 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
       carrierVariant: "US Model"
     }
   },
+  // Samsung Galaxy S24 Ultra (Real Samsung TAC: 35932811)
+  "359328118012345": {
+    make: "Samsung",
+    model: "Galaxy S24 Ultra",
+    year: 2024,
+    modelNumber: "SM-S928U",
+    networkCapabilities: {
+      fourG: true,
+      fiveG: true,
+      volte: true,
+      wifiCalling: "supported"
+    },
+    specifications: {
+      networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 14, 17, 18, 19, 20, 25, 26, 28, 29, 30, 38, 39, 40, 41, 46, 48, 66, 71; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n38, n40, n41, n66, n71, n77, n78, n79",
+      releaseYear: 2024,
+      carrierVariant: "US Unlocked"
+    }
+  },
+  // iPhone 16 Pro (Real Apple TAC: 35940210)
+  "359402108012345": {
+    make: "Apple",
+    model: "iPhone 16 Pro",
+    year: 2024,
+    modelNumber: "A3294",
+    networkCapabilities: {
+      fourG: true,
+      fiveG: true,
+      volte: true,
+      wifiCalling: "supported"
+    },
+    specifications: {
+      networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 14, 17, 18, 19, 20, 25, 26, 28, 29, 30, 32, 34, 38, 39, 40, 41, 42, 43, 46, 48, 53, 66, 71; 5G: n1, n2, n3, n5, n7, n8, n12, n14, n20, n25, n26, n28, n29, n30, n38, n40, n41, n48, n53, n66, n70, n71, n77, n78, n79",
+      releaseYear: 2024,
+      carrierVariant: "US Model"
+    }
+  },
   // Default for unknown devices
   "default": {
     make: "Unknown",
@@ -279,10 +315,21 @@ export async function getTopCarriers(location: string): Promise<{ carriers: Arra
 
 export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
   try {
-    // Check if Gemini API key is available, otherwise use fallback
+    // PRIORITY 1: Check local database first (faster, more reliable for known devices)
+    console.log(`[DEVICE ID] Checking local database for IMEI: ${imei}`);
+    const localDevice = getDeviceFromLocalDatabase(imei);
+    
+    if (localDevice && localDevice.make !== "Unknown") {
+      console.log(`[DEVICE ID] ✅ Device found in local database: ${localDevice.make} ${localDevice.model}`);
+      return localDevice;
+    }
+    
+    console.log(`[DEVICE ID] Device not in local database, checking Gemini AI...`);
+
+    // PRIORITY 2: If not in local database and Gemini available, use AI
     if (!process.env.GEMINI_API_KEY) {
-      console.log("Gemini API key not available, using fallback device database");
-      return getFallbackDeviceInfo(imei);
+      console.log("[DEVICE ID] Gemini API key not available, returning unknown device");
+      return localDevice; // Return the unknown device from local DB
     }
 
     // Extract TAC and other components for enhanced analysis
@@ -424,32 +471,44 @@ Always respond with valid JSON in the exact format specified.`;
       }
     };
 
+    console.log(`[DEVICE ID] ✅ Device identified via Gemini: ${deviceInfo.make} ${deviceInfo.model}`);
     return deviceInfo;
   } catch (error) {
-    console.error("Gemini API error:", error);
-    console.log("Falling back to demo device database");
-    return getFallbackDeviceInfo(imei);
+    console.error("[DEVICE ID] Gemini API error:", error);
+    console.log("[DEVICE ID] Returning unknown device (Gemini failed)");
+    return getDeviceFromLocalDatabase(imei);
   }
 }
 
-function getFallbackDeviceInfo(imei: string): DeviceInfo {
+function getDeviceFromLocalDatabase(imei: string): DeviceInfo {
   const { tac, fac } = analyzeIMEIStructure(imei);
   
-  // Try to match exact IMEI first
+  // Strategy 1: Try to match exact IMEI first (most precise)
   if (DEMO_DEVICES[imei]) {
+    console.log(`[LOCAL DB] Exact IMEI match found: ${imei}`);
     return {
       ...DEMO_DEVICES[imei],
-      tacAnalysis: `TAC ${tac} matched in fallback database. This is a known device configuration.`
+      tacAnalysis: `TAC ${tac} matched in local database. Known device configuration.`
     };
   }
   
-  // Try to match by TAC (first 8 digits)
-  const tacKey = Object.keys(DEMO_DEVICES).find(key => key.startsWith(fac));
-  
-  if (tacKey && DEMO_DEVICES[tacKey]) {
+  // Strategy 2: Try to match by full TAC (8 digits)
+  const tacMatch = Object.keys(DEMO_DEVICES).find(key => key.startsWith(tac));
+  if (tacMatch && DEMO_DEVICES[tacMatch]) {
+    console.log(`[LOCAL DB] TAC match found: ${tac} -> ${DEMO_DEVICES[tacMatch].make} ${DEMO_DEVICES[tacMatch].model}`);
     return {
-      ...DEMO_DEVICES[tacKey],
-      tacAnalysis: `TAC ${tac} partially matched (FAC: ${fac}). Device identified from similar TAC pattern.`
+      ...DEMO_DEVICES[tacMatch],
+      tacAnalysis: `TAC ${tac} matched in local database. Device identified from TAC pattern.`
+    };
+  }
+  
+  // Strategy 3: Try to match by FAC (first 6 digits - less precise)
+  const facMatch = Object.keys(DEMO_DEVICES).find(key => key.startsWith(fac));
+  if (facMatch && DEMO_DEVICES[facMatch]) {
+    console.log(`[LOCAL DB] FAC match found: ${fac} -> ${DEMO_DEVICES[facMatch].make} ${DEMO_DEVICES[facMatch].model}`);
+    return {
+      ...DEMO_DEVICES[facMatch],
+      tacAnalysis: `FAC ${fac} partially matched. Device identified from similar pattern.`
     };
   }
   
