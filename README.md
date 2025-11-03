@@ -143,8 +143,8 @@ This full-stack platform provides comprehensive IMEI device analysis and network
 ### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+# Clone the repository (replace with your GitHub repository URL after pushing)
+git clone https://github.com/YOUR_USERNAME/imei-device-checker.git
 cd imei-device-checker
 
 # Install dependencies
@@ -785,8 +785,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Email**: rbm@dotmobile.app
-- **Issues**: [GitHub Issues](repository-issues-url)
-- **Documentation**: [Full Docs](repository-docs-url)
+- **Documentation**: See `docs/` folder for additional guides
+- **Issues**: Report issues via GitHub Issues after repository is published
 
 ---
 

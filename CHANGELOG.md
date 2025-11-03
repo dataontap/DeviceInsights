@@ -133,4 +133,4 @@ All existing endpoints remain backwards compatible.
 
 ---
 
-For detailed changes and discussions, see [GitHub Releases](repository-releases-url).
+For detailed changes and discussions, see the GitHub Releases page after the repository is published.
