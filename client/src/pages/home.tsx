@@ -91,7 +91,8 @@ export default function Home() {
           <DeviceResults result={result} />
           <NpsFeedback 
             searchId={(result as any)?.searchId} 
-            onComplete={() => console.log('NPS feedback completed')} 
+            onComplete={() => console.log('NPS feedback completed')}
+            inline={true}
           />
         </>
       )}
