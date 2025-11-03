@@ -1877,6 +1877,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get location statistics with time filtering (admin only)
+  app.get("/api/admin/location-stats", validateAdminSession, async (req, res) => {
+    try {
+      const period = req.query.period as string || '30d'; // 1h, 1d, 30d
+      
+      // Calculate time threshold
+      const now = new Date();
+      let timeThreshold = new Date();
+      
+      switch (period) {
+        case '1h':
+          timeThreshold.setHours(now.getHours() - 1);
+          break;
+        case '1d':
+          timeThreshold.setDate(now.getDate() - 1);
+          break;
+        case '30d':
+          timeThreshold.setDate(now.getDate() - 30);
+          break;
+        default:
+          timeThreshold.setDate(now.getDate() - 30);
+      }
+
+      // Get searches within time period
+      const allSearches = await storage.getImeiSearches(10000);
+      const filteredSearches = allSearches.filter((search: any) => {
+        const searchDate = new Date(search.searchedAt);
+        return searchDate >= timeThreshold;
+      });
+
+      // Aggregate by location
+      const locationCounts: { [key: string]: number } = {};
+      const locationCoordinates: { [key: string]: { lat: number; lng: number; count: number } } = {};
+      
+      filteredSearches.forEach((search: any) => {
+        const location = search.searchLocation || 'Unknown';
+        locationCounts[location] = (locationCounts[location] || 0) + 1;
+      });
+
+      // Convert to array and sort
+      const topLocations = Object.entries(locationCounts)
+        .map(([location, count]) => ({ location, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      // Calculate total searches in period
+      const totalSearches = filteredSearches.length;
+
+      res.json({
+        period,
+        totalSearches,
+        topLocations,
+        locationCounts,
+        heatmapData: topLocations.map(loc => ({
+          name: loc.location,
+          value: loc.count
+        }))
+      });
+    } catch (error) {
+      console.error("Location stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch location statistics"
+      });
+    }
+  });
+
   // Get NPS statistics (admin only)
   app.get("/api/admin/nps/stats", async (req, res) => {
     try {

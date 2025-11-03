@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import RecentSearches from "@/components/recent-searches";
 // import { NotificationManager } from "@/components/notification-manager"; // Hidden for now
 import NpsMetrics from "@/components/nps-metrics";
+import LocationAnalytics from "@/components/location-analytics";
 
 interface StatsData {
   totalSearches: number;
@@ -153,6 +154,11 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
         {/* NPS Metrics Section */}
         <div className="max-w-6xl mx-auto mb-8">
           <NpsMetrics />
+        </div>
+
+        {/* Location Analytics Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <LocationAnalytics sessionToken={sessionToken} />
         </div>
 
         {/* Charts Grid */}
