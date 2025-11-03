@@ -5,7 +5,7 @@ import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import RecentSearches from "@/components/recent-searches";
-import { NotificationManager } from "@/components/notification-manager";
+// import { NotificationManager } from "@/components/notification-manager"; // Hidden for now
 import NpsMetrics from "@/components/nps-metrics";
 
 interface StatsData {
@@ -196,10 +196,10 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
           <RecentSearches popularDevices={stats?.popularDevices || []} />
         </div>
 
-        {/* Firebase Messaging Center */}
-        <div className="max-w-4xl mx-auto">
+        {/* Firebase Messaging Center - Hidden for now */}
+        {/* <div className="max-w-4xl mx-auto">
           <NotificationManager />
-        </div>
+        </div> */}
       </div>
     </section>
   );
