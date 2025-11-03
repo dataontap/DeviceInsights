@@ -1,676 +1,413 @@
-# DOTM Device Compatibility API
+# IMEI Device Checker & Network Monitoring Platform
 
-A comprehensive IMEI device checker and network connectivity monitoring platform with AI-powered device identification, lightweight speed analytics, and automated email insights.
+> A comprehensive AI-powered platform for IMEI device compatibility analysis, network coverage monitoring, and user feedback collection with multilingual support and voice synthesis.
 
-**Last update: January 30, 2025**
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)
 
-## 🚀 Features
-
-- **🌍 30+ Languages Support** - Complete multilingual experience with voice synthesis in 30+ languages including English, Spanish, French, German, Japanese, Chinese, Arabic, and more
-- **🎙️ ElevenLabs Voice Synthesis** - Advanced AI voice generation with harmonizing modes, singing styles, and Canadian rock ballads for USSD instructions
-- **AI-Powered IMEI Analysis** - Device identification using Google Gemini with intelligent fallback
-- **Network Connectivity Monitoring** - Lightweight speed analytics and interruption detection
-- **Monthly Email Insights** - Automated connectivity reports for registered users
-- **Real-time Alerts** - Connectivity issue notifications through web app
-- **MCP Server Integration** - Optimized for automated LLM services
-- **Admin Portal** - Comprehensive usage tracking and rate limit monitoring
-
-## 🛠️ Developer Guide
-
-### Prerequisites
-
-Before setting up the development environment, ensure you have the following installed:
-
-- **Node.js** (v18 or later) - [Download here](https://nodejs.org/)
-- **npm** (comes with Node.js) or **yarn**
-- **PostgreSQL** (v12 or later) - [Download here](https://www.postgresql.org/download/)
-- **Git** - [Download here](https://git-scm.com/)
-
-### Local Development Setup
-
-#### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd dotm-device-checker
-```
-
-#### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-#### 3. Environment Configuration
-
-Create a `.env` file in the root directory with the following variables:
-
-```bash
-# === REQUIRED ENVIRONMENT VARIABLES ===
-
-# Database Configuration
-DATABASE_URL="postgresql://username:password@localhost:5432/dotm_dev"
-
-# Google Gemini API (for AI-powered device identification)
-GEMINI_API_KEY="your_gemini_api_key_here"
-
-# Firebase Configuration (for notifications and messaging)
-VITE_FIREBASE_API_KEY="your_firebase_api_key"
-VITE_FIREBASE_PROJECT_ID="your_firebase_project_id"
-VITE_FIREBASE_APP_ID="your_firebase_app_id"
-FIREBASE_SERVICE_ACCOUNT_JSON="your_firebase_service_account_json"
-
-# Google Maps API (for location services)
-GORSE_GOOGLE_API_KEY="your_google_maps_api_key"
-GOOGLE_MAPS_API_KEY="your_google_maps_api_key" # Fallback
-
-# Application Configuration
-NODE_ENV="development"
-PORT="5000"
-SESSION_SECRET="your_session_secret_here"
-
-# === OPTIONAL ENVIRONMENT VARIABLES ===
-
-# Email Service (for monthly insights - optional)
-SENDGRID_API_KEY="your_sendgrid_api_key"
-
-# Admin Configuration
-ADMIN_EMAIL="rbm@dotmobile.app"
-```
-
-#### 4. Database Setup
-
-##### Option A: Local PostgreSQL
-
-1. **Start PostgreSQL service**:
-   ```bash
-   # On macOS with Homebrew
-   brew services start postgresql
-
-   # On Ubuntu/Debian
-   sudo systemctl start postgresql
-
-   # On Windows
-   # Start through Services or PostgreSQL installer
-   ```
-
-2. **Create database**:
-   ```bash
-   psql -U postgres
-   CREATE DATABASE dotm_dev;
-   CREATE USER dotm_user WITH PASSWORD 'your_password';
-   GRANT ALL PRIVILEGES ON DATABASE dotm_dev TO dotm_user;
-   \q
-   ```
-
-3. **Update DATABASE_URL** in `.env`:
-   ```bash
-   DATABASE_URL="postgresql://dotm_user:your_password@localhost:5432/dotm_dev"
-   ```
-
-##### Option B: Using Neon (Cloud PostgreSQL)
-
-1. Sign up at [Neon.tech](https://neon.tech/)
-2. Create a new project
-3. Copy the connection string to your `.env` file
-
-#### 5. Database Migration
-
-Initialize the database with the required tables:
-
-```bash
-npm run db:push
-```
-
-This command uses Drizzle ORM to create all necessary tables based on the schema in `shared/schema.ts`.
-
-#### 6. API Keys Setup
-
-##### Google Gemini API
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Add to your `.env` file as `GEMINI_API_KEY`
-
-##### Firebase Configuration
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or use existing one
-3. Enable Authentication with Google sign-in
-4. Generate service account key (JSON)
-5. Add configuration to your `.env` file
-
-##### Google Maps API
-1. Visit [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Maps Static API
-3. Create credentials (API Key)
-4. Add to your `.env` file
-
-### Running the Application
-
-#### Development Mode
-
-Start the development server with hot reloading:
-
-```bash
-npm run dev
-```
-
-This will:
-- Start the Express server on `http://localhost:5000`
-- Enable Vite dev server with HMR
-- Watch for file changes and auto-restart
-- Initialize the monthly email insights scheduler
-
-#### Production Build
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Start the production server:
-
-```bash
-npm start
-```
-
-### Project Structure
-
-```
-dotm-device-checker/
-├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── lib/          # Utilities and helpers
-│   │   └── main.tsx      # Application entry point
-│   └── index.html
-├── server/                # Backend Express application
-│   ├── services/         # Business logic services
-│   │   ├── gemini.js     # AI device analysis
-│   │   ├── email-insights.ts  # Monthly email reports
-│   │   ├── firebase-admin.js  # Notifications
-│   │   └── coverage-analyzer.js  # Network analysis
-│   ├── middleware/       # Express middleware
-│   ├── routes/          # API route handlers
-│   ├── storage.ts       # Database operations
-│   └── index.ts         # Server entry point
-├── shared/              # Shared code between client/server
-│   └── schema.ts        # Database schema and types
-├── package.json
-├── drizzle.config.ts    # Database configuration
-├── vite.config.ts       # Frontend build configuration
-├── tailwind.config.ts   # Styling configuration
-└── .env                 # Environment variables
-```
-
-### Development Workflow
-
-#### 1. Making Changes
-
-- **Frontend changes**: Edit files in `client/src/` - Vite will hot-reload
-- **Backend changes**: Edit files in `server/` - Server will auto-restart
-- **Database changes**: Modify `shared/schema.ts` then run `npm run db:push`
-
-#### 2. Database Operations
-
-```bash
-# Push schema changes to database
-npm run db:push
-
-# Force push (dangerous - use with caution)
-npm run db:push --force
-
-# Generate migration files (if using migrations instead of push)
-npm run db:generate
-
-# View database in Drizzle Studio
-npm run db:studio
-```
-
-#### 3. Testing API Endpoints
-
-Use the built-in API routes for testing:
-
-```bash
-# Test IMEI analysis
-curl -X POST http://localhost:5000/api/check \
-  -H "Content-Type: application/json" \
-  -d '{"imei": "123456789012345", "location": "New York", "accept_policy": true}'
-
-# Generate API key for testing
-curl -X POST http://localhost:5000/api/keys \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "name": "Test Key"}'
-
-# Register user for email insights
-curl -X POST http://localhost:5000/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "firstName": "John", "lastName": "Doe"}'
-```
-
-### Building for Production
-
-#### 1. Environment Setup
-
-Create a production `.env` file with:
-- Production database URL
-- Production API keys
-- Secure session secret
-- Production domain configuration
-
-#### 2. Build Process
-
-```bash
-# Install dependencies
-npm ci
-
-# Build frontend and backend
-npm run build
-
-# Start production server
-npm start
-```
-
-#### 3. Deployment Checklist
-
-- [ ] All environment variables are set
-- [ ] Database is accessible and migrated
-- [ ] API keys are valid and have proper limits
-- [ ] CORS is configured for your domain
-- [ ] Rate limiting is appropriate for production
-- [ ] Logging is configured
-- [ ] Health checks are working
-- [ ] SSL/TLS is properly configured
-
-### Troubleshooting
-
-#### Common Issues
-
-**Database Connection Issues**:
-```bash
-# Check if PostgreSQL is running
-pg_isready -h localhost -p 5432
-
-# Test database connection
-psql "postgresql://username:password@localhost:5432/dotm_dev"
-```
-
-**API Key Issues**:
-- Verify all API keys are valid and have proper permissions
-- Check rate limits haven't been exceeded
-- Ensure environment variables are loaded correctly
-
-**Build Issues**:
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Delete node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Check for TypeScript errors
-npm run type-check
-```
-
-**Port Already in Use**:
-```bash
-# Find process using port 5000
-lsof -ti:5000
-
-# Kill process (replace PID)
-kill -9 <PID>
-```
-
-### Contributing
-
-#### Code Style
-
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Follow the configured rules
-- **Prettier**: Auto-formatting on save
-- **Naming**: Use descriptive names, camelCase for variables, PascalCase for components
-
-#### Database Changes
-
-1. Modify schema in `shared/schema.ts`
-2. Run `npm run db:push` to apply changes
-3. Test thoroughly in development
-4. Update storage interface if needed
-
-#### Adding New Features
-
-1. **Plan the feature**: Update schema if needed
-2. **Backend first**: Add storage methods, API routes
-3. **Frontend integration**: Add UI components, API calls
-4. **Testing**: Manual testing, edge cases
-5. **Documentation**: Update README if needed
-
-#### Pull Request Process
-
-1. Create feature branch from `main`
-2. Make changes with clear commit messages
-3. Test thoroughly in development
-4. Update documentation if needed
-5. Submit PR with clear description
-
-### Performance Optimization
-
-#### Database Optimization
-
-- Use indexes for frequently queried columns
-- Implement connection pooling
-- Monitor query performance
-- Use appropriate data types
-
-#### API Optimization
-
-- Implement caching where appropriate
-- Use efficient serialization
-- Monitor response times
-- Implement pagination for large datasets
-
-#### Frontend Optimization
-
-- Code splitting for large components
-- Lazy loading for non-critical features
-- Optimize images and assets
-- Use React.memo for expensive components
+**Last Updated:** January 2025
 
 ---
 
-## 📊 Service Tiers & Rate Limits
+## 📋 Table of Contents
 
-### Standard Tier
-- **Rate Limit**: 100 requests per hour
-- **Use Case**: Individual developers, small projects
-- **Features**: Basic IMEI analysis, connectivity monitoring
+- [Overview](#-overview)
+- [Features](#-features)
+- [Recent Developments](#-recent-developments)
+- [Quick Start](#-quick-start)
+- [Environment Setup](#-environment-setup)
+- [API Documentation](#-api-documentation)
+- [Project Structure](#-project-structure)
+- [Development Guide](#-development-guide)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-### MCP Server Tier
-- **Rate Limit**: 500 requests per hour
-- **Use Case**: Model Context Protocol servers and automated LLM services
-- **Features**: Enhanced rate limits, optimized for AI workflows
+---
 
-### Premium Tier
-- **Rate Limit**: 1000 requests per hour
-- **Use Case**: Production applications, high-volume services
-- **Features**: Priority support, advanced analytics
+## 🎯 Overview
 
-## 🤖 MCP Server Integration
+This full-stack platform provides comprehensive IMEI device analysis and network monitoring capabilities, designed for mobile carriers, MVNOs, device compatibility services, and network infrastructure monitoring. Built with modern technologies and AI-powered insights, it offers real-time device identification, network compatibility analysis, and user satisfaction tracking.
 
-The DOTM API is optimized for **Model Context Protocol (MCP)** servers, providing AI assistants with reliable device compatibility data and connectivity insights.
+### Key Use Cases
 
-### Why Use DOTM with MCP?
+- **MVNO Operations**: Device compatibility verification for customer onboarding
+- **Network Carriers**: Coverage analysis and quality monitoring across regions
+- **Device Retailers**: Pre-sale compatibility checks for customer assurance
+- **Technical Support**: Automated device identification and troubleshooting
+- **Market Research**: User satisfaction tracking via NPS surveys
+- **API Integration**: RESTful APIs for third-party service integration
 
-- **AI-Optimized Responses**: Structured JSON responses perfect for LLM processing
-- **Intelligent Rate Limiting**: Higher limits (500/hour) for automated services
-- **Comprehensive Data**: Device specs, network compatibility, and connectivity insights
-- **Real-time Monitoring**: Track API usage and performance through admin portal
+---
 
-### MCP Server Setup
+## ✨ Features
 
-#### 1. Register for MCP API Key
+### 🤖 AI-Powered Device Analysis
+- **Google Gemini Integration**: Advanced AI identification using TAC (Type Allocation Code) analysis
+- **Intelligent Fallback System**: Comprehensive device database for offline operation
+- **Network Compatibility**: Complete 4G/5G/VoLTE/Wi-Fi Calling capability analysis
+- **Multi-Carrier Support**: AT&T, Verizon, T-Mobile, Rogers, Bell, Telus, and more
+- **Real-time Analysis**: Sub-second IMEI lookup with detailed specifications
 
-Contact our support team for MCP-tier API access:
+### 🗺️ Network Coverage Analysis
+- **Provider Comparison**: Side-by-side coverage analysis for multiple carriers
+- **AI-Powered Insights**: Gemini-driven coverage quality assessment
+- **Downdetector Integration**: Real-time outage and issue detection
+- **Google Maps Integration**: Visual coverage maps with interactive markers
+- **Location-Based Analysis**: Automatic carrier detection based on GPS coordinates
+- **Issue Reporting**: User-submitted network problems with AI pattern recognition
+
+### 🎙️ Multilingual Voice Support (30+ Languages)
+- **ElevenLabs Integration**: High-quality AI voice synthesis
+- **Voice Styles**: Standard, harmonizing, singing, and rock ballad modes
+- **USSD Instructions**: Voice-guided help for finding IMEI (*#06#) in any language
+- **Supported Languages**: English, Spanish, French, German, Italian, Portuguese, Dutch, Russian, Polish, Turkish, Chinese (Mandarin & Cantonese), Japanese, Korean, Hindi, Thai, Vietnamese, Indonesian, Arabic, Hebrew, Swedish, Norwegian, Danish, Finnish, Greek, Czech, Hungarian, Romanian, Bulgarian, Croatian, Slovak
+
+### 📊 User Feedback & Analytics
+- **NPS (Net Promoter Score) System**: Non-intrusive feedback collection after searches
+- **Admin Dashboard**: Comprehensive metrics including:
+  - Real-time NPS score calculation
+  - Promoter/Passive/Detractor breakdown
+  - Recent feedback with sentiment analysis
+  - User satisfaction trends
+- **Search Analytics**: Device popularity, success rates, geographic distribution
+- **Rate Limit Monitoring**: Track API usage and enforce limits by tier
+
+### 📧 User Engagement
+- **Monthly Email Insights**: Automated connectivity reports for registered users
+- **Magic Link Authentication**: Secure email-based admin access via Resend
+- **Real-time Notifications**: Firebase Cloud Messaging for alerts
+- **Admin Access Tracking**: Complete audit trail of authentication attempts
+
+### 🔐 Security & Performance
+- **API Key Management**: Secure key generation and validation
+- **Enhanced Rate Limiting**: Tiered limits (100/500/1000 requests per hour)
+- **PostgreSQL Database**: Robust data persistence with Drizzle ORM
+- **Session Management**: Secure admin sessions with PostgreSQL storage
+- **Input Validation**: Zod schemas for all API endpoints
+- **CORS Configuration**: Production-ready cross-origin controls
+
+### 🚀 Developer-Friendly APIs
+- **RESTful Architecture**: Clean, documented endpoints
+- **OpenAPI Compatible**: Easy integration with any language/framework
+- **JSON Responses**: Structured data perfect for LLM/AI processing
+- **Export Capabilities**: CSV and JSON data export
+- **Versioned APIs**: `/api/v1` for stable production use
+- **MCP Server Ready**: Optimized for Model Context Protocol integration
+
+---
+
+## 🆕 Recent Developments
+
+### Version 2.0 (January 2025)
+
+#### NPS Feedback System
+- ✅ **Non-intrusive Widget**: Appears 3 seconds after successful IMEI search
+- ✅ **Smart Positioning**: Bottom-right desktop, bottom-center mobile
+- ✅ **0-10 Rating Scale**: Standard NPS methodology with optional text feedback
+- ✅ **Admin Dashboard**: Real-time NPS metrics with distribution charts
+- ✅ **Database Schema**: Complete `nps_responses` table with timestamps
+- ✅ **API Endpoints**: `/api/nps/submit` and `/api/admin/nps/*`
+
+#### Enhanced Authentication
+- ✅ **Resend Magic Links**: Email-based admin authentication from rbm@dotmobile.app
+- ✅ **Access Request Tracking**: All login attempts recorded with metadata
+- ✅ **Firebase Bypass**: Backend-only approach avoids domain whitelist issues
+- ✅ **Session Metadata**: IP, user agent, location, and timestamp tracking
+
+#### Voice & Internationalization
+- ✅ **ElevenLabs Integration**: Template-based caching for cost optimization
+- ✅ **30+ Language Support**: Complete voice synthesis across all languages
+- ✅ **Harmonizing Modes**: Multi-voice singing for USSD instructions
+- ✅ **Voice Agent API**: Endpoints for language/voice selection
+
+#### Coverage Maps Enhancement
+- ✅ **Provider Selection**: Choose specific carrier or auto-detect by location
+- ✅ **Issue Analyzer**: AI-powered network problem classification
+- ✅ **Pattern Recognition**: Identify widespread vs. isolated issues
+- ✅ **Mobile/Broadband Split**: Separate analysis for service types
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** v18+ ([Download](https://nodejs.org/))
+- **PostgreSQL** v12+ ([Download](https://www.postgresql.org/download/))
+- **Git** ([Download](https://git-scm.com/))
+- **API Keys** (see [Environment Setup](#-environment-setup))
+
+### Installation
 
 ```bash
-# Request MCP API key
-curl -X POST https://your-domain.com/api/contact \
-  -H "Content-Type: application/json" \
-  -d '{"type": "mcp_access", "email": "your-email@domain.com", "service": "Your MCP Server Name"}'
+# Clone the repository
+git clone <repository-url>
+cd imei-device-checker
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your API keys and database URL
+
+# Initialize database
+npm run db:push
+
+# Start development server
+npm run dev
 ```
 
-#### 2. Configure Your MCP Server
+The application will be available at `http://localhost:5000`
 
-```python
-# Example MCP server configuration
-import requests
-import json
-from datetime import datetime, timedelta
+---
 
-class DOTMConnector:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://your-domain.com/api/v1"
-        self.headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "MCP-DOTM-Connector/1.0"
-        }
-        self.request_count = 0
-        self.last_reset = datetime.now()
+## 🔧 Environment Setup
 
-    def check_rate_limit(self):
-        """Monitor rate limit usage"""
-        if datetime.now() - self.last_reset > timedelta(hours=1):
-            self.request_count = 0
-            self.last_reset = datetime.now()
+### Required Environment Variables
 
-        if self.request_count >= 480:  # Leave buffer for 500 limit
-            raise Exception("Approaching rate limit. Please wait.")
+Create a `.env` file in the root directory:
 
-    def analyze_device(self, imei: str, location: str = None) -> dict:
-        """Analyze IMEI device for MCP server"""
-        self.check_rate_limit()
+```bash
+# === DATABASE ===
+DATABASE_URL="postgresql://username:password@localhost:5432/dotm_dev"
 
-        payload = {
-            "imei": imei,
-            "location": location or "Unknown",
-            "accept_policy": True
-        }
+# === AI SERVICES ===
+# Google Gemini API for device identification
+GEMINI_API_KEY="your_gemini_api_key"
 
-        try:
-            response = requests.post(
-                f"{self.base_url}/check",
-                headers=self.headers,
-                json=payload,
-                timeout=30
-            )
+# === FIREBASE (Authentication & Messaging) ===
+VITE_FIREBASE_API_KEY="your_firebase_api_key"
+VITE_FIREBASE_PROJECT_ID="your_project_id"
+VITE_FIREBASE_APP_ID="your_app_id"
+FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 
-            self.request_count += 1
+# === MAPS & LOCATION ===
+GORSE_GOOGLE_API_KEY="your_google_maps_api_key"
+GOOGLE_MAPS_API_KEY="your_google_maps_api_key"
 
-            if response.status_code == 429:
-                # Rate limit exceeded
-                return {
-                    "error": "rate_limit_exceeded",
-                    "message": "MCP service rate limit exceeded",
-                    "retry_after": response.headers.get("Retry-After", "3600")
-                }
+# === EMAIL SERVICES ===
+# Resend for magic link authentication
+RESEND_API_KEY="your_resend_api_key"
 
-            response.raise_for_status()
-            return response.json()
+# SendGrid for monthly insights (optional)
+SENDGRID_API_KEY="your_sendgrid_api_key"
 
-        except requests.exceptions.RequestException as e:
-            return {
-                "error": "api_error",
-                "message": str(e),
-                "imei": imei
-            }
+# === VOICE SYNTHESIS (Optional) ===
+ELEVENLABS_API_KEY="your_elevenlabs_api_key"
 
-    def get_usage_stats(self) -> dict:
-        """Get API usage statistics"""
-        try:
-            response = requests.get(
-                f"{self.base_url}/stats",
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            return {"error": str(e)}
-
-# Usage in your MCP server
-dotm = DOTMConnector("your_mcp_api_key_here")
-
-def handle_device_query(imei: str, location: str = None):
-    """Handle device compatibility query from LLM"""
-    result = dotm.analyze_device(imei, location)
-
-    if "error" in result:
-        if result["error"] == "rate_limit_exceeded":
-            return f"Rate limit reached. Service will resume in {result.get('retry_after', 3600)} seconds."
-        return f"Analysis failed: {result['message']}"
-
-    # Format response for LLM
-    device_info = result.get("device", {})
-    compatibility = result.get("compatibility", {})
-
-    return f\"\"\"
-Device Analysis Results:
-- Device: {device_info.get('make')} {device_info.get('model')} ({device_info.get('year', 'Unknown')})
-- DOTM Compatible: {'Yes' if compatibility.get('dotm') else 'No'}
-- 5G Support: {'Yes' if compatibility.get('fiveG') else 'No'}
-- VoLTE: {'Yes' if compatibility.get('volte') else 'No'}
-- Network Quality Score: {result.get('qualityScore', 'N/A')}/100
-\"\"\"
+# === APPLICATION CONFIG ===
+NODE_ENV="development"
+PORT="5000"
+SESSION_SECRET="your_secure_random_string_here"
+ADMIN_EMAIL="rbm@dotmobile.app"
 ```
 
-#### 3. JavaScript/TypeScript MCP Integration
+### Getting API Keys
 
-```typescript
-interface DOTMConfig {
-  apiKey: string;
-  baseUrl?: string;
-  rateLimitBuffer?: number;
-}
+#### 1. Google Gemini API
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create new project or select existing
+3. Generate API key
+4. Add to `.env` as `GEMINI_API_KEY`
 
-class DOTMMCPClient {
-  private config: DOTMConfig;
-  private requestCount = 0;
-  private resetTime = Date.now() + (60 * 60 * 1000);
+#### 2. Firebase
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create project
+3. Enable Authentication (Email/Password + Google)
+4. Enable Cloud Messaging (FCM)
+5. Download service account key (JSON)
+6. Add credentials to `.env`
 
-  constructor(config: DOTMConfig) {
-    this.config = {
-      baseUrl: 'https://your-domain.com/api/v1',
-      rateLimitBuffer: 20, // Buffer of 20 requests
-      ...config
-    };
-  }
+#### 3. Google Maps API
+1. Visit [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable Maps Static API and Maps JavaScript API
+3. Create API key
+4. Restrict key to your domain
+5. Add to `.env`
 
-  async checkDevice(imei: string, location?: string): Promise<any> {
-    // Rate limit check
-    if (Date.now() > this.resetTime) {
-      this.requestCount = 0;
-      this.resetTime = Date.now() + (60 * 60 * 1000);
-    }
+#### 4. Resend (Magic Link Email)
+1. Sign up at [Resend](https://resend.com/)
+2. Verify domain or use test domain
+3. Create API key
+4. Add to `.env` as `RESEND_API_KEY`
 
-    if (this.requestCount >= (500 - this.config.rateLimitBuffer!)) {
-      throw new Error(`MCP rate limit buffer reached. Reset at: ${new Date(this.resetTime).toISOString()}`);
-    }
+#### 5. ElevenLabs (Voice Synthesis - Optional)
+1. Sign up at [ElevenLabs](https://elevenlabs.io/)
+2. Generate API key from settings
+3. Add to `.env` as `ELEVENLABS_API_KEY`
+4. Note: Limited free tier, monitor usage
 
-    const response = await fetch(`${this.config.baseUrl}/check`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'MCP-DOTM-Client/1.0'
-      },
-      body: JSON.stringify({
-        imei,
-        location: location || 'Unknown',
-        accept_policy: true
-      })
-    });
+### Database Setup
 
-    this.requestCount++;
+#### Local PostgreSQL
 
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After') || '3600';
-      throw new Error(`Rate limit exceeded. Retry after: ${retryAfter} seconds`);
-    }
+```bash
+# Start PostgreSQL
+# macOS (Homebrew)
+brew services start postgresql
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
+# Ubuntu/Debian
+sudo systemctl start postgresql
 
-    return response.json();
-  }
+# Windows: Use Services or PostgreSQL installer
 
-  async getUsageStats(): Promise<any> {
-    const response = await fetch(`${this.config.baseUrl}/stats`, {
-      headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`
-      }
-    });
+# Create database
+psql -U postgres
+CREATE DATABASE dotm_dev;
+CREATE USER dotm_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE dotm_dev TO dotm_user;
+\q
 
-    return response.json();
-  }
+# Update DATABASE_URL in .env
+DATABASE_URL="postgresql://dotm_user:your_secure_password@localhost:5432/dotm_dev"
+
+# Run migrations
+npm run db:push
+```
+
+#### Cloud PostgreSQL (Neon)
+
+```bash
+# 1. Sign up at https://neon.tech/
+# 2. Create new project
+# 3. Copy connection string
+# 4. Add to .env:
+DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/dotm_prod?sslmode=require"
+
+# 5. Run migrations
+npm run db:push
+```
+
+---
+
+## 📡 API Documentation
+
+### Device Analysis
+
+#### Check IMEI Compatibility
+
+```http
+POST /api/v1/check
+Authorization: Bearer your_api_key
+Content-Type: application/json
+
+{
+  "imei": "123456789012345",
+  "location": "New York, NY",
+  "network": "AT&T",
+  "accept_policy": true
 }
 ```
 
-## 📈 Rate Limit Monitoring & Notifications
-
-### Rate Limit Headers
-All API responses include rate limit information:
-
-```
-RateLimit-Limit: 500
-RateLimit-Remaining: 487
-RateLimit-Reset: 1640995200
-RateLimit-Policy: 500;w=3600
-```
-
-### Rate Limit Exceeded Response
-When limits are exceeded, you'll receive:
-
+**Response:**
 ```json
 {
-  "error": "Rate limit exceeded",
-  "message": "You have exceeded the rate limit of 500 requests per 60 minutes.",
-  "details": {
-    "limit": 500,
-    "windowMs": 3600000,
-    "usage": 501,
-    "resetTime": "2025-09-11T15:00:00.000Z"
+  "searchId": 12345,
+  "success": true,
+  "device": {
+    "make": "Apple",
+    "model": "iPhone 14 Pro",
+    "year": 2022,
+    "modelNumber": "A2892"
   },
-  "retryAfter": 3600
+  "networkCompatibility": {
+    "fourG": true,
+    "fiveG": true,
+    "volte": true,
+    "wifiCalling": "supported"
+  },
+  "tacAnalysis": "TAC 01326600 identifies this as Apple iPhone 14 Pro (US model)",
+  "location": "New York, NY",
+  "coordinates": { "lat": 40.7128, "lng": -74.0060 }
 }
 ```
 
-### Admin Notifications
-Rate limit violations automatically generate admin notifications:
+### Coverage Analysis
 
+#### Analyze Network Coverage
+
+```http
+POST /api/coverage/analyze
+Content-Type: application/json
+
+{
+  "lat": 40.7128,
+  "lng": -74.0060,
+  "address": "New York, NY",
+  "provider": "auto"
+}
+```
+
+**Response:**
 ```json
 {
-  "type": "rate_limit_exceeded",
-  "title": "Rate Limit Exceeded",
-  "message": "API key 'MCP-Server-Production' has exceeded rate limits on /api/v1/check",
-  "severity": "warning",
-  "metadata": {
-    "endpoint": "/api/v1/check",
-    "requestCount": 501,
-    "timeWindow": "60 minutes",
-    "ipAddress": "192.168.1.100",
-    "userAgent": "MCP-DOTM-Connector/1.0"
-  }
+  "location": {
+    "lat": 40.7128,
+    "lng": -74.0060,
+    "address": "New York, NY"
+  },
+  "mobile_providers": {
+    "Verizon": {
+      "coverage_score": 92,
+      "reliability_rating": 4.5,
+      "recent_issues": 3,
+      "recommendation": "excellent"
+    },
+    "AT&T": {
+      "coverage_score": 88,
+      "reliability_rating": 4.2,
+      "recent_issues": 5,
+      "recommendation": "good"
+    }
+  },
+  "broadband_providers": { ... }
 }
 ```
 
-## 🎙️ Voice Synthesis & Multilingual Support
+### NPS Feedback
 
-### Supported Languages (30+)
-The platform supports voice synthesis and localized content in over 30 languages:
+#### Submit User Feedback
 
-**European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Swedish, Norwegian, Danish, Finnish, Polish, Czech, Hungarian, Romanian, Bulgarian, Croatian, Slovak
+```http
+POST /api/nps/submit
+Content-Type: application/json
 
-**Asian**: Japanese, Korean, Chinese (Mandarin), Chinese (Cantonese), Hindi, Thai, Vietnamese, Indonesian, Malay
+{
+  "searchId": 12345,
+  "rating": 9,
+  "feedback": "Great tool, very accurate results!"
+}
+```
 
-**Middle Eastern & African**: Arabic, Hebrew, Turkish
+#### Get NPS Statistics (Admin)
 
-**Americas**: Portuguese (Brazilian), Spanish (Latin American)
+```http
+GET /api/admin/nps/stats
+Authorization: Bearer admin_session_token
+```
 
-### Voice Synthesis Features
-- **Multiple Voice Styles**: Standard voice, harmonizing style, Canadian rock style
-- **ElevenLabs Integration**: High-quality AI voice generation with emotional expression
-- **Singing Modes**: Christmas song style, harmonizing vocals, rock ballads
-- **Real-time Generation**: Dynamic voice content based on user location and preferences
-- **USSD Instructions**: Voice-guided help for finding IMEI numbers in any supported language
+**Response:**
+```json
+{
+  "totalResponses": 1247,
+  "npsScore": 56,
+  "promoters": 687,
+  "passives": 412,
+  "detractors": 148,
+  "promoterPercentage": 55.1,
+  "passivePercentage": 33.0,
+  "detractorPercentage": 11.9
+}
+```
 
-### Voice API Endpoints
+### Voice API
 
 #### Get USSD Voice Instructions
+
 ```http
 POST /api/voice/ussd-help
 Content-Type: application/json
@@ -685,33 +422,13 @@ Content-Type: application/json
 }
 ```
 
-#### Get Available Languages
-```http
-GET /api/voice/languages
-```
+### User Management
 
-#### Get Voice Agents
-```http
-GET /api/voice/agents?language=fr
-```
+#### Register for Email Insights
 
-## 🔧 API Endpoints
-
-### Device Analysis
-```http
-POST /api/v1/check
-Authorization: Bearer your_api_key
-
-{
-  "imei": "123456789012345",
-  "location": "New York, NY",
-  "accept_policy": true
-}
-```
-
-### User Registration (for email insights)
 ```http
 POST /api/users/register
+Content-Type: application/json
 
 {
   "email": "user@example.com",
@@ -720,191 +437,382 @@ POST /api/users/register
   "emailPreferences": {
     "monthlyInsights": true,
     "interruptionAlerts": true,
-    "speedAlerts": true
+    "speedAlerts": false
   }
 }
 ```
 
-### Connectivity Monitoring
-```http
-POST /api/connectivity/record
-X-User-Email: user@example.com
+### Analytics & Export
 
-{
-  "sessionId": "unique-session-id",
-  "downloadSpeed": 25000,
-  "uploadSpeed": 5000,
-  "latency": 45,
-  "connectionType": "4G",
-  "carrier": "DOTM"
-}
-```
+#### Get Platform Statistics
 
-### Usage Statistics
 ```http
 GET /api/v1/stats
 Authorization: Bearer your_api_key
 ```
 
-## 🔐 Admin Portal Access
+#### Export Search Data
 
-### Request Admin Access
-
-To access the admin portal for monitoring API usage, rate limits, and generating reports:
-
-#### Email Request
-Send an email to: **rbm@dotmobile.app**
-
-**Subject**: Admin Portal Access Request
-
-**Required Information**:
-```
-Company/Organization: [Your Organization]
-Email Address: [Your Email]
-API Key Name: [Your API Key Name]
-Use Case: [Brief description of your use case]
-Expected Monthly Volume: [Estimated requests per month]
-Technical Contact: [Primary technical contact]
-Billing Contact: [Billing/business contact]
-```
-
-#### Online Request Form
-Visit: **https://your-domain.com/admin-request**
-
-Fill out the admin access request form with:
-- Organization details
-- Technical requirements
-- Usage expectations
-- Billing information
-
-#### API Request
 ```http
-POST /api/admin/access-request
-Content-Type: application/json
+GET /api/v1/export?format=csv&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer your_api_key
+```
 
+### Rate Limits
+
+| Tier | Limit | Use Case |
+|------|-------|----------|
+| **Standard** | 100 req/hour | Individual developers, testing |
+| **MCP Server** | 500 req/hour | Automated AI services |
+| **Premium** | 1000 req/hour | Production applications |
+
+**Rate Limit Headers:**
+```
+RateLimit-Limit: 500
+RateLimit-Remaining: 487
+RateLimit-Reset: 1640995200
+RateLimit-Policy: 500;w=3600
+```
+
+---
+
+## 📁 Project Structure
+
+```
+imei-device-checker/
+├── client/                     # Frontend React application
+│   ├── public/
+│   │   └── firebase-messaging-sw.js  # Service worker for push notifications
+│   └── src/
+│       ├── components/
+│       │   ├── ui/            # Shadcn/ui components
+│       │   ├── imei-checker.tsx        # Main IMEI input form
+│       │   ├── device-results.tsx      # Results display
+│       │   ├── nps-feedback.tsx        # NPS feedback widget
+│       │   ├── nps-metrics.tsx         # Admin NPS dashboard
+│       │   ├── admin-dashboard.tsx     # Analytics dashboard
+│       │   ├── admin-login.tsx         # Magic link auth
+│       │   ├── coverage-maps.tsx       # Network coverage
+│       │   ├── voice-helper.tsx        # Voice instructions
+│       │   └── ...
+│       ├── pages/
+│       │   ├── home.tsx       # Landing page
+│       │   ├── admin.tsx      # Admin portal
+│       │   ├── coverage-maps.tsx  # Coverage analysis page
+│       │   └── analytics.tsx  # Public analytics
+│       ├── lib/
+│       │   ├── queryClient.ts # TanStack Query setup
+│       │   ├── firebase.ts    # Firebase client
+│       │   └── utils.ts       # Utilities
+│       └── App.tsx
+│
+├── server/                     # Backend Express application
+│   ├── services/
+│   │   ├── gemini.ts          # AI device analysis
+│   │   ├── elevenlabs.ts      # Voice synthesis
+│   │   ├── coverage-analyzer.ts   # Network coverage AI
+│   │   ├── issue-analyzer.ts  # Problem classification
+│   │   ├── email-insights.ts  # Monthly email reports
+│   │   ├── resend.ts          # Magic link emails
+│   │   └── firebase-admin.ts  # Push notifications
+│   ├── middleware/
+│   │   └── enhanced-rate-limit.ts  # Tiered rate limiting
+│   ├── routes/
+│   │   └── pdf-generator.ts   # Policy PDF generation
+│   ├── storage.ts             # Database operations (Drizzle)
+│   ├── routes.ts              # API route handlers
+│   ├── db.ts                  # Database connection
+│   ├── vite.ts                # Frontend serving
+│   └── index.ts               # Server entry point
+│
+├── shared/
+│   └── schema.ts              # Database schema (Drizzle ORM)
+│
+├── migrations/                # Database migrations
+├── docs/                      # Additional documentation
+│   ├── CONTRIBUTING.md
+│   ├── SECURITY_ANALYSIS.md
+│   └── ...
+│
+├── package.json
+├── drizzle.config.ts          # Database config
+├── vite.config.ts             # Frontend build config
+├── tailwind.config.ts         # Styling config
+├── tsconfig.json              # TypeScript config
+├── .env                       # Environment variables
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 💻 Development Guide
+
+### Running the Application
+
+```bash
+# Development mode (hot reload)
+npm run dev
+
+# Production build
+npm run build
+npm start
+
+# Database operations
+npm run db:push          # Apply schema changes
+npm run db:studio        # Open Drizzle Studio GUI
+npm run db:generate      # Generate migrations
+```
+
+### Database Schema Management
+
+The application uses Drizzle ORM with push-based schema updates:
+
+```bash
+# 1. Edit schema in shared/schema.ts
+# 2. Push changes to database
+npm run db:push
+
+# 3. For breaking changes, use force push (careful!)
+npm run db:push --force
+```
+
+**Main Tables:**
+- `imei_searches` - IMEI analysis records
+- `users` - Registered users for email insights
+- `api_keys` - API authentication
+- `blacklisted_imeis` - Blocked devices
+- `nps_responses` - User feedback (NEW)
+- `admin_access_requests` - Auth audit trail (NEW)
+
+### Adding New Features
+
+1. **Update Database Schema**
+   ```typescript
+   // shared/schema.ts
+   export const newFeature = pgTable('new_feature', {
+     id: serial('id').primaryKey(),
+     name: text('name').notNull(),
+     createdAt: timestamp('created_at').defaultNow()
+   });
+   ```
+
+2. **Update Storage Interface**
+   ```typescript
+   // server/storage.ts
+   interface IStorage {
+     // Add new methods
+     createFeature(data: NewFeature): Promise<Feature>;
+     getFeatures(): Promise<Feature[]>;
+   }
+   ```
+
+3. **Add API Route**
+   ```typescript
+   // server/routes.ts
+   app.post('/api/features', async (req, res) => {
+     const data = await storage.createFeature(req.body);
+     res.json(data);
+   });
+   ```
+
+4. **Create Frontend Component**
+   ```typescript
+   // client/src/components/feature.tsx
+   export default function Feature() {
+     const { data } = useQuery({ queryKey: ['/api/features'] });
+     return <div>{/* Component JSX */}</div>;
+   }
+   ```
+
+### Testing API Endpoints
+
+```bash
+# Test IMEI analysis
+curl -X POST http://localhost:5000/api/check \
+  -H "Content-Type: application/json" \
+  -d '{"imei":"123456789012345","network":"AT&T","accept_policy":true}'
+
+# Test NPS submission
+curl -X POST http://localhost:5000/api/nps/submit \
+  -H "Content-Type: application/json" \
+  -d '{"searchId":1,"rating":9,"feedback":"Excellent!"}'
+
+# Test coverage analysis
+curl -X POST http://localhost:5000/api/coverage/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"lat":40.7128,"lng":-74.0060,"provider":"auto"}'
+```
+
+### Code Style
+
+- **TypeScript**: Strict mode enabled
+- **Prettier**: Auto-formatting on save
+- **ESLint**: Follow configured rules
+- **Naming**: camelCase for variables, PascalCase for components
+- **Git Commits**: Conventional commits format
+
+---
+
+## 🚀 Deployment
+
+### Production Environment Variables
+
+```bash
+NODE_ENV="production"
+DATABASE_URL="postgresql://user:pass@production-db.com:5432/prod"
+SESSION_SECRET="<generate-strong-random-string>"
+
+# Update all API keys with production credentials
+GEMINI_API_KEY="prod_key_..."
+RESEND_API_KEY="prod_key_..."
+# ... etc
+```
+
+### Build & Deploy
+
+```bash
+# 1. Install dependencies
+npm ci
+
+# 2. Build application
+npm run build
+
+# 3. Run database migrations
+npm run db:push
+
+# 4. Start production server
+npm start
+```
+
+### Deployment Platforms
+
+#### Replit (Recommended)
+- ✅ Automatic deployment on push
+- ✅ Built-in PostgreSQL database
+- ✅ Environment variable management
+- ✅ Domain configuration included
+- ✅ One-click publishing
+
+#### Vercel
+```bash
+vercel deploy --prod
+```
+
+#### Heroku
+```bash
+git push heroku main
+heroku run npm run db:push
+```
+
+#### Docker
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY . .
+RUN npm run build
+CMD ["npm", "start"]
+```
+
+### Health Checks
+
+```http
+GET /api/health
+```
+
+**Response:**
+```json
 {
-  "organization": "Your Company",
-  "email": "admin@yourcompany.com",
-  "apiKeyName": "your-api-key-name",
-  "useCase": "Production IMEI analysis for mobile app",
-  "monthlyVolume": 50000,
-  "technicalContact": {
-    "name": "John Doe",
-    "email": "john@yourcompany.com",
-    "role": "Lead Developer"
-  },
-  "billingContact": {
-    "name": "Jane Smith",
-    "email": "billing@yourcompany.com",
-    "role": "Finance Manager"
-  }
+  "status": "healthy",
+  "database": "connected",
+  "timestamp": "2025-01-30T12:00:00Z"
 }
 ```
 
-### Admin Portal Features
+---
 
-Once approved, you'll have access to:
+## 📖 Additional Documentation
 
-#### Dashboard
-- **Real-time Usage Metrics**: Current request rates, response times
-- **Rate Limit Status**: Usage vs. limits, time until reset
-- **Error Tracking**: Failed requests, rate limit violations
-- **Performance Analytics**: Average response times, success rates
+- **[API Reference](./API_DOCUMENTATION.md)** - Complete API documentation
+- **[Coverage API](./COVERAGE_MAPS_API_DOCUMENTATION.md)** - Network coverage endpoints
+- **[Contributing Guide](./docs/CONTRIBUTING.md)** - How to contribute
+- **[Security Analysis](./docs/SECURITY_ANALYSIS.md)** - Security practices
+- **[Architecture](./replit.md)** - Technical architecture details
 
-#### API Key Management
-- **Usage History**: Detailed request logs and statistics
-- **Rate Limit Configuration**: Adjust limits based on tier
-- **Key Regeneration**: Rotate API keys securely
-- **Usage Alerts**: Set up notifications for usage thresholds
+---
 
-#### Reporting
-- **Monthly Reports**: Detailed usage and performance reports
-- **Custom Analytics**: Filter by date range, endpoint, response codes
-- **Export Data**: CSV/JSON export of usage statistics
-- **Billing Reports**: Usage-based billing calculations
+## 🤝 Contributing
 
-#### Notifications
-- **Rate Limit Alerts**: Real-time notifications when approaching limits
-- **Error Threshold Alerts**: Notifications for high error rates
-- **System Notifications**: API updates, maintenance windows
-- **Custom Alerts**: Configure custom notification rules
+We welcome contributions! Please see [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for guidelines.
 
-### Response Timeline
-- **Email Requests**: 2-3 business days
-- **Online Form**: 1-2 business days  
-- **API Requests**: Immediate confirmation, 1 business day approval
-- **Urgent Requests**: Contact rbm@dotmobile.app with "URGENT" in subject
+### Quick Contribution Steps
 
-### Admin Portal URL
-After approval: **https://your-domain.com/admin**
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-Login credentials will be sent to your registered email address.
+### Development Workflow
 
-## 🛡️ Security & Best Practices
+- Use conventional commits
+- Add tests for new features
+- Update documentation
+- Ensure all checks pass
 
-### API Key Security
-- Store API keys in environment variables, never in code
-- Use different keys for development, staging, and production
-- Rotate keys regularly (recommended: every 90 days)
-- Monitor usage for unusual patterns
+---
 
-### Rate Limit Best Practices
-- Implement client-side rate limiting with buffers
-- Cache responses when appropriate
-- Use exponential backoff for retries
-- Monitor usage through admin portal
+## 📝 License
 
-### Error Handling
-Always handle rate limit responses gracefully:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```javascript
-async function makeAPICall(endpoint, data) {
-  try {
-    const response = await fetch(endpoint, { /* config */ });
+---
 
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After');
-      console.log(`Rate limited. Retry after: ${retryAfter} seconds`);
-      // Implement retry logic with exponential backoff
-      return null;
-    }
+## 🙏 Acknowledgments
 
-    return await response.json();
-  } catch (error) {
-    console.error('API call failed:', error);
-    return null;
-  }
-}
-```
+- **Google Gemini** - AI-powered device identification
+- **ElevenLabs** - High-quality voice synthesis
+- **Resend** - Reliable email delivery
+- **Firebase** - Real-time notifications
+- **Neon** - Serverless PostgreSQL
+- **Shadcn/ui** - Beautiful UI components
+- **Drizzle ORM** - Type-safe database operations
 
-## 📞 Support & Contact
+---
 
-### Technical Support
+## 📞 Support
+
 - **Email**: rbm@dotmobile.app
-- **Documentation**: https://your-domain.com/docs
-- **API Status**: https://status.dotm.com
-
-### Business Inquiries
-- **Sales**: rbm@dotmobile.app
-- **Partnerships**: rbm@dotmobile.app
-- **Admin Access**: rbm@dotmobile.app
-
-### Emergency Contact
-For critical issues affecting production services:
-- **Emergency Support**: rbm@dotmobile.app
-- **Subject Line**: CRITICAL - [Brief Description]
+- **Issues**: [GitHub Issues](repository-issues-url)
+- **Documentation**: [Full Docs](repository-docs-url)
 
 ---
 
-## 📄 License & Terms
+## 🗺️ Roadmap
 
-This API is provided under commercial license. By using this service, you agree to our Terms of Service and Privacy Policy.
+### Q1 2025
+- [x] NPS feedback system
+- [x] Enhanced admin authentication
+- [x] Multilingual voice support
+- [ ] Real-time WebSocket updates
+- [ ] Advanced analytics dashboard
 
-- **Terms of Service**: https://your-domain.com/terms
-- **Privacy Policy**: https://your-domain.com/privacy
-- **SLA**: https://your-domain.com/sla
+### Q2 2025
+- [ ] Mobile app (React Native)
+- [ ] Advanced reporting
+- [ ] Custom branding options
+- [ ] Enterprise tier
+
+### Future
+- [ ] GraphQL API
+- [ ] Real-time collaboration
+- [ ] Predictive analytics
+- [ ] IoT device support
 
 ---
 
-*API Version: 1.0.0*
-*Documentation Version: 1.0.0*
+**Made with ❤️ by Data On Tap Inc.**
+
+*Last updated: January 2025*

@@ -106,3 +106,18 @@ auto-generated/
 *.lock
 .git/index.lock
 .git/config.lock
+
+# Development assets and temporary files
+attached_assets/
+test-*.js
+*.tar.gz
+*.zip
+create-upload-zip.sh
+generate-pdf.js
+github-client.ts
+deviceInsights
+DOTM_Device_Compatibility_Policy.html
+
+# Generated documentation
+docs/GITHUB_*.md
+docs/SENSITIVE_DATA_REMOVAL_GUIDE.md
