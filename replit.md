@@ -2,7 +2,7 @@
 
 ## Overview
 
-This full-stack web application enables users to analyze mobile device IMEI numbers to determine device information and network compatibility, primarily focused on the DOTM network. It utilizes AI-powered device identification via Google's Gemini API (with an intelligent fallback system) and provides comprehensive analytics on device searches, including location tracking and Google Earth integration. The project aims to offer a robust and user-friendly tool for device compatibility analysis, with ambitions for broad market adoption and ongoing feature expansion.
+This comprehensive full-stack web application enables users to analyze mobile device IMEI numbers to determine device information and network compatibility across multiple carriers. It utilizes AI-powered device identification via Google's Gemini API (with an intelligent fallback system) and provides comprehensive analytics on device searches, network coverage analysis, user satisfaction tracking via NPS surveys, and multilingual voice assistance. The platform is designed for MVNOs, mobile carriers, device retailers, and technical support services, offering robust APIs, real-time feedback collection, and administrative dashboards for complete operational visibility.
 
 ## User Preferences
 
@@ -21,21 +21,68 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 
 ### Key Components & Features
 
--   **Database Schema**: Manages Users, IMEI Searches, API Keys, and Blacklisted IMEIs.
--   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, and a CSS variable-based theme system.
--   **Backend Services**: Handles IMEI analysis, database operations, RESTful API endpoints, and PostgreSQL session management. Features include real-time analytics, location tracking, network agnostic compatibility, data export, and published REST APIs with CORS enabled.
--   **AI Fallback System**: Ensures functionality even without Gemini API access by using an intelligent device database.
--   **Security**: Includes API key management, rate limiting (100 requests/hour per IP), secure API endpoints, input validation, and secure logging.
--   **Mapping & Location**: Integrates Google Earth and Google Maps for location visualization and coverage analysis, with a fallback SVG world map system. Live world map shows animated search activity.
--   **Coverage Maps & Issue Reporting**: Provides comprehensive coverage analysis with provider compatibility, Downdetector data simulation, AI-powered provider comparison, and an AI-driven issue reporting system with pattern detection.
--   **Authentication**: Email-based magic link authentication for admin dashboard access; API key authentication for external API access.
--   **Messaging**: Firebase integration for SMS, email, and push notifications.
+-   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, and Admin Access Requests.
+-   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme system, and Shadcn/ui components.
+-   **Backend Services**: Handles IMEI analysis, database operations, RESTful API endpoints, PostgreSQL session management, NPS feedback collection, and voice synthesis. Features include real-time analytics, location tracking, network-agnostic compatibility, data export, and published REST APIs with CORS enabled.
+-   **AI Fallback System**: Ensures functionality even without Gemini API access by using an intelligent device database with over 20 real TAC (Type Allocation Code) entries.
+-   **NPS Feedback System**: Non-intrusive widget appears 3 seconds after successful IMEI searches, collecting 0-10 ratings with optional text feedback. Admin dashboard displays real-time NPS score, promoter/passive/detractor breakdown, and recent responses.
+-   **Security**: Enhanced rate limiting with tiered access (100/500/1000 req/hour), API key management, secure magic link authentication via Resend, input validation with Zod schemas, and comprehensive audit logging.
+-   **Mapping & Location**: Integrates Google Maps for location visualization and coverage analysis, with fallback SVG world map system. Live world map shows animated search activity.
+-   **Coverage Maps & Issue Reporting**: Provides comprehensive coverage analysis with provider compatibility, Downdetector data integration, AI-powered provider comparison, and an AI-driven issue reporting system with pattern detection and device-specific analysis.
+-   **Authentication**: Magic link email authentication via Resend (from rbm@dotmobile.app) for admin dashboard; API key authentication for external API access. All access attempts are tracked with session metadata.
+-   **Messaging**: Firebase Cloud Messaging integration for push notifications; Resend for transactional emails.
+-   **Voice Synthesis**: ElevenLabs integration supporting 30+ languages with multiple voice styles (standard, harmonizing, singing, rock ballad). Template-based caching optimizes API usage and costs.
 
 ## External Dependencies
 
--   **AI Service**: Google Gemini 2.5 Pro (via `GEMINI_API_KEY`).
--   **Database**: Neon PostgreSQL (via `DATABASE_URL`).
--   **Mapping**: Google Maps Static API (for thumbnails).
--   **Build Tools**: Vite (frontend), ESBuild (backend).
+-   **AI Service**: Google Gemini 2.5 Pro (via `GEMINI_API_KEY`) for device identification, coverage analysis, and issue classification.
+-   **Database**: PostgreSQL via Neon serverless (via `DATABASE_URL`).
+-   **Voice Synthesis**: ElevenLabs API (via `ELEVENLABS_API_KEY`) for multilingual voice generation.
+-   **Email Services**: 
+    - Resend (via `RESEND_API_KEY`) for magic link authentication
+    - SendGrid (optional, via `SENDGRID_API_KEY`) for monthly insights
+-   **Mapping**: Google Maps JavaScript API and Static API (via `GOOGLE_MAPS_API_KEY`).
+-   **Build Tools**: Vite (frontend), ESBuild (backend), TypeScript compiler.
 -   **PDF Generation**: Puppeteer (for policy document creation).
--   **Messaging**: Firebase (FCM, Admin SDK).
+-   **Messaging**: Firebase Cloud Messaging (FCM, Admin SDK) for push notifications.
+-   **ORM**: Drizzle ORM with PostgreSQL driver for type-safe database operations.
+
+## Recent Architecture Updates (January 2025)
+
+### NPS Feedback System
+- Added `nps_responses` table with rating (0-10), optional feedback text, search reference, and timestamps
+- Implemented storage methods: `createNpsResponse()`, `getNpsStats()`, `getNpsResponses()`
+- API endpoints: `POST /api/nps/submit`, `GET /api/admin/nps/stats`, `GET /api/admin/nps/responses`
+- Frontend: Non-intrusive widget component with smart positioning and auto-dismiss
+- Admin dashboard: Real-time NPS metrics with distribution charts and recent feedback display
+
+### Authentication Enhancements
+- Migrated admin authentication to Resend magic links (backend-only approach)
+- Added `admin_access_requests` table to track all login attempts with metadata
+- Session metadata includes: IP address, user agent, location, referrer, admin status, email delivery status
+- Supports future email marketing campaigns based on access request history
+
+### Database Schema Additions
+```typescript
+// NPS Responses
+nps_responses: {
+  id: serial
+  searchId: integer (nullable, references imei_searches)
+  rating: integer (0-10)
+  feedback: text (nullable)
+  createdAt: timestamp
+}
+
+// Admin Access Tracking
+admin_access_requests: {
+  id: serial
+  email: text
+  ipAddress: text
+  userAgent: text
+  location: text (nullable)
+  referer: text (nullable)
+  isAdmin: boolean
+  emailSent: boolean
+  createdAt: timestamp
+}
+```
