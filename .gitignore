@@ -77,7 +77,7 @@ firebase-debug.*.log
 replit.nix
 
 # Package manager
-package-lock.json
+# Note: package-lock.json is tracked for reproducible builds
 yarn.lock
 pnpm-lock.yaml
 
