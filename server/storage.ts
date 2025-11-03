@@ -45,6 +45,7 @@ export interface IStorage {
   // API Keys
   createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
   getApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
+  getApiKeyById(id: number): Promise<ApiKey | undefined>;
   incrementApiKeyUsage(keyHash: string): Promise<void>;
   
   // Policy Acceptances
@@ -351,6 +352,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(apiKeys)
       .where(eq(apiKeys.keyHash, keyHash));
+    return apiKey || undefined;
+  }
+
+  async getApiKeyById(id: number): Promise<ApiKey | undefined> {
+    const [apiKey] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.id, id));
     return apiKey || undefined;
   }
 

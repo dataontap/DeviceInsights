@@ -1943,6 +1943,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get top API keys usage statistics (admin only)
+  app.get("/api/admin/api-keys/top", validateAdminSession, async (req, res) => {
+    try {
+      const period = req.query.period as string || '30d';
+      
+      // Calculate time threshold
+      const now = new Date();
+      let timeThreshold = new Date();
+      
+      switch (period) {
+        case '1h':
+          timeThreshold.setHours(now.getHours() - 1);
+          break;
+        case '1d':
+          timeThreshold.setDate(now.getDate() - 1);
+          break;
+        case '30d':
+          timeThreshold.setDate(now.getDate() - 30);
+          break;
+        default:
+          timeThreshold.setDate(now.getDate() - 30);
+      }
+
+      // Get all searches with API key info
+      const allSearches = await storage.getImeiSearches(10000);
+      
+      // Filter by time period and aggregate by API key
+      const apiKeyStats: { 
+        [keyId: number]: { 
+          email: string; 
+          name: string; 
+          requests: number;
+          lastUsed?: Date;
+        } 
+      } = {};
+
+      allSearches.forEach((search: any) => {
+        const searchDate = new Date(search.searchedAt);
+        if (searchDate >= timeThreshold && search.apiKeyId) {
+          if (!apiKeyStats[search.apiKeyId]) {
+            apiKeyStats[search.apiKeyId] = {
+              email: 'Unknown',
+              name: 'Unknown',
+              requests: 0,
+              lastUsed: searchDate
+            };
+          }
+          apiKeyStats[search.apiKeyId].requests++;
+          
+          if (!apiKeyStats[search.apiKeyId].lastUsed || searchDate > apiKeyStats[search.apiKeyId].lastUsed) {
+            apiKeyStats[search.apiKeyId].lastUsed = searchDate;
+          }
+        }
+      });
+
+      // Get API key details for each
+      const apiKeyIds = Object.keys(apiKeyStats).map(id => parseInt(id));
+      const apiKeyDetails: any[] = [];
+      
+      for (const keyId of apiKeyIds) {
+        const apiKey = await storage.getApiKeyById(keyId);
+        if (apiKey) {
+          apiKeyStats[keyId].email = apiKey.email;
+          apiKeyStats[keyId].name = apiKey.name;
+        }
+      }
+
+      // Convert to array and sort by request count
+      const topApiKeys = Object.entries(apiKeyStats)
+        .map(([keyId, stats]) => ({
+          apiKeyId: parseInt(keyId),
+          email: stats.email,
+          name: stats.name,
+          requests: stats.requests,
+          lastUsed: stats.lastUsed
+        }))
+        .sort((a, b) => b.requests - a.requests)
+        .slice(0, 5);
+
+      res.json({
+        period,
+        topApiKeys,
+        totalApiKeys: apiKeyIds.length
+      });
+    } catch (error) {
+      console.error("Top API keys stats error:", error);
+      res.status(500).json({
+        error: "Failed to fetch API key statistics"
+      });
+    }
+  });
+
   // Get NPS statistics (admin only)
   app.get("/api/admin/nps/stats", async (req, res) => {
     try {

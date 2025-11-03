@@ -8,6 +8,7 @@ import RecentSearches from "@/components/recent-searches";
 // import { NotificationManager } from "@/components/notification-manager"; // Hidden for now
 import NpsMetrics from "@/components/nps-metrics";
 import LocationAnalytics from "@/components/location-analytics";
+import ApiKeyAnalytics from "@/components/api-key-analytics";
 
 interface StatsData {
   totalSearches: number;
@@ -159,6 +160,11 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
         {/* Location Analytics Section */}
         <div className="max-w-6xl mx-auto mb-8">
           <LocationAnalytics sessionToken={sessionToken} />
+        </div>
+
+        {/* API Key Analytics Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <ApiKeyAnalytics sessionToken={sessionToken} />
         </div>
 
         {/* Charts Grid */}
