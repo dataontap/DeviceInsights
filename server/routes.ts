@@ -1992,7 +1992,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           apiKeyStats[search.apiKeyId].requests++;
           
-          if (!apiKeyStats[search.apiKeyId].lastUsed || searchDate > apiKeyStats[search.apiKeyId].lastUsed) {
+          const currentLastUsed = apiKeyStats[search.apiKeyId].lastUsed;
+          if (!currentLastUsed || searchDate > currentLastUsed) {
             apiKeyStats[search.apiKeyId].lastUsed = searchDate;
           }
         }
