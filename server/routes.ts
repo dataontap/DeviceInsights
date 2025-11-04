@@ -1877,6 +1877,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to normalize location strings (hide coordinates, normalize country names)
+  function normalizeLocation(location: string | null | undefined): string {
+    if (!location || location === 'unknown' || location === 'Unknown') {
+      return 'Unknown Location';
+    }
+
+    // Check if location is GPS coordinates (pattern: number,number)
+    const coordinatePattern = /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/;
+    if (coordinatePattern.test(location.trim())) {
+      // Hide raw coordinates for privacy
+      return 'Location Not Specified';
+    }
+
+    // Normalize common location names
+    const normalizedLocation = location.trim();
+    
+    // Country name normalization map
+    const countryAliases: { [key: string]: string } = {
+      'usa': 'United States',
+      'us': 'United States',
+      'united states of america': 'United States',
+      'uk': 'United Kingdom',
+      'britain': 'United Kingdom',
+      'great britain': 'United Kingdom',
+      'canada': 'Canada',
+      'ca': 'Canada'
+    };
+
+    const lowerLocation = normalizedLocation.toLowerCase();
+    if (countryAliases[lowerLocation]) {
+      return countryAliases[lowerLocation];
+    }
+
+    // Capitalize first letter of each word for consistency
+    return normalizedLocation
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   // Get location statistics with time filtering (admin only)
   app.get("/api/admin/location-stats", validateAdminSession, async (req, res) => {
     try {
@@ -1907,13 +1947,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return searchDate >= timeThreshold;
       });
 
-      // Aggregate by location
+      // Aggregate by normalized location (hide coordinates, group by country)
       const locationCounts: { [key: string]: number } = {};
       const locationCoordinates: { [key: string]: { lat: number; lng: number; count: number } } = {};
       
       filteredSearches.forEach((search: any) => {
-        const location = search.searchLocation || 'Unknown';
-        locationCounts[location] = (locationCounts[location] || 0) + 1;
+        const normalizedLocation = normalizeLocation(search.searchLocation);
+        locationCounts[normalizedLocation] = (locationCounts[normalizedLocation] || 0) + 1;
       });
 
       // Convert to array and sort
