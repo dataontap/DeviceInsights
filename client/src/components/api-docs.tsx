@@ -13,6 +13,7 @@ export default function APIDocs() {
   const [apiKey, setApiKey] = useState("");
   const [email, setEmail] = useState("");
   const [keyName, setKeyName] = useState("");
+  const [website, setWebsite] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
@@ -25,7 +26,7 @@ export default function APIDocs() {
   };
 
   const generateApiKeyMutation = useMutation({
-    mutationFn: async (data: { email: string; name: string }) => {
+    mutationFn: async (data: { email: string; name?: string; website?: string }) => {
       const response = await fetch('/api/generate-key', {
         method: 'POST',
         headers: {
@@ -59,17 +60,21 @@ export default function APIDocs() {
   });
 
   const handleGenerateApiKey = () => {
-    if (!email || !keyName) {
+    if (!email) {
       toast({
         title: "Missing Information",
-        description: "Please provide both email and name for your API key.",
+        description: "Please provide an email address.",
         variant: "destructive",
       });
       return;
     }
     
     setIsGenerating(true);
-    generateApiKeyMutation.mutate({ email, name: keyName });
+    generateApiKeyMutation.mutate({ 
+      email, 
+      name: keyName || undefined,
+      website: website || undefined
+    });
   };
 
   const downloadExport = async (format: 'json' | 'csv') => {
@@ -328,21 +333,42 @@ Content-Type: application/json`}
                         onChange={(e) => setEmail(e.target.value)}
                         className="mt-1"
                         required
+                        data-testid="input-api-email"
                       />
                     </div>
                     <div>
                       <Label htmlFor="keyName" className="text-sm font-medium text-gray-700">
-                        API Key Name *
+                        API Key Name (optional)
                       </Label>
                       <Input
                         id="keyName"
                         type="text"
-                        placeholder="My Project API Key"
+                        placeholder="Auto-generated if left blank (e.g., Key1, Key2)"
                         value={keyName}
                         onChange={(e) => setKeyName(e.target.value)}
                         className="mt-1"
-                        required
+                        data-testid="input-api-keyname"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        If not provided, we'll generate a name like "Key1", "Key2", etc.
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="website" className="text-sm font-medium text-gray-700">
+                        Website or Description (optional)
+                      </Label>
+                      <Input
+                        id="website"
+                        type="text"
+                        placeholder="https://myapp.com or Description of usage"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        className="mt-1"
+                        data-testid="input-api-website"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Where will you use this API key?
+                      </p>
                     </div>
                   </div>
 

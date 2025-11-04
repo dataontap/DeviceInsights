@@ -129,9 +129,9 @@ export default function ApiKeyAnalytics({ sessionToken }: ApiKeyAnalyticsProps) 
                           #{index + 1}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{apiKey.name}</p>
-                          <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                            <Mail className="w-3.5 h-3.5" />
+                          <p className="font-bold text-lg text-gray-900">{apiKey.name}</p>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                            <Mail className="w-3 h-3" />
                             <span>{apiKey.email}</span>
                           </div>
                         </div>
