@@ -777,18 +777,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // SECURITY: Apply additional rate limiting for key generation
       const userIP = req.ip || 'unknown';
 
-      const { email, name } = generateApiKeySchema.parse(req.body);
+      const { email, name, website } = generateApiKeySchema.parse(req.body);
 
       // SECURITY: Additional validation and sanitization
       const sanitizedEmail = email.toLowerCase().trim();
-      const sanitizedName = name.trim().substring(0, 100); // Limit name length
+      const sanitizedWebsite = website?.trim().substring(0, 200);
 
-      // SECURITY: Check for suspicious patterns
-      if (sanitizedName.length < 2) {
-        return res.status(400).json({ 
-          error: "Invalid name", 
-          details: ["Name must be at least 2 characters long"]
-        });
+      // Auto-generate name if not provided (Key1, Key2, etc.)
+      let finalName: string;
+      if (name && name.trim().length > 0) {
+        finalName = name.trim().substring(0, 100);
+      } else {
+        // Count existing keys for this email to generate sequential name
+        const allKeys = await storage.getAllApiKeys();
+        const userKeys = allKeys.filter(k => k.email === sanitizedEmail);
+        const keyNumber = userKeys.length + 1;
+        finalName = `Key${keyNumber}`;
       }
 
       // Generate unique API key with stronger entropy
@@ -800,7 +804,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         key: apiKey,
         keyHash,
         email: sanitizedEmail,
-        name: sanitizedName,
+        name: finalName,
+        website: sanitizedWebsite,
       });
 
       res.json({
@@ -809,6 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keyId: storedKey.id,
         email: storedKey.email,
         name: storedKey.name,
+        website: storedKey.website,
         createdAt: storedKey.createdAt,
         message: "API key generated successfully. Store it securely - it cannot be retrieved again."
       });

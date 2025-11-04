@@ -363,6 +363,14 @@ export class DatabaseStorage implements IStorage {
     return apiKey || undefined;
   }
 
+  async getAllApiKeys(): Promise<ApiKey[]> {
+    return await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.isActive, true))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
   async incrementApiKeyUsage(keyHash: string): Promise<void> {
     await db
       .update(apiKeys)

@@ -35,6 +35,7 @@ export const apiKeys = pgTable("api_keys", {
   key: text("key").notNull().unique(),
   email: text("email").notNull(),
   name: text("name").notNull(),
+  website: text("website"), // Optional: website or description for the API key
   requestCount: integer("request_count").default(0),
   lastUsed: timestamp("last_used"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -382,6 +383,7 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).pick({
   key: true,
   email: true,
   name: true,
+  website: true,
 });
 
 export const generateApiKeySchema = z.object({
@@ -390,9 +392,13 @@ export const generateApiKeySchema = z.object({
     .max(254, "Email address is too long")
     .refine(email => !email.includes('<') && !email.includes('>'), "Invalid email format"),
   name: z.string()
-    .min(2, "Name must be at least 2 characters long")
     .max(100, "Name must be less than 100 characters")
-    .refine(name => !/[<>'"&]/.test(name), "Name contains invalid characters"),
+    .refine(name => !/[<>'"&]/.test(name), "Name contains invalid characters")
+    .optional(),
+  website: z.string()
+    .max(200, "Website/Description must be less than 200 characters")
+    .refine(website => !website || !/[<>'"&]/.test(website), "Website contains invalid characters")
+    .optional(),
 });
 
 export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances).pick({
