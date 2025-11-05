@@ -145,7 +145,7 @@ export function createEnhancedRateLimit(config: RateLimitConfig) {
 // MCP-specific rate limiting for automated services
 export const mcpRateLimit = createEnhancedRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 500, // Higher limit for MCP servers
+  maxRequests: 1000, // Pro tier for testing
   skipSuccessfulRequests: false,
   skipFailedRequests: false
 });
@@ -153,7 +153,7 @@ export const mcpRateLimit = createEnhancedRateLimit({
 // Standard rate limiting for regular API usage
 export const standardRateLimit = createEnhancedRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 100, // Standard limit
+  maxRequests: 1000, // Pro tier for testing
   skipSuccessfulRequests: false,
   skipFailedRequests: false
 });
@@ -161,7 +161,7 @@ export const standardRateLimit = createEnhancedRateLimit({
 // Premium rate limiting for upgraded accounts
 export const premiumRateLimit = createEnhancedRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 1000, // Premium limit
+  maxRequests: 1000, // Pro tier for testing
   skipSuccessfulRequests: false,
   skipFailedRequests: false
 });

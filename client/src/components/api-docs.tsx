@@ -222,8 +222,8 @@ export default function APIDocs() {
   ];
 
   const rateLimits = [
-    { tier: "Free Tier", requests: "100 requests/hour", status: "available", label: "Available in Alpha" },
-    { tier: "Pro Tier", requests: "1,000 requests/hour", status: "coming-soon", label: "Coming Soon" },
+    { tier: "Free Tier", requests: "1,000 requests/hour", status: "available", label: "Pro Tier for Testing" },
+    { tier: "Pro Tier", requests: "1,000 requests/hour", status: "available", label: "Pro Tier for Testing" },
     { tier: "Enterprise", requests: "Unlimited", status: "coming-soon", label: "Coming Soon" }
   ];
 
