@@ -138,18 +138,11 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
           </div>
           
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2">
-              Device Detected
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2" data-testid="text-detected-device">
+              {detectionData.device.make} {detectionData.device.model}
             </h3>
             
             <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
-              <div className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-gray-500" />
-                <span data-testid="text-detected-device">
-                  <strong>{detectionData.device.make} {detectionData.device.model}</strong>
-                </span>
-              </div>
-              
               {detectionData.isp && (
                 <div className="flex items-center gap-2">
                   <Wifi className="h-4 w-4 text-gray-500" />
@@ -184,23 +177,13 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
               )}
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleCheckDevice}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                data-testid="button-check-this-device"
-              >
-                Check This Device
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleDismiss}
-                data-testid="button-enter-different-imei"
-              >
-                Enter Different IMEI
-              </Button>
-            </div>
+            <Button 
+              onClick={handleCheckDevice}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              data-testid="button-check-this-device"
+            >
+              Check This Device
+            </Button>
           </div>
         </div>
       </CardContent>
