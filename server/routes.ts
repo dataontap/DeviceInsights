@@ -321,8 +321,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { deviceModel, userAgent, location } = req.body;
       
-      // Get client IP
-      const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+      // Get real client IP - check proxy headers first for production environments
+      let ipAddress = 
+        req.get('CF-Connecting-IP') || // Cloudflare
+        req.get('X-Real-IP') || // Nginx proxy
+        req.get('X-Forwarded-For')?.split(',')[0]?.trim() || // Standard proxy header
+        req.ip || 
+        req.connection?.remoteAddress || 
+        'unknown';
+      
+      // Clean up IPv6-mapped IPv4 addresses
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+      
+      console.log('Device detection - IP:', ipAddress, 'Device:', deviceModel);
       
       // Match device model to TAC
       const deviceMatch = matchDeviceToTAC(deviceModel || '');
@@ -345,19 +358,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      // Try to get ISP from IP (basic implementation)
-      // In production, you'd use a service like ip-api.com or ipinfo.io
-      try {
-        const ipApiResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
-        if (ipApiResponse.ok) {
-          const ipData = await ipApiResponse.json();
-          response.isp = ipData.org || 'Unknown ISP';
-          response.city = ipData.city;
-          response.region = ipData.region;
-          response.country = ipData.country_name;
+      // Try to get ISP from IP using multiple fallback services
+      // Skip private/local IP ranges (RFC1918 + link-local)
+      const isPrivateIP = ipAddress === 'unknown' || 
+        ipAddress.startsWith('127.') ||      // Loopback
+        ipAddress.startsWith('192.168.') ||  // Private
+        ipAddress.startsWith('10.') ||       // Private
+        ipAddress.startsWith('172.16.') ||   // Private
+        ipAddress.startsWith('172.17.') ||   // Private
+        ipAddress.startsWith('172.18.') ||   // Private
+        ipAddress.startsWith('172.19.') ||   // Private
+        ipAddress.startsWith('172.20.') ||   // Private
+        ipAddress.startsWith('172.21.') ||   // Private
+        ipAddress.startsWith('172.22.') ||   // Private
+        ipAddress.startsWith('172.23.') ||   // Private
+        ipAddress.startsWith('172.24.') ||   // Private
+        ipAddress.startsWith('172.25.') ||   // Private
+        ipAddress.startsWith('172.26.') ||   // Private
+        ipAddress.startsWith('172.27.') ||   // Private
+        ipAddress.startsWith('172.28.') ||   // Private
+        ipAddress.startsWith('172.29.') ||   // Private
+        ipAddress.startsWith('172.30.') ||   // Private
+        ipAddress.startsWith('172.31.') ||   // Private
+        ipAddress.startsWith('169.254.');    // Link-local
+      
+      if (!isPrivateIP) {
+        let ispLookupSuccess = false;
+        
+        try {
+          // Try ip-api.com first (no rate limits for non-commercial use)
+          const ipApiResponse = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,regionName,city,isp,org,as,mobile`);
+          if (ipApiResponse.ok) {
+            const ipData = await ipApiResponse.json();
+            if (ipData.status === 'success') {
+              response.isp = ipData.isp || ipData.org || ipData.as || 'Unknown ISP';
+              response.city = ipData.city;
+              response.region = ipData.regionName;
+              response.country = ipData.country;
+              console.log('ISP lookup success:', response.isp);
+              ispLookupSuccess = true;
+            } else {
+              console.log('ip-api.com returned non-success status:', ipData.status);
+            }
+          }
+        } catch (error) {
+          console.log('ip-api.com lookup failed:', error);
         }
-      } catch (error) {
-        console.log('ISP lookup failed:', error);
+        
+        // If primary lookup failed, try fallback
+        if (!ispLookupSuccess) {
+          try {
+            const fallbackResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+            if (fallbackResponse.ok) {
+              const ipData = await fallbackResponse.json();
+              if (!ipData.error) {
+                response.isp = ipData.org || 'Unknown ISP';
+                response.city = ipData.city;
+                response.region = ipData.region;
+                response.country = ipData.country_name;
+                console.log('ISP lookup success (fallback):', response.isp);
+                ispLookupSuccess = true;
+              }
+            }
+          } catch (fallbackError) {
+            console.log('Fallback ISP lookup also failed:', fallbackError);
+          }
+        }
+      }
+      
+      // If still no ISP, set default
+      if (!response.isp) {
         response.isp = 'Unknown ISP';
       }
       
