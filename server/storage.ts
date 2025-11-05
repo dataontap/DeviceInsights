@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, ispCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type IspCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -98,6 +98,18 @@ export interface IStorage {
       promotions?: string;
     }>;
     lastUpdated: string;
+  }, hoursToExpire?: number): Promise<void>;
+
+  // ISP Cache
+  getCachedIspData(ipAddress: string): Promise<IspCache | null>;
+  setCachedIspData(ipAddress: string, ispData: {
+    isp: string;
+    org?: string;
+    as?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    mobile?: boolean;
   }, hoursToExpire?: number): Promise<void>;
 
   // Voice Cache
@@ -628,6 +640,72 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error(`Error caching pricing for ${country}:`, error);
+      throw error;
+    }
+  }
+
+  // ISP Cache implementation
+  async getCachedIspData(ipAddress: string): Promise<IspCache | null> {
+    const [result] = await db
+      .select()
+      .from(ispCache)
+      .where(and(
+        eq(ispCache.ipAddress, ipAddress),
+        sql`expires_at > NOW()`
+      ));
+    
+    return result || null;
+  }
+
+  async setCachedIspData(
+    ipAddress: string,
+    ispData: {
+      isp: string;
+      org?: string;
+      as?: string;
+      city?: string;
+      region?: string;
+      country?: string;
+      mobile?: boolean;
+    },
+    hoursToExpire: number = 24
+  ): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + hoursToExpire);
+
+      console.log(`Caching ISP data for IP: ${ipAddress}`);
+
+      // Check if entry exists first
+      const [existing] = await db
+        .select()
+        .from(ispCache)
+        .where(eq(ispCache.ipAddress, ipAddress));
+
+      if (existing) {
+        // Update existing entry
+        await db
+          .update(ispCache)
+          .set({
+            ispData,
+            cachedAt: new Date(),
+            expiresAt
+          })
+          .where(eq(ispCache.ipAddress, ipAddress));
+        console.log(`Updated ISP cache for IP: ${ipAddress}`);
+      } else {
+        // Insert new entry
+        await db
+          .insert(ispCache)
+          .values({
+            ipAddress,
+            ispData,
+            expiresAt
+          });
+        console.log(`Inserted new ISP cache entry for IP: ${ipAddress}`);
+      }
+    } catch (error) {
+      console.error(`Error caching ISP data for ${ipAddress}:`, error);
       throw error;
     }
   }
