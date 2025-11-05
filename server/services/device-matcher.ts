@@ -105,12 +105,32 @@ export function matchDeviceToTAC(deviceModel: string): DeviceMatch {
 }
 
 /**
- * Get example IMEI from TAC (for privacy, only shows TAC with masked digits)
+ * Get example IMEI from TAC (for privacy, uses zeros for serial number)
+ * This allows searches to work while protecting user privacy and enabling analytics tracking
  * @param tac - 8-digit TAC code
- * @returns TAC with masked remaining digits (e.g., "35448766*******")
+ * @returns Valid IMEI with TAC + zeros (e.g., "354487660000001")
  */
 export function getExampleIMEIFromTAC(tac: string): string {
-  // Only show TAC (8 digits), mask the rest for privacy
-  // Format: TAC (8) + Masked (7) = 15 characters
-  return tac + "*******";
+  // Use zeros for serial number to create a valid IMEI that:
+  // 1. Passes validation checks
+  // 2. Can be used for searches
+  // 3. Can be tracked in analytics as "suggested device" searches
+  // 4. Protects user privacy (not their real serial number)
+  
+  const serial = "000000"; // 6 zeros for serial
+  const imeiWithoutCheck = tac + serial;
+  
+  // Calculate Luhn check digit
+  let sum = 0;
+  for (let i = imeiWithoutCheck.length - 1; i >= 0; i--) {
+    let digit = parseInt(imeiWithoutCheck[i]);
+    if ((imeiWithoutCheck.length - i) % 2 === 0) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+  
+  return imeiWithoutCheck + checkDigit;
 }
