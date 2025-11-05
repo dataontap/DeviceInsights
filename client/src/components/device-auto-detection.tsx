@@ -59,6 +59,10 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
         ? `${browserData.device.make} ${browserData.device.model}`
         : browserData.device.model || '';
       
+      console.log('Device detection - User Agent:', navigator.userAgent);
+      console.log('Device detection - Parsed device:', deviceModel);
+      console.log('Device detection - Full data:', browserData.device);
+      
       // Send to backend for enrichment
       const response = await fetch('/api/detect-device', {
         method: 'POST',
