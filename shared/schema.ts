@@ -122,6 +122,30 @@ export const carrierCache = pgTable("carrier_cache", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// Pricing Cache for carrier plan pricing
+export const pricingCache = pgTable("pricing_cache", {
+  id: serial("id").primaryKey(),
+  country: text("country").notNull().unique(),
+  pricingData: jsonb("pricing_data").$type<{
+    country: string;
+    currency: string;
+    plans: Array<{
+      carrier: string;
+      planName: string;
+      monthlyPrice: number;
+      data: string;
+      speed: string;
+      features: string[];
+      contractType: string;
+      additionalFees?: string;
+      promotions?: string;
+    }>;
+    lastUpdated: string;
+  }>(),
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 // Voice Audio Cache for session-based storage
 export const voiceCache = pgTable("voice_cache", {
   id: serial("id").primaryKey(),
@@ -606,6 +630,9 @@ export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSche
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertNpsResponse = z.infer<typeof insertNpsResponseSchema>;
 export type NpsResponse = typeof npsResponses.$inferSelect;
+
+// Pricing Cache types
+export type PricingCache = typeof pricingCache.$inferSelect;
 
 // Voice Cache schema and types
 export const insertVoiceCacheSchema = createInsertSchema(voiceCache).omit({

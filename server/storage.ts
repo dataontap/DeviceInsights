@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -79,6 +79,25 @@ export interface IStorage {
       marketShare: string;
       description: string;
     }>;
+  }, hoursToExpire?: number): Promise<void>;
+
+  // Pricing Cache
+  getCachedPricing(country: string): Promise<PricingCache | null>;
+  setCachedPricing(country: string, pricingData: {
+    country: string;
+    currency: string;
+    plans: Array<{
+      carrier: string;
+      planName: string;
+      monthlyPrice: number;
+      data: string;
+      speed: string;
+      features: string[];
+      contractType: string;
+      additionalFees?: string;
+      promotions?: string;
+    }>;
+    lastUpdated: string;
   }, hoursToExpire?: number): Promise<void>;
 
   // Voice Cache
@@ -536,6 +555,79 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error(`Error caching carriers for ${country}:`, error);
+      throw error;
+    }
+  }
+
+  // Pricing Cache implementation
+  async getCachedPricing(country: string): Promise<PricingCache | null> {
+    const [result] = await db
+      .select()
+      .from(pricingCache)
+      .where(and(
+        eq(pricingCache.country, country),
+        sql`expires_at > NOW()`
+      ));
+    
+    return result || null;
+  }
+
+  async setCachedPricing(
+    country: string,
+    pricingData: {
+      country: string;
+      currency: string;
+      plans: Array<{
+        carrier: string;
+        planName: string;
+        monthlyPrice: number;
+        data: string;
+        speed: string;
+        features: string[];
+        contractType: string;
+        additionalFees?: string;
+        promotions?: string;
+      }>;
+      lastUpdated: string;
+    },
+    hoursToExpire: number = 24
+  ): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + hoursToExpire);
+
+      console.log(`Caching pricing for country: ${country}`);
+
+      // Check if entry exists first
+      const [existing] = await db
+        .select()
+        .from(pricingCache)
+        .where(eq(pricingCache.country, country));
+
+      if (existing) {
+        // Update existing entry
+        await db
+          .update(pricingCache)
+          .set({
+            pricingData,
+            cachedAt: new Date(),
+            expiresAt
+          })
+          .where(eq(pricingCache.country, country));
+        console.log(`Updated pricing cache for country: ${country}`);
+      } else {
+        // Insert new entry
+        await db
+          .insert(pricingCache)
+          .values({
+            country,
+            pricingData,
+            expiresAt
+          });
+        console.log(`Inserted new pricing cache entry for country: ${country}`);
+      }
+    } catch (error) {
+      console.error(`Error caching pricing for ${country}:`, error);
       throw error;
     }
   }

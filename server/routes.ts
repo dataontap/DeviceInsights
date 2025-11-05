@@ -14,6 +14,7 @@ import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from '
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
 import { matchDeviceToTAC, getExampleIMEIFromTAC } from './services/device-matcher.js';
+import { getCarrierPricing } from './services/pricing-service.js';
 import { 
   generateVoiceAudio, 
   createMultiVoiceConversation, 
