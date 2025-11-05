@@ -146,6 +146,23 @@ export const pricingCache = pgTable("pricing_cache", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// ISP Cache for IP geolocation lookups
+export const ispCache = pgTable("isp_cache", {
+  id: serial("id").primaryKey(),
+  ipAddress: text("ip_address").notNull().unique(),
+  ispData: jsonb("isp_data").$type<{
+    isp: string;
+    org?: string;
+    as?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    mobile?: boolean;
+  }>(),
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 // Voice Audio Cache for session-based storage
 export const voiceCache = pgTable("voice_cache", {
   id: serial("id").primaryKey(),
@@ -633,6 +650,9 @@ export type NpsResponse = typeof npsResponses.$inferSelect;
 
 // Pricing Cache types
 export type PricingCache = typeof pricingCache.$inferSelect;
+
+// ISP Cache types
+export type IspCache = typeof ispCache.$inferSelect;
 
 // Voice Cache schema and types
 export const insertVoiceCacheSchema = createInsertSchema(voiceCache).omit({
