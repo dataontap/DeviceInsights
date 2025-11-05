@@ -105,27 +105,12 @@ export function matchDeviceToTAC(deviceModel: string): DeviceMatch {
 }
 
 /**
- * Get example IMEI from TAC (for testing purposes)
+ * Get example IMEI from TAC (for privacy, only shows TAC with masked digits)
  * @param tac - 8-digit TAC code
- * @returns Full 15-digit IMEI example
+ * @returns TAC with masked remaining digits (e.g., "35448766*******")
  */
 export function getExampleIMEIFromTAC(tac: string): string {
-  // Generate a valid IMEI from TAC by adding serial number and check digit
-  // Format: TAC (8) + Serial (6) + Check (1) = 15 digits
-  const serial = "801234"; // Example serial number
-  const imeiWithoutCheck = tac + serial;
-  
-  // Calculate Luhn check digit
-  let sum = 0;
-  for (let i = imeiWithoutCheck.length - 1; i >= 0; i--) {
-    let digit = parseInt(imeiWithoutCheck[i]);
-    if ((imeiWithoutCheck.length - i) % 2 === 0) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-  }
-  const checkDigit = (10 - (sum % 10)) % 10;
-  
-  return imeiWithoutCheck + checkDigit;
+  // Only show TAC (8 digits), mask the rest for privacy
+  // Format: TAC (8) + Masked (7) = 15 characters
+  return tac + "*******";
 }

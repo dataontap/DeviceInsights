@@ -271,7 +271,7 @@ def analyze_coverage(lat, lng, api_key, provider='auto'):
           <CardContent>
             <ul className="text-sm space-y-1 text-muted-foreground">
               <li>• 30-minute response caching</li>
-              <li>• 100 requests/hour limit</li>
+              <li>• 1,000 requests/hour limit (Pro tier for testing)</li>
               <li>• Real-time analysis</li>
               <li>• Optimized for speed</li>
             </ul>
