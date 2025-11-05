@@ -166,6 +166,99 @@ export function getConnectionInfo(): { type?: string; effectiveType?: string; do
 }
 
 /**
+ * Get device info using User-Agent Client Hints API (more accurate than parsing)
+ */
+async function getDeviceFromClientHints(): Promise<DeviceInfo | null> {
+  try {
+    // Check if User-Agent Client Hints API is available
+    // @ts-ignore - userAgentData is experimental
+    if (!navigator.userAgentData || !navigator.userAgentData.getHighEntropyValues) {
+      return null;
+    }
+
+    // Request high entropy values for detailed device info
+    // @ts-ignore
+    const hints = await navigator.userAgentData.getHighEntropyValues([
+      'model',
+      'platform',
+      'platformVersion',
+      'architecture',
+      'bitness',
+      'brands',
+      'mobile'
+    ]);
+
+    console.log('Client Hints data:', hints);
+
+    const info: DeviceInfo = {};
+
+    // Get device type
+    info.deviceType = hints.mobile ? 'mobile' : 'desktop';
+
+    // Get make and model
+    if (hints.model && hints.model !== '') {
+      // Model is available (mainly on Chromium-based browsers)
+      info.model = hints.model;
+      
+      // Try to determine make from model or platform
+      if (hints.model.toLowerCase().includes('pixel')) {
+        info.make = 'Google';
+      } else if (hints.model.toLowerCase().includes('galaxy') || hints.model.toLowerCase().includes('sm-')) {
+        info.make = 'Samsung';
+      } else if (hints.model.toLowerCase().includes('iphone')) {
+        info.make = 'Apple';
+      } else if (hints.model.toLowerCase().includes('oneplus')) {
+        info.make = 'OnePlus';
+      } else if (hints.platform === 'Android') {
+        info.make = 'Android';
+      }
+    } else if (hints.platform) {
+      // Model not available, use platform info
+      info.osName = hints.platform;
+      if (hints.platform === 'Android') {
+        info.make = 'Android';
+        info.model = 'Device';
+      } else if (hints.platform === 'iOS') {
+        info.make = 'Apple';
+        info.model = 'iPhone';
+      } else if (hints.platform === 'macOS') {
+        info.make = 'Apple';
+        info.model = 'Mac';
+      } else if (hints.platform === 'Windows') {
+        info.make = 'Microsoft';
+        info.model = 'Windows PC';
+      }
+    }
+
+    // Get OS version
+    if (hints.platformVersion) {
+      info.osVersion = hints.platformVersion;
+    }
+
+    // Get browser info from brands
+    if (hints.brands && Array.isArray(hints.brands)) {
+      for (const brand of hints.brands) {
+        if (brand.brand === 'Google Chrome') {
+          info.browserName = 'Chrome';
+          info.browserVersion = brand.version;
+          break;
+        } else if (brand.brand === 'Microsoft Edge') {
+          info.browserName = 'Edge';
+          info.browserVersion = brand.version;
+          break;
+        }
+      }
+    }
+
+    console.log('Parsed device from Client Hints:', info);
+    return info;
+  } catch (error) {
+    console.log('Client Hints not available or failed:', error);
+    return null;
+  }
+}
+
+/**
  * Get comprehensive device detection data
  */
 export async function getDeviceDetectionData(): Promise<{
@@ -173,7 +266,14 @@ export async function getDeviceDetectionData(): Promise<{
   connection: ReturnType<typeof getConnectionInfo>;
   location?: { latitude: number; longitude: number };
 }> {
-  const device = parseUserAgent();
+  // Try Client Hints API first (more accurate)
+  let device = await getDeviceFromClientHints();
+  
+  // Fall back to user agent parsing if Client Hints not available
+  if (!device || (!device.make && !device.model)) {
+    device = parseUserAgent();
+  }
+  
   const connection = getConnectionInfo();
   
   // Try to get location if permission granted
