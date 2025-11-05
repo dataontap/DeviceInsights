@@ -427,8 +427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let ispDataToCache: any = {};
           
           try {
-            // Try ip-api.com first (45 requests/minute limit)
-            const ipApiResponse = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,regionName,city,isp,org,as,mobile`);
+            // Use ip-api.com Pro with unlimited requests
+            const ipApiKey = process.env.IP_API_KEY;
+            if (!ipApiKey) {
+              throw new Error('IP_API_KEY not configured');
+            }
+            
+            const ipApiResponse = await fetch(`https://pro.ip-api.com/json/${ipAddress}?key=${ipApiKey}&fields=status,country,regionName,city,isp,org,as,mobile`);
             if (ipApiResponse.ok) {
               const ipData = await ipApiResponse.json();
               if (ipData.status === 'success') {
@@ -448,14 +453,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   mobile: ipData.mobile
                 };
                 
-                console.log('ISP lookup success:', response.isp);
+                console.log('ISP lookup success (Pro API):', response.isp);
                 ispLookupSuccess = true;
               } else {
-                console.log('ip-api.com returned non-success status:', ipData.status);
+                console.log('ip-api.com Pro returned non-success status:', ipData.status);
               }
             }
           } catch (error) {
-            console.log('ip-api.com lookup failed:', error);
+            console.log('ip-api.com Pro lookup failed:', error);
           }
           
           // If primary lookup failed, try fallback
