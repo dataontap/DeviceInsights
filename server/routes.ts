@@ -13,6 +13,7 @@ import { storage } from "./storage";
 import { analyzeIMEI, getTopCarriers, validateIMEI, generateWorldMapSVG } from './services/gemini.js';
 import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } from './services/firebase-admin.js';
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
+import { matchDeviceToTAC, getExampleIMEIFromTAC } from './services/device-matcher.js';
 import { 
   generateVoiceAudio, 
   createMultiVoiceConversation, 
@@ -271,6 +272,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         carriers: [
           { name: "AT&T", marketShare: "45.4%", description: "Default carrier for compatibility testing" }
         ]
+      });
+    }
+  });
+
+  // Auto-detect device from browser information
+  app.post("/api/detect-device", async (req, res) => {
+    try {
+      const { deviceModel, userAgent, location } = req.body;
+      
+      // Get client IP
+      const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+      
+      // Match device model to TAC
+      const deviceMatch = matchDeviceToTAC(deviceModel || '');
+      
+      // Prepare response
+      const response: any = {
+        success: true,
+        ipAddress: ipAddress,
+        userAgent: userAgent || req.get('User-Agent') || 'unknown',
+        location: location,
+        deviceDetected: deviceMatch.found,
+      };
+      
+      if (deviceMatch.found && deviceMatch.tac) {
+        response.device = {
+          make: deviceMatch.deviceInfo?.make,
+          model: deviceMatch.deviceInfo?.model,
+          tac: deviceMatch.tac,
+          exampleImei: getExampleIMEIFromTAC(deviceMatch.tac)
+        };
+      }
+      
+      // Try to get ISP from IP (basic implementation)
+      // In production, you'd use a service like ip-api.com or ipinfo.io
+      try {
+        const ipApiResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+        if (ipApiResponse.ok) {
+          const ipData = await ipApiResponse.json();
+          response.isp = ipData.org || 'Unknown ISP';
+          response.city = ipData.city;
+          response.region = ipData.region;
+          response.country = ipData.country_name;
+        }
+      } catch (error) {
+        console.log('ISP lookup failed:', error);
+        response.isp = 'Unknown ISP';
+      }
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Device detection error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to detect device",
+        message: "Could not process device detection request"
       });
     }
   });
