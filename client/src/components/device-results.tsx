@@ -1,5 +1,6 @@
 import { Signal, Radio, Phone, Wifi, CheckCircle, AlertTriangle, XCircle, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PricingComparison } from "./pricing-comparison";
 
 interface DeviceResultsProps {
   result: {
@@ -237,6 +238,14 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
             )}
           </div>
 
+          {/* Pricing Comparison Section */}
+          <div className="mt-12">
+            <PricingComparison 
+              country={extractCountry(result.location || '')}
+              compatibleCarriers={getCompatibleCarriers(deviceCapabilities)}
+            />
+          </div>
+
           {/* Coverage Analysis Banner */}
           {(result.location || result.coordinates) && (
             <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
@@ -271,4 +280,44 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
       </div>
     </section>
   );
+}
+
+// Helper function to extract country from location string
+function extractCountry(location: string): string {
+  if (!location) return 'United States';
+  
+  // Check for common country names
+  if (location.toLowerCase().includes('lithuania')) return 'Lithuania';
+  if (location.toLowerCase().includes('canada')) return 'Canada';
+  if (location.toLowerCase().includes('uk') || location.toLowerCase().includes('united kingdom')) return 'United Kingdom';
+  if (location.toLowerCase().includes('australia')) return 'Australia';
+  
+  // Extract last part after comma (usually country)
+  const parts = location.split(',');
+  const lastPart = parts[parts.length - 1].trim();
+  
+  // If last part looks like a country (not a number, reasonable length)
+  if (lastPart.length > 2 && lastPart.length < 50 && !/\d/.test(lastPart)) {
+    return lastPart;
+  }
+  
+  return 'United States';
+}
+
+// Helper function to determine compatible carriers based on device capabilities
+function getCompatibleCarriers(capabilities: any): string[] {
+  const compatible: string[] = [];
+  
+  // If device has good 5G/4G support, all major carriers are compatible
+  if (capabilities.fiveG && capabilities.fourG && capabilities.volte) {
+    compatible.push('AT&T', 'Verizon', 'T-Mobile');
+  } else if (capabilities.fourG && capabilities.volte) {
+    // Good 4G support - most carriers
+    compatible.push('AT&T', 'T-Mobile');
+  } else if (capabilities.fourG) {
+    // Basic 4G - T-Mobile tends to be more forgiving
+    compatible.push('T-Mobile');
+  }
+  
+  return compatible;
 }

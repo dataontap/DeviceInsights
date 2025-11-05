@@ -277,6 +277,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pricing plans for carriers
+  app.post("/api/pricing-plans", async (req, res) => {
+    try {
+      const { country, carriers } = req.body;
+      
+      if (!country) {
+        return res.status(400).json({ error: "Country is required" });
+      }
+
+      // Check cache first
+      const cached = await storage.getCachedPricing(country);
+      if (cached && cached.pricingData) {
+        console.log(`Pricing cache hit for country: ${country}`);
+        return res.json({
+          ...cached.pricingData,
+          cached: true
+        });
+      }
+
+      // Cache miss - fetch from AI
+      console.log(`Pricing cache miss for country: ${country}, fetching from AI`);
+      const pricingData = await getCarrierPricing(country, carriers);
+
+      // Cache the result for 24 hours
+      await storage.setCachedPricing(country, pricingData, 24);
+
+      res.json({
+        ...pricingData,
+        cached: false
+      });
+    } catch (error) {
+      console.error("Pricing fetch error:", error);
+      res.status(500).json({
+        error: "Failed to fetch pricing plans",
+        message: "Could not retrieve carrier pricing information"
+      });
+    }
+  });
+
   // Auto-detect device from browser information
   app.post("/api/detect-device", async (req, res) => {
     try {
