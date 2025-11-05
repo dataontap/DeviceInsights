@@ -236,6 +236,13 @@ export default function APIDocs() {
             Access our comprehensive APIs for IMEI checking and network coverage analysis
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-6">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => window.location.href = '/integration-guide'}
+              data-testid="button-integration-guide"
+            >
+              📚 Integration Guide
+            </Button>
             <Button variant="outline" onClick={() => window.location.href = '/coverage-api-docs'}>
               Coverage Maps API Docs
             </Button>
