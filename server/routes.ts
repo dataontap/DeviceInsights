@@ -385,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      // Try to get ISP from IP using multiple fallback services
+      // Try to get ISP from IP using cache-first approach
       // Skip private/local IP ranges (RFC1918 + link-local)
       const isPrivateIP = ipAddress === 'unknown' || 
         ipAddress.startsWith('127.') ||      // Loopback
@@ -410,45 +410,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress.startsWith('169.254.');    // Link-local
       
       if (!isPrivateIP) {
-        let ispLookupSuccess = false;
+        // Check cache first
+        const cachedIspData = await storage.getCachedIspData(ipAddress);
         
-        try {
-          // Try ip-api.com first (no rate limits for non-commercial use)
-          const ipApiResponse = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,regionName,city,isp,org,as,mobile`);
-          if (ipApiResponse.ok) {
-            const ipData = await ipApiResponse.json();
-            if (ipData.status === 'success') {
-              response.isp = ipData.isp || ipData.org || ipData.as || 'Unknown ISP';
-              response.city = ipData.city;
-              response.region = ipData.regionName;
-              response.country = ipData.country;
-              console.log('ISP lookup success:', response.isp);
-              ispLookupSuccess = true;
-            } else {
-              console.log('ip-api.com returned non-success status:', ipData.status);
-            }
-          }
-        } catch (error) {
-          console.log('ip-api.com lookup failed:', error);
-        }
-        
-        // If primary lookup failed, try fallback
-        if (!ispLookupSuccess) {
+        if (cachedIspData) {
+          // Cache hit - use cached data
+          console.log(`ISP cache HIT for IP: ${ipAddress}`);
+          response.isp = cachedIspData.ispData.isp;
+          response.city = cachedIspData.ispData.city;
+          response.region = cachedIspData.ispData.region;
+          response.country = cachedIspData.ispData.country;
+        } else {
+          // Cache miss - fetch from external APIs
+          console.log(`ISP cache MISS for IP: ${ipAddress}`);
+          let ispLookupSuccess = false;
+          let ispDataToCache: any = {};
+          
           try {
-            const fallbackResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
-            if (fallbackResponse.ok) {
-              const ipData = await fallbackResponse.json();
-              if (!ipData.error) {
-                response.isp = ipData.org || 'Unknown ISP';
+            // Try ip-api.com first (45 requests/minute limit)
+            const ipApiResponse = await fetch(`http://ip-api.com/json/${ipAddress}?fields=status,country,regionName,city,isp,org,as,mobile`);
+            if (ipApiResponse.ok) {
+              const ipData = await ipApiResponse.json();
+              if (ipData.status === 'success') {
+                response.isp = ipData.isp || ipData.org || ipData.as || 'Unknown ISP';
                 response.city = ipData.city;
-                response.region = ipData.region;
-                response.country = ipData.country_name;
-                console.log('ISP lookup success (fallback):', response.isp);
+                response.region = ipData.regionName;
+                response.country = ipData.country;
+                
+                // Prepare data for caching
+                ispDataToCache = {
+                  isp: response.isp,
+                  org: ipData.org,
+                  as: ipData.as,
+                  city: ipData.city,
+                  region: ipData.regionName,
+                  country: ipData.country,
+                  mobile: ipData.mobile
+                };
+                
+                console.log('ISP lookup success:', response.isp);
                 ispLookupSuccess = true;
+              } else {
+                console.log('ip-api.com returned non-success status:', ipData.status);
               }
             }
-          } catch (fallbackError) {
-            console.log('Fallback ISP lookup also failed:', fallbackError);
+          } catch (error) {
+            console.log('ip-api.com lookup failed:', error);
+          }
+          
+          // If primary lookup failed, try fallback
+          if (!ispLookupSuccess) {
+            try {
+              const fallbackResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+              if (fallbackResponse.ok) {
+                const ipData = await fallbackResponse.json();
+                if (!ipData.error) {
+                  response.isp = ipData.org || 'Unknown ISP';
+                  response.city = ipData.city;
+                  response.region = ipData.region;
+                  response.country = ipData.country_name;
+                  
+                  // Prepare data for caching
+                  ispDataToCache = {
+                    isp: response.isp,
+                    org: ipData.org,
+                    city: ipData.city,
+                    region: ipData.region,
+                    country: ipData.country_name
+                  };
+                  
+                  console.log('ISP lookup success (fallback):', response.isp);
+                  ispLookupSuccess = true;
+                }
+              }
+            } catch (fallbackError) {
+              console.log('Fallback ISP lookup also failed:', fallbackError);
+            }
+          }
+          
+          // Cache the result if lookup was successful (24 hour TTL)
+          if (ispLookupSuccess && ispDataToCache.isp) {
+            try {
+              await storage.setCachedIspData(ipAddress, ispDataToCache, 24);
+              console.log(`Cached ISP data for IP: ${ipAddress} (24h TTL)`);
+            } catch (cacheError) {
+              console.error('Failed to cache ISP data:', cacheError);
+              // Don't fail the request if caching fails
+            }
           }
         }
       }
