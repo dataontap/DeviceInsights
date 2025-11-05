@@ -67,11 +67,10 @@ Provide realistic, current pricing. If exact prices aren't available, use typica
       config: {
         systemInstruction: "You are a mobile carrier pricing analyst providing accurate, current pricing data.",
       },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: prompt,
     });
 
-    const response = result.response;
-    const text = response.text();
+    const text = result.text || '';
 
     // Extract JSON from markdown code blocks if present
     const jsonMatch = text.match(/```(?:json)?\n?([\s\S]*?)\n?```/) || text.match(/\{[\s\S]*\}/);
