@@ -413,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check cache first
         const cachedIspData = await storage.getCachedIspData(ipAddress);
         
-        if (cachedIspData) {
+        if (cachedIspData && cachedIspData.ispData) {
           // Cache hit - use cached data
           console.log(`ISP cache HIT for IP: ${ipAddress}`);
           response.isp = cachedIspData.ispData.isp;
