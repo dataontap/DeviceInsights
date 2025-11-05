@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
 import BlacklistDrawer from "./blacklist-drawer";
 import VoiceHelper from "./voice-helper";
+import { DeviceAutoDetection } from "./device-auto-detection";
 import { API_CONFIG, getAuthHeaders } from "@/config/api";
 
 interface IMEICheckerProps {
@@ -267,6 +268,33 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     setImei(value);
   };
 
+  const handleQuickCheck = (detectedImei: string) => {
+    // Set the IMEI
+    setImei(detectedImei);
+    
+    // Trigger the check after a short delay to allow state to update
+    setTimeout(() => {
+      onLoading(true);
+      
+      // Use current location if available, otherwise use detected country
+      if (useCurrentLocation && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = `${position.coords.latitude},${position.coords.longitude}`;
+            checkIMEIMutation.mutate({ imei: detectedImei, location, network: selectedCarrier });
+          },
+          () => {
+            const finalLocation = manualLocation || country || 'unknown';
+            checkIMEIMutation.mutate({ imei: detectedImei, location: finalLocation, network: selectedCarrier });
+          }
+        );
+      } else {
+        const finalLocation = manualLocation || country || 'unknown';
+        checkIMEIMutation.mutate({ imei: detectedImei, location: finalLocation, network: selectedCarrier });
+      }
+    }, 100);
+  };
+
   return (
     <section className="bg-gradient-to-br from-primary to-secondary text-white py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -288,6 +316,9 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+          {/* Auto-Detection Component */}
+          <DeviceAutoDetection onQuickCheck={handleQuickCheck} />
+          
           <form onSubmit={handleSubmit}>
             <div className="text-left mb-6">
               <Label htmlFor="imei" className="block text-sm font-medium text-gray-700 mb-2">

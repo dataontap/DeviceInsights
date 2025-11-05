@@ -60,8 +60,11 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
         : browserData.device.model || '';
       
       // Send to backend for enrichment
-      const response = await apiRequest<DetectionData>('/api/detect-device', {
+      const response = await fetch('/api/detect-device', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           deviceModel,
           userAgent: navigator.userAgent,
@@ -69,9 +72,15 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
         }),
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to detect device');
+      }
+      
+      const data: DetectionData = await response.json();
+      
       // Add connection info from browser
       const enrichedData = {
-        ...response,
+        ...data,
         connectionType: browserData.connection.type,
         effectiveType: browserData.connection.effectiveType,
       };
