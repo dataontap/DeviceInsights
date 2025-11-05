@@ -111,8 +111,37 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
     return null;
   }
 
-  // Only show if device was detected
-  if (!detectionData.deviceDetected || !detectionData.device) {
+  // Check if we have useful information to display
+  const hasDevice = detectionData.device;
+  const hasValidIsp = detectionData.isp && detectionData.isp !== 'Unknown ISP';
+  const hasLocation = detectionData.city && detectionData.country;
+  
+  // Check if IP is public (not private/local)
+  const isPublicIP = detectionData.ipAddress && 
+    detectionData.ipAddress !== 'unknown' &&
+    !detectionData.ipAddress.startsWith('127.') &&
+    !detectionData.ipAddress.startsWith('192.168.') &&
+    !detectionData.ipAddress.startsWith('10.') &&
+    !detectionData.ipAddress.startsWith('172.16.') &&
+    !detectionData.ipAddress.startsWith('172.17.') &&
+    !detectionData.ipAddress.startsWith('172.18.') &&
+    !detectionData.ipAddress.startsWith('172.19.') &&
+    !detectionData.ipAddress.startsWith('172.20.') &&
+    !detectionData.ipAddress.startsWith('172.21.') &&
+    !detectionData.ipAddress.startsWith('172.22.') &&
+    !detectionData.ipAddress.startsWith('172.23.') &&
+    !detectionData.ipAddress.startsWith('172.24.') &&
+    !detectionData.ipAddress.startsWith('172.25.') &&
+    !detectionData.ipAddress.startsWith('172.26.') &&
+    !detectionData.ipAddress.startsWith('172.27.') &&
+    !detectionData.ipAddress.startsWith('172.28.') &&
+    !detectionData.ipAddress.startsWith('172.29.') &&
+    !detectionData.ipAddress.startsWith('172.30.') &&
+    !detectionData.ipAddress.startsWith('172.31.') &&
+    !detectionData.ipAddress.startsWith('169.254.');
+  
+  // Only show card if we have at least one useful piece of information
+  if (!hasDevice && !hasValidIsp && !hasLocation && !isPublicIP) {
     return null;
   }
 
@@ -138,12 +167,14 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
           </div>
           
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2" data-testid="text-detected-device">
-              {detectionData.device.make} {detectionData.device.model}
-            </h3>
+            {detectionData.device && (
+              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2" data-testid="text-detected-device">
+                {detectionData.device.make} {detectionData.device.model}
+              </h3>
+            )}
             
             <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
-              {detectionData.isp && (
+              {detectionData.isp && detectionData.isp !== 'Unknown ISP' && (
                 <div className="flex items-center gap-2">
                   <Wifi className="h-4 w-4 text-gray-500" />
                   <span data-testid="text-detected-isp">
@@ -167,7 +198,7 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
                 </div>
               )}
               
-              {detectionData.ipAddress && detectionData.ipAddress !== 'unknown' && (
+              {isPublicIP && (
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-gray-500" />
                   <span className="text-xs text-gray-500" data-testid="text-detected-ip">
@@ -177,13 +208,15 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
               )}
             </div>
             
-            <Button 
-              onClick={handleCheckDevice}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              data-testid="button-check-this-device"
-            >
-              Check This Device
-            </Button>
+            {detectionData.device?.exampleImei && (
+              <Button 
+                onClick={handleCheckDevice}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                data-testid="button-check-this-device"
+              >
+                Check This Device
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

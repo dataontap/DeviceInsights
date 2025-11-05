@@ -346,15 +346,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress: ipAddress,
         userAgent: userAgent || req.get('User-Agent') || 'unknown',
         location: location,
-        deviceDetected: deviceMatch.found,
+        deviceDetected: true, // Always true if we have any device info
       };
       
+      // Always include device info if available
       if (deviceMatch.found && deviceMatch.tac) {
+        // Matched to known device with TAC
         response.device = {
           make: deviceMatch.deviceInfo?.make,
           model: deviceMatch.deviceInfo?.model,
           tac: deviceMatch.tac,
           exampleImei: getExampleIMEIFromTAC(deviceMatch.tac)
+        };
+      } else if (deviceModel) {
+        // Device detected but no TAC match - still show generic info
+        // Parse basic make/model from deviceModel string
+        let make = 'Unknown';
+        let model = deviceModel;
+        
+        if (deviceModel.toLowerCase().includes('iphone') || deviceModel.toLowerCase().includes('ipad')) {
+          make = 'Apple';
+        } else if (deviceModel.toLowerCase().includes('samsung') || deviceModel.toLowerCase().includes('galaxy')) {
+          make = 'Samsung';
+        } else if (deviceModel.toLowerCase().includes('pixel')) {
+          make = 'Google';
+        } else if (deviceModel.toLowerCase().includes('oneplus')) {
+          make = 'OnePlus';
+        } else if (deviceModel.toLowerCase().includes('android')) {
+          make = 'Android';
+          model = 'Device';
+        }
+        
+        response.device = {
+          make: make,
+          model: model,
+          tac: null,
+          exampleImei: null
         };
       }
       
