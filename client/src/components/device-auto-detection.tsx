@@ -35,14 +35,6 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user previously dismissed
-    const dismissed = localStorage.getItem('device-detection-dismissed');
-    if (dismissed === 'true') {
-      setIsDismissed(true);
-      setIsLoading(false);
-      return;
-    }
-
     // Auto-detect device on mount
     detectDevice();
   }, []);
@@ -100,7 +92,6 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    localStorage.setItem('device-detection-dismissed', 'true');
   };
 
   const handleCheckDevice = () => {
