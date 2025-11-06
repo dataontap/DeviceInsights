@@ -21,7 +21,7 @@ Location data is only collected with your **explicit consent** when you choose t
 
 ## Base URL
 ```
-https://api.deviceinsights.net
+https://deviceinsights.net/api
 ```
 
 ## Authentication
@@ -240,7 +240,7 @@ Contact the administrator to obtain an API key for external service integration.
 
 ### cURL Example
 ```bash
-curl -X POST https://api.deviceinsights.net/api/v1/check \
+curl -X POST https://deviceinsights.net/api/v1/check \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -251,7 +251,7 @@ curl -X POST https://api.deviceinsights.net/api/v1/check \
 
 ### JavaScript Example
 ```javascript
-const response = await fetch('https://api.deviceinsights.net/api/v1/check', {
+const response = await fetch('https://deviceinsights.net/api/v1/check', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -272,7 +272,7 @@ console.log(data);
 import requests
 
 response = requests.post(
-    'https://api.deviceinsights.net/api/v1/check',
+    'https://deviceinsights.net/api/v1/check',
     headers={
         'Content-Type': 'application/json',
         'Authorization': 'Bearer YOUR_API_KEY'
