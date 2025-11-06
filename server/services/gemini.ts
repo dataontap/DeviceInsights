@@ -218,6 +218,9 @@ function analyzeIMEIStructure(imei: string) {
 // Get top 5 carriers for a country/location
 export async function getTopCarriers(location: string): Promise<{ carriers: Array<{name: string, marketShare: string, description: string}>, country: string }> {
   try {
+    console.log(`[CARRIERS] Fetching carriers for location: ${location}`);
+    console.log(`[CARRIERS] GEMINI_API_KEY available: ${!!process.env.GEMINI_API_KEY}`);
+    
     if (!process.env.GEMINI_API_KEY) {
       // Fallback carriers for common locations
       if (location.toLowerCase().includes('us') || location.toLowerCase().includes('united states') || location.toLowerCase().includes('america')) {
@@ -289,7 +292,9 @@ export async function getTopCarriers(location: string): Promise<{ carriers: Arra
       contents: prompt,
     });
 
+    console.log(`[CARRIERS] Gemini API response received`);
     const result = JSON.parse(response.text || '{}');
+    console.log(`[CARRIERS] Parsed result - country: ${result.country}, carriers count: ${result.carriers?.length}`);
     
     // Ensure we have valid data
     if (!result.carriers || !Array.isArray(result.carriers)) {
@@ -302,7 +307,8 @@ export async function getTopCarriers(location: string): Promise<{ carriers: Arra
     };
 
   } catch (error) {
-    console.error("Error fetching carriers:", error);
+    console.error("[CARRIERS] ❌ Error fetching carriers:", error);
+    console.error("[CARRIERS] Error details:", error instanceof Error ? error.message : String(error));
     // Return US default on error
     return {
       country: "United States",
