@@ -572,8 +572,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const search = await storage.createImeiSearch(searchData);
 
-        // Check if this is a popular device
-        const isPopular = await storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || '');
+        // Check if this is a popular device and get search count
+        const [isPopular, searchCount] = await Promise.all([
+          storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || ''),
+          storage.getDeviceSearchCount(deviceInfo.make || '', deviceInfo.model || '')
+        ]);
 
         res.json({
           success: true,
@@ -584,7 +587,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             year: deviceInfo.year,
             modelNumber: deviceInfo.modelNumber,
             imei: imei,
-            isPopular: isPopular
+            isPopular: isPopular,
+            searchCount: searchCount
           },
           networkCompatibility: deviceInfo.networkCapabilities,
           analysis: deviceInfo.tacAnalysis || "Device analysis completed",
@@ -713,8 +717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const search = await storage.createImeiSearch(searchData);
 
-        // Check if this is a popular device
-        const isPopular = await storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || '');
+        // Check if this is a popular device and get search count
+        const [isPopular, searchCount] = await Promise.all([
+          storage.isPopularDevice(deviceInfo.make || '', deviceInfo.model || ''),
+          storage.getDeviceSearchCount(deviceInfo.make || '', deviceInfo.model || '')
+        ]);
 
         res.json({
           success: true,
@@ -724,7 +731,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             year: deviceInfo.year,
             modelNumber: deviceInfo.modelNumber,
             imei: imei,
-            isPopular: isPopular
+            isPopular: isPopular,
+            searchCount: searchCount
           },
           capabilities: deviceInfo.networkCapabilities,
           specifications: deviceInfo.specifications,

@@ -23,6 +23,7 @@ export interface IStorage {
     searchCount: number;
   }>>;
   isPopularDevice(deviceMake: string, deviceModel: string): Promise<boolean>;
+  getDeviceSearchCount(deviceMake: string, deviceModel: string): Promise<number>;
   getSearchesByLocation(): Promise<Array<{
     location: string;
     searchCount: number;
@@ -349,6 +350,24 @@ export class DatabaseStorage implements IStorage {
       device.deviceMake?.toLowerCase() === deviceMake?.toLowerCase() && 
       device.deviceModel?.toLowerCase() === deviceModel?.toLowerCase()
     );
+  }
+
+  async getDeviceSearchCount(deviceMake: string, deviceModel: string): Promise<number> {
+    if (!deviceMake || !deviceModel || deviceMake === 'Unknown' || deviceModel === 'Unknown') {
+      return 0;
+    }
+
+    const result = await db
+      .select({ count: count() })
+      .from(imeiSearches)
+      .where(
+        sql`LOWER(${imeiSearches.deviceMake}) = LOWER(${deviceMake}) 
+            AND LOWER(${imeiSearches.deviceModel}) = LOWER(${deviceModel})
+            AND ${imeiSearches.deviceMake} IS NOT NULL 
+            AND ${imeiSearches.deviceModel} IS NOT NULL`
+      );
+
+    return result[0]?.count || 0;
   }
 
   async getSearchesByLocation(): Promise<Array<{
