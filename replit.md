@@ -55,6 +55,16 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 
 ## Recent Architecture Updates (January 2025)
 
+### Location & Carrier Detection (November 2025)
+- **Google Maps Autocomplete**: Location input field now features Google Maps Places Autocomplete for accurate address entry
+- **Smart Country Extraction**: Automatically extracts country from selected Google Maps places via address_components
+- **Carrier Caching**: Extended carrier data cache from 24 hours to 30 days (720 hours) to reduce API costs
+- **Dual Location Methods**:
+  - Checkbox: "Use my current location" with GPS geolocation + reverse geocoding
+  - Manual entry: Google Maps autocomplete with country detection
+- **Carrier API Flow**: Check cache first → if miss or expired (>30 days), fetch from Gemini API → cache result
+- **No Default Selection**: Carrier dropdown requires explicit user selection (no auto-selection of AT&T or other carriers)
+
 ### NPS Feedback System
 - Added `nps_responses` table with rating (0-10), optional feedback text, search reference, and timestamps
 - Implemented storage methods: `createNpsResponse()`, `getNpsStats()`, `getNpsResponses()`

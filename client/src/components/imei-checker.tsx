@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,13 @@ import BlacklistDrawer from "./blacklist-drawer";
 import VoiceHelper from "./voice-helper";
 import { DeviceAutoDetection } from "./device-auto-detection";
 import { API_CONFIG, getAuthHeaders } from "@/config/api";
+
+// Declare global Google Maps types
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 interface IMEICheckerProps {
   onResult: (result: any) => void;
@@ -38,6 +45,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [blacklistInfo, setBlacklistInfo] = useState<{imei?: string; reason?: string}>({});
   const [showVoiceHelper, setShowVoiceHelper] = useState(false);
   const { toast } = useToast();
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
 
   // Fetch carriers when location changes
   const fetchCarriersMutation = useMutation({
@@ -201,6 +210,47 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       return () => clearTimeout(timer);
     }
   }, [manualLocation, useCurrentLocation]);
+
+  // Initialize Google Maps Autocomplete
+  useEffect(() => {
+    if (!locationInputRef.current || !window.google?.maps?.places) {
+      return;
+    }
+
+    // Create autocomplete instance
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+      types: ['(regions)'], // Cities, regions, countries
+      fields: ['address_components', 'formatted_address', 'geometry']
+    });
+
+    // Listen for place selection
+    autocompleteRef.current.addListener('place_changed', () => {
+      const place = autocompleteRef.current?.getPlace();
+      
+      if (place?.address_components) {
+        // Extract country from address components
+        const countryComponent = place.address_components.find(
+          (component: any) => component.types.includes('country')
+        );
+        
+        if (countryComponent) {
+          const detectedCountry = countryComponent.long_name;
+          console.log("Google Maps detected country:", detectedCountry);
+          setCountry(detectedCountry);
+          setManualLocation(place.formatted_address || '');
+          setCarriersLoading(true);
+          fetchCarriersMutation.mutate(detectedCountry);
+        }
+      }
+    });
+
+    return () => {
+      // Cleanup
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,6 +418,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
                 <div className="relative">
                   <Input
+                    ref={locationInputRef}
                     type="text"
                     value={manualLocation}
                     onChange={(e) => {
@@ -379,6 +430,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                     placeholder="Or enter your location (e.g., New York, NY)"
                     className="w-full text-sm"
                     disabled={useCurrentLocation}
+                    data-testid="input-location"
                   />
                 </div>
 
