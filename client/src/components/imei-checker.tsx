@@ -32,7 +32,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [deviceResult, setDeviceResult] = useState<any>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [selectedCarrier, setSelectedCarrier] = useState("");
-  const [country, setCountry] = useState("United States");
+  const [country, setCountry] = useState("");
   const [carriersLoading, setCarriersLoading] = useState(false);
   const [showBlacklistDrawer, setShowBlacklistDrawer] = useState(false);
   const [blacklistInfo, setBlacklistInfo] = useState<{imei?: string; reason?: string}>({});
@@ -127,16 +127,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     },
   });
 
-  // Initialize carriers with US defaults - show all major carriers
-  useEffect(() => {
-    const defaultUSCarriers = [
-      { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
-      { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
-      { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
-    ];
-    setCarriers(defaultUSCarriers);
-    setSelectedCarrier("AT&T"); // Default to AT&T but show all options
-  }, []);
+  // Carriers will be loaded when location is detected
+  // No default carriers or selection on initial load
 
   // Handle location changes and carrier fetching
   useEffect(() => {
@@ -387,53 +379,55 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               </div>
             </div>
 
-            {/* Carrier Selection Section */}
-            <div className="text-left mb-6">
-              <Label className="block text-sm font-medium text-gray-700 mb-2">
-                <Globe className="w-4 h-4 mr-1 inline text-primary" />
-                Network Carrier for {country}
-              </Label>
+            {/* Carrier Selection Section - Only show when we have location */}
+            {(country || carriers.length > 0) && (
+              <div className="text-left mb-6">
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Globe className="w-4 h-4 mr-1 inline text-primary" />
+                  Network Carrier{country ? ` for ${country}` : ''}
+                </Label>
 
-              {carriersLoading ? (
-                <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  <span className="text-sm text-blue-600">Finding top carriers in your area...</span>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
-                    <SelectTrigger className="w-full text-gray-700 dark:text-gray-200">
-                      <SelectValue placeholder="Select a carrier" className="text-gray-700 dark:text-gray-200" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-gray-800">
-                      {carriers.map((carrier) => (
-                        <SelectItem key={carrier.name} value={carrier.name} className="text-gray-700 dark:text-gray-200 focus:text-gray-900 dark:focus:text-white">
-                          <div className="flex items-center space-x-2">
-                            <Radio className="w-4 h-4 text-primary" />
-                            <div>
-                              <div className="font-medium text-gray-800 dark:text-gray-100">{carrier.name}</div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">{carrier.marketShare} market share</div>
+                {carriersLoading ? (
+                  <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    <span className="text-sm text-blue-600">Finding top carriers in your area...</span>
+                  </div>
+                ) : carriers.length > 0 ? (
+                  <div className="space-y-3">
+                    <Select value={selectedCarrier} onValueChange={setSelectedCarrier}>
+                      <SelectTrigger className="w-full text-gray-700 dark:text-gray-200">
+                        <SelectValue placeholder="Select a carrier" className="text-gray-700 dark:text-gray-200" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800">
+                        {carriers.map((carrier) => (
+                          <SelectItem key={carrier.name} value={carrier.name} className="text-gray-700 dark:text-gray-200 focus:text-gray-900 dark:focus:text-white">
+                            <div className="flex items-center space-x-2">
+                              <Radio className="w-4 h-4 text-primary" />
+                              <div>
+                                <div className="font-medium text-gray-800 dark:text-gray-100">{carrier.name}</div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400">{carrier.marketShare} market share</div>
+                              </div>
                             </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                  {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700 dark:text-gray-200">
-                        <strong className="text-gray-800 dark:text-gray-100">{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-700 dark:text-gray-200">
+                          <strong className="text-gray-800 dark:text-gray-100">{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
+                        </p>
+                      </div>
+                    )}
 
-              <p className="text-xs text-gray-500 mt-2">
-                Shows all major carriers for your region. Defaults to AT&T (US) but you can select any carrier.
-              </p>
-            </div>
+                    <p className="text-xs text-gray-500">
+                      Shows all major carriers for your region. Please select your carrier to check compatibility.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             <Button 
               type="submit"
