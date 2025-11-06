@@ -42,26 +42,33 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   // Fetch carriers when location changes
   const fetchCarriersMutation = useMutation({
     mutationFn: async (location: string) => {
+      console.log("Fetching carriers for location:", location);
       const response = await apiRequest("POST", "/api/carriers", { location });
-      return response.json();
+      const data = await response.json();
+      console.log("Carriers API response:", data);
+      return data;
     },
     onSuccess: (data) => {
       setCarriersLoading(false);
       setCarriers(data.carriers || []);
       setCountry(data.country || "Unknown");
+      console.log("Carriers loaded successfully, country:", data.country);
       // Don't auto-select a carrier - let user choose
     },
     onError: (error: any) => {
       setCarriersLoading(false);
       console.error("Failed to fetch carriers:", error);
-      // Fallback to full US carriers list on error
-      const fallbackCarriers = [
-        { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
-        { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
-        { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
-      ];
-      setCarriers(fallbackCarriers);
-      setCountry("United States");
+      // Keep the detected country, don't override it
+      // Only provide fallback carriers if we have no country set
+      if (!country) {
+        const fallbackCarriers = [
+          { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
+          { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
+          { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
+        ];
+        setCarriers(fallbackCarriers);
+        setCountry("United States");
+      }
       // Don't auto-select a carrier - let user choose
     },
   });
@@ -146,7 +153,9 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
               const geoData = await geoResponse.json();
               const detectedCountry = geoData.countryName || "United States";
-
+              
+              console.log("Geocoding result:", geoData);
+              console.log("Detected country:", detectedCountry);
               setCountry(detectedCountry);
               fetchCarriersMutation.mutate(detectedCountry);
             } catch (error) {

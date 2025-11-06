@@ -256,8 +256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { getTopCarriers } = await import("./services/gemini.js");
       const carriersData = await getTopCarriers(location);
 
-      // Cache the result for 24 hours
-      await storage.setCachedCarriers(country, carriersData, 24);
+      // Cache the result for 30 days (720 hours)
+      await storage.setCachedCarriers(country, carriersData, 720);
 
       res.json({
         success: true,
