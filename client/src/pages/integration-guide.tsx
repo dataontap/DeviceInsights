@@ -98,7 +98,7 @@ export default function IntegrationGuide() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(`curl -X POST https://your-domain.replit.app/api/v1/check \\
+                  onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/check \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -115,7 +115,7 @@ export default function IntegrationGuide() {
                 </Button>
               </div>
               <pre className="text-sm overflow-x-auto">
-{`curl -X POST https://your-domain.replit.app/api/v1/check \\
+{`curl -X POST https://deviceinsights.net/api/v1/check \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -223,11 +223,11 @@ Content-Type: application/json`}
                       variant="ghost"
                       size="sm"
                       onClick={() => copyToClipboard(`const API_KEY = 'imei_your_api_key_here';
-const BASE_URL = 'https://your-domain.replit.app';
+const BASE_URL = 'https://deviceinsights.net/api';
 
 async function checkIMEI(imei, make, model) {
   try {
-    const response = await fetch(\`\${BASE_URL}/api/v1/check\`, {
+    const response = await fetch(\`\${BASE_URL}/v1/check\`, {
       method: 'POST',
       headers: {
         'Authorization': \`Bearer \${API_KEY}\`,
@@ -263,11 +263,11 @@ checkIMEI('013266008012345', 'Apple', 'iPhone 14 Pro')
                   </div>
                   <pre className="text-sm overflow-x-auto">
 {`const API_KEY = 'imei_your_api_key_here';
-const BASE_URL = 'https://your-domain.replit.app';
+const BASE_URL = 'https://deviceinsights.net/api';
 
 async function checkIMEI(imei, make, model) {
   try {
-    const response = await fetch(\`\${BASE_URL}/api/v1/check\`, {
+    const response = await fetch(\`\${BASE_URL}/v1/check\`, {
       method: 'POST',
       headers: {
         'Authorization': \`Bearer \${API_KEY}\`,
@@ -310,7 +310,7 @@ checkIMEI('013266008012345', 'Apple', 'iPhone 14 Pro')
 import os
 
 API_KEY = os.getenv('IMEI_API_KEY', 'imei_your_api_key_here')
-BASE_URL = 'https://your-domain.replit.app'
+BASE_URL = 'https://deviceinsights.net/api'
 
 def check_imei(imei, make, model):
     """
@@ -324,7 +324,7 @@ def check_imei(imei, make, model):
     Returns:
         dict: Device compatibility information
     """
-    url = f'{BASE_URL}/api/v1/check'
+    url = f'{BASE_URL}/v1/check'
     headers = {
         'Authorization': f'Bearer {API_KEY}',
         'Content-Type': 'application/json'
@@ -363,7 +363,7 @@ if __name__ == '__main__':
 import os
 
 API_KEY = os.getenv('IMEI_API_KEY', 'imei_your_api_key_here')
-BASE_URL = 'https://your-domain.replit.app'
+BASE_URL = 'https://deviceinsights.net/api'
 
 def check_imei(imei, make, model):
     """
@@ -377,7 +377,7 @@ def check_imei(imei, make, model):
     Returns:
         dict: Device compatibility information
     """
-    url = f'{BASE_URL}/api/v1/check'
+    url = f'{BASE_URL}/v1/check'
     headers = {
         'Authorization': f'Bearer {API_KEY}',
         'Content-Type': 'application/json'
@@ -419,12 +419,12 @@ if __name__ == '__main__':
                       onClick={() => copyToClipboard(`const axios = require('axios');
 
 const API_KEY = process.env.IMEI_API_KEY || 'imei_your_api_key_here';
-const BASE_URL = 'https://your-domain.replit.app';
+const BASE_URL = 'https://deviceinsights.net/api';
 
 async function checkIMEI(imei, make, model) {
   try {
     const response = await axios.post(
-      \`\${BASE_URL}/api/v1/check\`,
+      \`\${BASE_URL}/v1/check\`,
       {
         device: { make, model, imei }
       },
@@ -470,12 +470,12 @@ module.exports = { checkIMEI };`, 'nodejs-axios')}
 {`const axios = require('axios');
 
 const API_KEY = process.env.IMEI_API_KEY || 'imei_your_api_key_here';
-const BASE_URL = 'https://your-domain.replit.app';
+const BASE_URL = 'https://deviceinsights.net/api';
 
 async function checkIMEI(imei, make, model) {
   try {
     const response = await axios.post(
-      \`\${BASE_URL}/api/v1/check\`,
+      \`\${BASE_URL}/v1/check\`,
       {
         device: { make, model, imei }
       },
@@ -522,7 +522,7 @@ module.exports = { checkIMEI };`}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(`curl -X POST https://your-domain.replit.app/api/v1/check \\
+                      onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/check \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -534,16 +534,16 @@ module.exports = { checkIMEI };`}
   }'
 
 # Get statistics
-curl -X GET https://your-domain.replit.app/api/v1/stats \\
+curl -X GET https://deviceinsights.net/api/v1/stats \\
   -H "Authorization: Bearer imei_your_api_key_here"
 
 # Export data (CSV)
-curl -X GET "https://your-domain.replit.app/api/v1/export?format=csv&limit=100" \\
+curl -X GET "https://deviceinsights.net/api/v1/export?format=csv&limit=100" \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -o searches.csv
 
 # Export data (JSON)
-curl -X GET "https://your-domain.replit.app/api/v1/export?format=json&limit=100" \\
+curl -X GET "https://deviceinsights.net/api/v1/export?format=json&limit=100" \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -o searches.json`, 'curl-examples')}
                       className="text-white hover:bg-white/10"
@@ -553,7 +553,7 @@ curl -X GET "https://your-domain.replit.app/api/v1/export?format=json&limit=100"
                     </Button>
                   </div>
                   <pre className="text-sm overflow-x-auto">
-{`curl -X POST https://your-domain.replit.app/api/v1/check \\
+{`curl -X POST https://deviceinsights.net/api/v1/check \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -565,16 +565,16 @@ curl -X GET "https://your-domain.replit.app/api/v1/export?format=json&limit=100"
   }'
 
 # Get statistics
-curl -X GET https://your-domain.replit.app/api/v1/stats \\
+curl -X GET https://deviceinsights.net/api/v1/stats \\
   -H "Authorization: Bearer imei_your_api_key_here"
 
 # Export data (CSV)
-curl -X GET "https://your-domain.replit.app/api/v1/export?format=csv&limit=100" \\
+curl -X GET "https://deviceinsights.net/api/v1/export?format=csv&limit=100" \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -o searches.csv
 
 # Export data (JSON)
-curl -X GET "https://your-domain.replit.app/api/v1/export?format=json&limit=100" \\
+curl -X GET "https://deviceinsights.net/api/v1/export?format=json&limit=100" \\
   -H "Authorization: Bearer imei_your_api_key_here" \\
   -o searches.json`}
                   </pre>
@@ -672,7 +672,7 @@ curl -X GET "https://your-domain.replit.app/api/v1/export?format=json&limit=100"
                   size="sm"
                   onClick={() => copyToClipboard(`# IMEI API Configuration
 IMEI_API_KEY=imei_your_api_key_here
-IMEI_API_BASE_URL=https://your-domain.replit.app
+IMEI_API_BASE_URL=https://deviceinsights.net/api
 
 # Don't commit this file to git!`, 'env-example')}
                   className="text-white hover:bg-white/10"
@@ -684,7 +684,7 @@ IMEI_API_BASE_URL=https://your-domain.replit.app
               <pre className="text-sm">
 {`# IMEI API Configuration
 IMEI_API_KEY=imei_your_api_key_here
-IMEI_API_BASE_URL=https://your-domain.replit.app
+IMEI_API_BASE_URL=https://deviceinsights.net/api
 
 # Don't commit this file to git!`}
               </pre>
@@ -862,7 +862,7 @@ X-RateLimit-Reset: 1640995200`}
                     size="sm"
                     onClick={() => copyToClipboard(`async function checkIMEIWithErrorHandling(imei, make, model) {
   try {
-    const response = await fetch(\`\${BASE_URL}/api/v1/check\`, {
+    const response = await fetch(\`\${BASE_URL}/v1/check\`, {
       method: 'POST',
       headers: {
         'Authorization': \`Bearer \${API_KEY}\`,
@@ -901,7 +901,7 @@ X-RateLimit-Reset: 1640995200`}
                 <pre className="text-sm overflow-x-auto">
 {`async function checkIMEIWithErrorHandling(imei, make, model) {
   try {
-    const response = await fetch(\`\${BASE_URL}/api/v1/check\`, {
+    const response = await fetch(\`\${BASE_URL}/v1/check\`, {
       method: 'POST',
       headers: {
         'Authorization': \`Bearer \${API_KEY}\`,
