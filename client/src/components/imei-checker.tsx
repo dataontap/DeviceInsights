@@ -47,6 +47,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const { toast } = useToast();
   const locationInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const autocompleteUsedRef = useRef(false);
 
   // Fetch carriers when location changes
   const fetchCarriersMutation = useMutation({
@@ -67,18 +68,12 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     onError: (error: any) => {
       setCarriersLoading(false);
       console.error("Failed to fetch carriers:", error);
-      // Keep the detected country, don't override it
-      // Only provide fallback carriers if we have no country set
-      if (!country) {
-        const fallbackCarriers = [
-          { name: "AT&T", marketShare: "31.0%", description: "Nationwide 5G coverage with strong rural presence" },
-          { name: "Verizon", marketShare: "36.0%", description: "Premium network with excellent reliability" },
-          { name: "T-Mobile", marketShare: "33.0%", description: "Un-carrier with competitive pricing and 5G expansion" }
-        ];
-        setCarriers(fallbackCarriers);
-        setCountry("United States");
-      }
-      // Don't auto-select a carrier - let user choose
+      // Don't provide fallback - show error to user instead
+      toast({
+        title: "Carrier Fetch Failed",
+        description: "Unable to load carriers for this location. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -148,6 +143,9 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
   // Handle location changes and carrier fetching
   useEffect(() => {
+    // Clear selected carrier when location changes
+    setSelectedCarrier("");
+    
     if (useCurrentLocation) {
       // When using current location, get GPS coordinates first
       if (navigator.geolocation) {
@@ -161,28 +159,34 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
               setCarriersLoading(true);
               const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
               const geoData = await geoResponse.json();
-              const detectedCountry = geoData.countryName || "United States";
+              const detectedCountry = geoData.countryName || "Unknown";
               
-              console.log("Geocoding result:", geoData);
-              console.log("Detected country:", detectedCountry);
+              console.log("GPS Geocoding result:", geoData);
+              console.log("GPS Detected country:", detectedCountry);
               setCountry(detectedCountry);
               fetchCarriersMutation.mutate(detectedCountry);
             } catch (error) {
-              // Fallback to US if geolocation fails
-              setCountry("United States");
-              fetchCarriersMutation.mutate("United States");
+              console.error("Geocoding failed:", error);
+              setCarriersLoading(false);
+              toast({
+                title: "Location Detection Failed",
+                description: "Unable to detect your location. Please enter it manually.",
+                variant: "destructive",
+              });
             }
           },
           () => {
-            // Fallback to US if geolocation permission denied
-            setCountry("United States");
-            setCarriersLoading(true);
-            fetchCarriersMutation.mutate("United States");
+            setCarriersLoading(false);
+            toast({
+              title: "Location Permission Denied",
+              description: "Please allow location access or enter your location manually.",
+              variant: "destructive",
+            });
           }
         );
       }
-    } else if (manualLocation && manualLocation.length > 2) {
-      // For manual location, extract/detect country and fetch carriers
+    } else if (manualLocation && manualLocation.length > 2 && !autocompleteUsedRef.current) {
+      // Only use manual parsing if autocomplete wasn't used
       const timer = setTimeout(() => {
         setCarriersLoading(true);
         // Update country based on manual location
@@ -200,14 +204,19 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           setCountry('United Kingdom');
           fetchCarriersMutation.mutate('United Kingdom');
         } else {
-          // Default to extracting country or assume US
-          const country = potentialCountry.length > 15 ? "United States" : potentialCountry;
+          // Extract last part as country
+          const country = potentialCountry;
           setCountry(country);
           fetchCarriersMutation.mutate(country);
         }
       }, 1000); // 1 second delay to avoid too many API calls
 
       return () => clearTimeout(timer);
+    }
+    
+    // Reset autocomplete flag when user starts typing again
+    if (manualLocation.length === 0) {
+      autocompleteUsedRef.current = false;
     }
   }, [manualLocation, useCurrentLocation]);
 
@@ -235,7 +244,13 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
         
         if (countryComponent) {
           const detectedCountry = countryComponent.long_name;
-          console.log("Google Maps detected country:", detectedCountry);
+          console.log("Google Maps autocomplete detected country:", detectedCountry);
+          
+          // Mark that autocomplete was used to prevent manual parsing
+          autocompleteUsedRef.current = true;
+          
+          // Clear selected carrier when location changes
+          setSelectedCarrier("");
           setCountry(detectedCountry);
           setManualLocation(place.formatted_address || '');
           setCarriersLoading(true);
