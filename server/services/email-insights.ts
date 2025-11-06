@@ -375,7 +375,7 @@ export function generateInsightEmailHTML(userName: string, data: MonthlyInsightD
           <p>This report was automatically generated based on your registered email preferences.</p>
           <div class="unsubscribe">
             <a href="#">Update your email preferences</a> | 
-            <a href="mailto:support@dotm.com?subject=Unsubscribe Monthly Reports">Unsubscribe</a>
+            <a href="mailto:rbm@dotmobile.app?subject=Unsubscribe Monthly Reports">Unsubscribe</a>
           </div>
         </div>
       </div>

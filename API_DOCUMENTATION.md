@@ -13,7 +13,7 @@ Location data is only collected with your **explicit consent** when you choose t
 
 ### Your Privacy Rights
 - Location services are completely optional
-- You can request deletion of all collected data at any time by contacting support@dotm.com
+- You can request deletion of all collected data at any time by contacting rbm@dotmobile.app
 - Location services can be disabled in your browser settings
 - We respect your privacy choices and make data control easy
 
@@ -21,7 +21,7 @@ Location data is only collected with your **explicit consent** when you choose t
 
 ## Base URL
 ```
-https://your-replit-app.replit.app
+https://api.deviceinsights.net
 ```
 
 ## Authentication
@@ -240,7 +240,7 @@ Contact the administrator to obtain an API key for external service integration.
 
 ### cURL Example
 ```bash
-curl -X POST https://your-app.replit.app/api/v1/check \
+curl -X POST https://api.deviceinsights.net/api/v1/check \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -251,7 +251,7 @@ curl -X POST https://your-app.replit.app/api/v1/check \
 
 ### JavaScript Example
 ```javascript
-const response = await fetch('https://your-app.replit.app/api/v1/check', {
+const response = await fetch('https://api.deviceinsights.net/api/v1/check', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -272,7 +272,7 @@ console.log(data);
 import requests
 
 response = requests.post(
-    'https://your-app.replit.app/api/v1/check',
+    'https://api.deviceinsights.net/api/v1/check',
     headers={
         'Content-Type': 'application/json',
         'Authorization': 'Bearer YOUR_API_KEY'

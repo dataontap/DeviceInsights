@@ -585,7 +585,7 @@ export function registerPDFRoutes(app: Express) {
             <p>Our technical support team is available to assist with device compatibility questions and unlock guidance.</p>
             <div class="contact-info">
                 📞 1-800-DOTM-HELP<br>
-                📧 support@dotm.com<br>
+                📧 rbm@dotmobile.app<br>
                 💬 Live chat at dotm.com
             </div>
             <p style="margin-top: 1rem; font-size: 0.9rem; color: #6B7280;">

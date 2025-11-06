@@ -6,7 +6,7 @@ The Coverage Maps API provides comprehensive network coverage analysis for mobil
 
 ## Base URL
 ```
-https://your-domain.replit.app/api
+https://api.deviceinsights.net
 ```
 
 ## Authentication
@@ -242,7 +242,7 @@ const analyzeWeaning = async (lat, lng, provider = 'auto') => {
 import requests
 
 def analyze_coverage(lat, lng, api_key, provider='auto'):
-    url = 'https://your-domain.replit.app/api/coverage/analyze'
+    url = 'https://api.deviceinsights.net/coverage/analyze'
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {api_key}'
@@ -260,7 +260,7 @@ def analyze_coverage(lat, lng, api_key, provider='auto'):
 ### cURL
 
 ```bash
-curl -X POST https://your-domain.replit.app/api/coverage/analyze \
+curl -X POST https://api.deviceinsights.net/coverage/analyze \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your_api_key" \
   -d '{
