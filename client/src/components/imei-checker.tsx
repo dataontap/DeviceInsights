@@ -31,7 +31,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [showPolicy, setShowPolicy] = useState(false);
   const [deviceResult, setDeviceResult] = useState<any>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
-  const [selectedCarrier, setSelectedCarrier] = useState("AT&T");
+  const [selectedCarrier, setSelectedCarrier] = useState("");
   const [country, setCountry] = useState("United States");
   const [carriersLoading, setCarriersLoading] = useState(false);
   const [showBlacklistDrawer, setShowBlacklistDrawer] = useState(false);
@@ -49,23 +49,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       setCarriersLoading(false);
       setCarriers(data.carriers || []);
       setCountry(data.country || "Unknown");
-
-      // Auto-select appropriate default carrier
-      if (data.carriers && data.carriers.length > 0) {
-        const isUS = data.country === "United States" || data.country === "US";
-
-        // Always set all carriers first
-        setCarriers(data.carriers);
-        
-        if (isUS) {
-          // For US, prefer AT&T if available, otherwise use largest
-          const attCarrier = data.carriers.find((c: Carrier) => c.name === "AT&T");
-          setSelectedCarrier(attCarrier ? "AT&T" : data.carriers[0].name);
-        } else {
-          // For other countries, use the largest carrier (first in list)
-          setSelectedCarrier(data.carriers[0].name);
-        }
-      }
+      // Don't auto-select a carrier - let user choose
     },
     onError: (error: any) => {
       setCarriersLoading(false);
@@ -78,7 +62,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       ];
       setCarriers(fallbackCarriers);
       setCountry("United States");
-      setSelectedCarrier("AT&T");
+      // Don't auto-select a carrier - let user choose
     },
   });
 
@@ -93,7 +77,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
       setShowPolicy(true);
       toast({
         title: "Device Analyzed Successfully",
-        description: `Found ${data.device.make} ${data.device.model} (${selectedCarrier} compatibility)`,
+        description: `Found ${data.device.make} ${data.device.model}${selectedCarrier ? ` (${selectedCarrier} compatibility)` : ''}`,
       });
     },
     onError: (error: any) => {
