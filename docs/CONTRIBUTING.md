@@ -1,6 +1,6 @@
-# Contributing to DOTM Device Compatibility API
+# Contributing to Device Insights API
 
-Thank you for your interest in contributing to the DOTM Device Compatibility API! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to the Device Insights API! This document provides guidelines for contributing to the project.
 
 ## 🚀 Getting Started
 
@@ -11,7 +11,7 @@ Thank you for your interest in contributing to the DOTM Device Compatibility API
 
 ### Setup Development Environment
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/dotm-device-checker.git`
+2. Clone your fork: `git clone https://github.com/your-username/device-insights.git`
 3. Install dependencies: `npm install`
 4. Set up environment variables (see README.md Developer Guide)
 5. Initialize database: `npm run db:push`
@@ -256,4 +256,4 @@ When reporting bugs, include:
 - **Discussions**: Use GitHub Discussions for questions
 - **Email**: Contact maintainers for urgent issues
 
-Thank you for contributing to DOTM Device Compatibility API! 🎉
+Thank you for contributing to Device Insights API! 🎉

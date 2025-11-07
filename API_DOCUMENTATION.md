@@ -13,7 +13,7 @@ Location data is only collected with your **explicit consent** when you choose t
 
 ### Your Privacy Rights
 - Location services are completely optional
-- You can request deletion of all collected data at any time by contacting rbm@dotmobile.app
+- You can request deletion of all collected data at any time by contacting our support team
 - Location services can be disabled in your browser settings
 - We respect your privacy choices and make data control easy
 
@@ -422,7 +422,7 @@ Reports a network issue and analyzes similar problems in the area using AI patte
 ## Support
 
 For technical support or API questions:
-- Email: rbm@dotmobile.app first with questions
+- Email: Contact support first with questions
 - Documentation: Visit `/coverage-maps` for interactive testing
 - Status: Monitor API health at your deployment URL
 

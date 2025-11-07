@@ -9,10 +9,12 @@ import LiveWorldMap from "@/components/live-world-map";
 import APIDocs from "@/components/api-docs";
 import { ProviderCoverageMaps } from "@/components/provider-coverage-maps";
 import { Loader2, Wifi, AlertTriangle } from "lucide-react";
+import { useMVNOConfig } from "@/hooks/use-mvno-config";
 
 export default function Home() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { config: mvnoConfig } = useMVNOConfig();
 
   const handleResult = (data: any) => {
     setResult(data);
@@ -37,7 +39,7 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-orange-900 mb-2">Alpha Service</h3>
               <div className="text-sm text-orange-800 space-y-1">
                 <p>
-                  Results are tentative and experimental. Use with caution. These are service terms: use FREE under 100TPH. Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use cases. Contact us at rbm@dotmobile.app anytime or use MCP server.
+                  Results are tentative and experimental. Use with caution. These are service terms: use FREE under 100TPH. Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use cases. Contact us at {mvnoConfig.supportEmail} anytime or use MCP server.
                 </p>
               </div>
             </div>
@@ -59,7 +61,7 @@ export default function Home() {
                   <strong>Network Connectivity Pings:</strong> Every time you use our IMEI checking service, we automatically perform network connectivity pings to measure your current network performance and compatibility. This helps us provide accurate device analysis and network recommendations. No other private information is collected during these pings.
                 </p>
                 <p>
-                  <strong>Location Services (Optional):</strong> Location data is only collected with your explicit consent when you choose to enable location-based features for enhanced coverage analysis. You can request data deletion at any time by contacting rbm@dotmobile.app.
+                  <strong>Location Services (Optional):</strong> Location data is only collected with your explicit consent when you choose to enable location-based features for enhanced coverage analysis. You can request data deletion at any time by contacting {mvnoConfig.supportEmail}.
                 </p>
               </div>
             </div>

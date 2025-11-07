@@ -173,7 +173,7 @@ Create a `.env` file in the root directory:
 
 ```bash
 # === DATABASE ===
-DATABASE_URL="postgresql://username:password@localhost:5432/dotm_dev"
+DATABASE_URL="postgresql://username:password@localhost:5432/app_dev"
 
 # === AI SERVICES ===
 # Google Gemini API for device identification
@@ -257,13 +257,13 @@ sudo systemctl start postgresql
 
 # Create database
 psql -U postgres
-CREATE DATABASE dotm_dev;
-CREATE USER dotm_user WITH PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE dotm_dev TO dotm_user;
+CREATE DATABASE app_dev;
+CREATE USER app_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE app_dev TO app_user;
 \q
 
 # Update DATABASE_URL in .env
-DATABASE_URL="postgresql://dotm_user:your_secure_password@localhost:5432/dotm_dev"
+DATABASE_URL="postgresql://app_user:your_secure_password@localhost:5432/app_dev"
 
 # Run migrations
 npm run db:push
@@ -276,7 +276,7 @@ npm run db:push
 # 2. Create new project
 # 3. Copy connection string
 # 4. Add to .env:
-DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/dotm_prod?sslmode=require"
+DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/app_prod?sslmode=require"
 
 # 5. Run migrations
 npm run db:push

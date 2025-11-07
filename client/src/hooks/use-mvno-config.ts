@@ -9,24 +9,25 @@ export interface MVNOConfig {
   internationalCarrier: string;
 }
 
-const DEFAULT_MVNO_CONFIG: MVNOConfig = {
-  name: 'DOTM',
-  companyName: 'DOTM Inc.',
-  website: 'dotm.com',
-  phone: '1-800-DOTM-HELP',
-  supportEmail: 'rbm@dotmobile.app',
-  internationalCarrier: 'DOTM'
+const NEUTRAL_MVNO_CONFIG: MVNOConfig = {
+  name: 'Network Services',
+  companyName: 'Network Services Inc.',
+  website: 'our website',
+  phone: 'our support line',
+  supportEmail: 'our support team',
+  internationalCarrier: 'our network'
 };
 
 export function useMVNOConfig() {
-  const { data, isLoading } = useQuery<MVNOConfig>({
+  const { data, isLoading, error } = useQuery<MVNOConfig>({
     queryKey: ['/api/mvno-config'],
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
   return {
-    config: data || DEFAULT_MVNO_CONFIG,
-    isLoading
+    config: data || NEUTRAL_MVNO_CONFIG,
+    isLoading,
+    error
   };
 }
