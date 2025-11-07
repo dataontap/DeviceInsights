@@ -37,7 +37,9 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 -   **Mapping & Location**: Integrates Google Maps for location visualization and coverage analysis, with fallback SVG world map system. Live world map shows animated search activity.
 -   **Coverage Maps & Issue Reporting**: Provides comprehensive coverage analysis with provider compatibility, Downdetector data integration, AI-powered provider comparison, and an AI-driven issue reporting system with pattern detection and device-specific analysis.
 -   **Authentication**: Magic link email authentication via Resend (from rbm@dotmobile.app) for admin dashboard; API key authentication for external API access. All access attempts are tracked with session metadata.
--   **Messaging**: Firebase Cloud Messaging integration for push notifications; Resend for transactional emails.
+-   **Messaging**: 
+    - **Web Push Notifications**: Firebase Cloud Messaging for browser push notifications to website visitors (public API endpoint: `/api/messaging/push`)
+    - **Internal Notifications**: SMS and email capabilities available as internal server-side APIs only (not exposed publicly) for system notifications and admin communications via Resend
 -   **Voice Synthesis**: ElevenLabs integration supporting 30+ languages with multiple voice styles (standard, harmonizing, singing, rock ballad). Template-based caching optimizes API usage and costs.
 
 ## External Dependencies
@@ -46,12 +48,12 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 -   **Database**: PostgreSQL via Neon serverless (via `DATABASE_URL`).
 -   **Voice Synthesis**: ElevenLabs API (via `ELEVENLABS_API_KEY`) for multilingual voice generation.
 -   **Email Services**: 
-    - Resend (via `RESEND_API_KEY`) for magic link authentication
+    - Resend (via `RESEND_API_KEY`) for magic link authentication and internal email notifications
     - SendGrid (optional, via `SENDGRID_API_KEY`) for monthly insights
 -   **Mapping**: Google Maps JavaScript API and Static API (via `GOOGLE_MAPS_API_KEY`).
 -   **Build Tools**: Vite (frontend), ESBuild (backend), TypeScript compiler.
 -   **PDF Generation**: Puppeteer (for policy document creation).
--   **Messaging**: Firebase Cloud Messaging (FCM, Admin SDK) for push notifications.
+-   **Push Notifications**: Firebase Cloud Messaging (FCM, Admin SDK) for web push notifications to website visitors only. SMS and email are internal server-side APIs.
 -   **ORM**: Drizzle ORM with PostgreSQL driver for type-safe database operations.
 
 ## Recent Architecture Updates (January 2025)

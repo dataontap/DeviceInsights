@@ -156,39 +156,8 @@ function showInAppNotification(notification: any) {
   }, 5000);
 }
 
-// SMS and Email Messaging Functions (Server-side via Firebase Admin)
-export async function sendSMSNotification(phoneNumber: string, message: string): Promise<boolean> {
-  try {
-    const response = await fetch('/api/messaging/sms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phoneNumber, message }),
-    });
-    return response.ok;
-  } catch (error) {
-    console.error('Error sending SMS:', error);
-    return false;
-  }
-}
-
-export async function sendEmailNotification(email: string, subject: string, body: string): Promise<boolean> {
-  try {
-    const response = await fetch('/api/messaging/email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, subject, body }),
-    });
-    return response.ok;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return false;
-  }
-}
-
+// Web Push Notification Function (for website visitors)
+// Note: SMS and email are now internal server-side APIs only
 export async function sendPushNotification(token: string, title: string, body: string, data?: any): Promise<boolean> {
   try {
     const response = await fetch('/api/messaging/push', {

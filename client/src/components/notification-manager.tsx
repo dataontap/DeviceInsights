@@ -9,20 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   requestNotificationPermission, 
   setupMessageListener, 
-  sendSMSNotification, 
-  sendEmailNotification, 
   sendPushNotification 
 } from '@/lib/firebase';
-import { Bell, Mail, MessageSquare, Smartphone } from 'lucide-react';
+import { Bell, Smartphone } from 'lucide-react';
 
 export function NotificationManager() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   
-  // Form states
-  const [smsForm, setSmsForm] = useState({ phoneNumber: '', message: '' });
-  const [emailForm, setEmailForm] = useState({ email: '', subject: '', body: '' });
+  // Form state for push notifications only (SMS and email are now internal APIs)
   const [pushForm, setPushForm] = useState({ title: '', body: '', data: '' });
 
   const handleRequestPermission = async () => {
@@ -49,84 +45,6 @@ export function NotificationManager() {
       toast({
         title: "Permission error",
         description: "Failed to request notification permission.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendSMS = async () => {
-    if (!smsForm.phoneNumber || !smsForm.message) {
-      toast({
-        title: "Missing fields",
-        description: "Please provide both phone number and message.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const success = await sendSMSNotification(smsForm.phoneNumber, smsForm.message);
-      
-      if (success) {
-        toast({
-          title: "SMS sent!",
-          description: "SMS notification sent successfully.",
-        });
-        setSmsForm({ phoneNumber: '', message: '' });
-      } else {
-        toast({
-          title: "SMS failed",
-          description: "Failed to send SMS notification.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('SMS error:', error);
-      toast({
-        title: "SMS error",
-        description: "Error sending SMS notification.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendEmail = async () => {
-    if (!emailForm.email || !emailForm.subject || !emailForm.body) {
-      toast({
-        title: "Missing fields",
-        description: "Please provide email, subject, and body.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const success = await sendEmailNotification(emailForm.email, emailForm.subject, emailForm.body);
-      
-      if (success) {
-        toast({
-          title: "Email sent!",
-          description: "Email notification sent successfully.",
-        });
-        setEmailForm({ email: '', subject: '', body: '' });
-      } else {
-        toast({
-          title: "Email failed",
-          description: "Failed to send email notification.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Email error:', error);
-      toast({
-        title: "Email error",
-        description: "Error sending email notification.",
         variant: "destructive",
       });
     } finally {
@@ -179,19 +97,17 @@ export function NotificationManager() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="w-5 h-5" />
-          Firebase Messaging Center
+          Web Push Notifications
         </CardTitle>
         <CardDescription>
-          Send SMS, email, and push notifications using Firebase services
+          Send push notifications to website visitors using Firebase Cloud Messaging
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="setup" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="setup">Setup</TabsTrigger>
-            <TabsTrigger value="sms">SMS</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="push">Push</TabsTrigger>
+            <TabsTrigger value="push">Send Notification</TabsTrigger>
           </TabsList>
           
           <TabsContent value="setup" className="space-y-4">
@@ -220,84 +136,6 @@ export function NotificationManager() {
                   </p>
                 </div>
               )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="sms" className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="w-4 h-4" />
-              <h3 className="text-lg font-semibold">Send SMS Notification</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="+1234567890"
-                  value={smsForm.phoneNumber}
-                  onChange={(e) => setSmsForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="sms-message">Message</Label>
-                <Textarea
-                  id="sms-message"
-                  placeholder="Your SMS message here..."
-                  value={smsForm.message}
-                  onChange={(e) => setSmsForm(prev => ({ ...prev, message: e.target.value }))}
-                />
-              </div>
-              
-              <Button onClick={handleSendSMS} disabled={isLoading} className="w-full">
-                Send SMS
-              </Button>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="email" className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Mail className="w-4 h-4" />
-              <h3 className="text-lg font-semibold">Send Email Notification</h3>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="recipient@example.com"
-                  value={emailForm.email}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="subject">Subject</Label>
-                <Input
-                  id="subject"
-                  placeholder="Email subject"
-                  value={emailForm.subject}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, subject: e.target.value }))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="email-body">Message Body</Label>
-                <Textarea
-                  id="email-body"
-                  placeholder="Your email message here..."
-                  rows={4}
-                  value={emailForm.body}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, body: e.target.value }))}
-                />
-              </div>
-              
-              <Button onClick={handleSendEmail} disabled={isLoading} className="w-full">
-                Send Email
-              </Button>
             </div>
           </TabsContent>
           
