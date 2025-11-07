@@ -17,6 +17,7 @@ import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-an
 import { matchDeviceToTAC, getExampleIMEIFromTAC } from './services/device-matcher.js';
 import { getCarrierPricing } from './services/pricing-service.js';
 import { getCoverageQualityForCarriers } from './services/coverage-quality-service.js';
+import { getLocationFromIp } from './services/ip-geolocation.js';
 import { 
   generateVoiceAudio, 
   createMultiVoiceConversation, 
@@ -197,7 +198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "GET /api/v1/stats": "Get your API key's usage statistics",
         "GET /api/v1/export": "Export your search data only",
         "GET /api/v1/search/{id}": "Get individual search details (your searches only)",
-        "GET /api/v1/my/searches": "Get your detailed search data with location info"
+        "GET /api/v1/my/searches": "Get your detailed search data with location info",
+        "POST /api/v1/coverage-quality": "Get network quality metrics (3G/4G/5G) for carriers by location"
       },
       authentication: {
         type: "Bearer Token",
@@ -318,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get coverage quality metrics for carriers by location
+  // Get coverage quality metrics for carriers by location (internal endpoint)
   app.post("/api/coverage-quality", async (req, res) => {
     try {
       const { carriers, location, coordinates } = req.body;
@@ -343,6 +345,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: "Failed to fetch coverage quality metrics",
         message: "Could not retrieve coverage quality information"
+      });
+    }
+  });
+
+  // Public API: Get coverage quality metrics with auto IP geolocation
+  app.post("/api/v1/coverage-quality", validateApiKey, standardRateLimit, async (req, res) => {
+    try {
+      const { carriers, location, coordinates } = req.body;
+      
+      if (!carriers || !Array.isArray(carriers) || carriers.length === 0) {
+        return res.status(400).json({ 
+          error: "Carriers array is required",
+          message: "Please provide an array of carrier names (e.g., ['AT&T', 'Verizon', 'T-Mobile'])"
+        });
+      }
+
+      let resolvedLocation = location;
+      let resolvedCoordinates = coordinates;
+
+      if (!resolvedLocation) {
+        const ipAddress = 
+          req.get('CF-Connecting-IP') ||
+          req.get('X-Real-IP') ||
+          req.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+          req.ip ||
+          req.connection?.remoteAddress ||
+          'unknown';
+
+        console.log(`[API v1] No location provided, attempting IP geolocation for ${ipAddress}`);
+        
+        const geoData = await getLocationFromIp(ipAddress);
+        
+        if (geoData) {
+          resolvedLocation = geoData.location;
+          resolvedCoordinates = geoData.coordinates;
+          console.log(`[API v1] IP geolocation successful: ${resolvedLocation}`);
+        } else {
+          return res.status(400).json({
+            error: "Location required",
+            message: "Please provide a location parameter, or ensure your IP address can be geolocated",
+            ipAddress: ipAddress
+          });
+        }
+      }
+
+      console.log(`[API v1] Fetching coverage quality for ${carriers.length} carriers in ${resolvedLocation}`);
+      const qualityData = await getCoverageQualityForCarriers(carriers, resolvedLocation, resolvedCoordinates);
+
+      res.json({
+        success: true,
+        location: resolvedLocation,
+        coordinates: resolvedCoordinates,
+        carriers: qualityData,
+        carrierCount: carriers.length,
+        detectedFromIp: !location
+      });
+    } catch (error) {
+      console.error("[API v1] Coverage quality fetch error:", error);
+      res.status(500).json({
+        error: "Failed to fetch coverage quality metrics",
+        message: "Could not retrieve coverage quality information. Please try again later."
       });
     }
   });
