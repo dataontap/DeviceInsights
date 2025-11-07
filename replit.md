@@ -2,7 +2,7 @@
 
 ## Overview
 
-This comprehensive full-stack web application enables users to analyze mobile device IMEI numbers to determine device information and network compatibility across multiple carriers. It utilizes AI-powered device identification via Google's Gemini API (with an intelligent fallback system) and provides comprehensive analytics on device searches, network coverage analysis, user satisfaction tracking via NPS surveys, and multilingual voice assistance. The platform is designed for MVNOs, mobile carriers, device retailers, and technical support services, offering robust APIs, real-time feedback collection, and administrative dashboards for complete operational visibility.
+This full-stack web application analyzes mobile device IMEI numbers to provide device information and network compatibility across various carriers. It features AI-powered device identification, comprehensive analytics on device searches, network coverage analysis, user satisfaction tracking via NPS surveys, and multilingual voice assistance. The platform targets MVNOs, mobile carriers, device retailers, and technical support, offering robust APIs, real-time feedback, and administrative dashboards. The business vision includes empowering users with critical device insights and optimizing network service delivery, positioning the platform as a key tool in the mobile industry.
 
 ## User Preferences
 
@@ -10,198 +10,39 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-The application is a full-stack TypeScript monorepo, separating client, server, and shared components.
+The application is a full-stack TypeScript monorepo with separate client, server, and shared components.
 
 ### Technology Stack
 
--   **Frontend**: React 18 with TypeScript, Vite, Shadcn/ui (Radix UI primitives), Tailwind CSS for styling, TanStack Query for state management, Wouter for routing.
+-   **Frontend**: React 18, TypeScript, Vite, Shadcn/ui (Radix UI), Tailwind CSS, TanStack Query, Wouter.
 -   **Backend**: Express.js with TypeScript.
--   **Database**: PostgreSQL (configured for Neon serverless) with Drizzle ORM.
--   **AI Integration**: Smart device identification with local TAC database priority, Google Gemini API fallback for unknown devices.
+-   **Database**: PostgreSQL (Neon serverless) with Drizzle ORM.
+-   **AI Integration**: Smart device identification with local TAC database priority and Google Gemini API fallback.
 
 ### Key Components & Features
 
--   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, and Admin Access Requests.
--   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme system, and Shadcn/ui components.
--   **Backend Services**: Handles IMEI analysis, database operations, RESTful API endpoints, PostgreSQL session management, NPS feedback collection, and voice synthesis. Features include real-time analytics, location tracking, network-agnostic compatibility, data export, and published REST APIs with CORS enabled.
--   **Smart Device Identification**: Three-tier priority system for optimal performance and cost efficiency:
-    1. **Local TAC Database** (Priority 1): Instant lookup for known devices, currently includes 10+ verified TAC entries for popular devices (iPhone 14/15/16, Pixel 8/10, Galaxy S23/S24, OnePlus 11)
-    2. **Google Gemini AI** (Priority 2): AI-powered identification for unknown TACs
-    3. **Unknown Fallback** (Priority 3): Graceful handling with basic TAC pattern analysis
-    - Supports exact IMEI match (15 digits), full TAC match (8 digits), and FAC match (6 digits)
-    - Reduces API costs by ~80% through intelligent caching
-    - Ensures consistent identification for known devices
-    - **eSIM Support Detection**: Automatically detects and displays eSIM capability with visual badge next to device make/model for supported devices
--   **NPS Feedback System**: Non-intrusive widget appears 3 seconds after successful IMEI searches, collecting 0-10 ratings with optional text feedback. Admin dashboard displays real-time NPS score, promoter/passive/detractor breakdown, and recent responses.
--   **Security**: Enhanced rate limiting with tiered access (100/500/1000 req/hour), API key management, secure magic link authentication via Resend, input validation with Zod schemas, and comprehensive audit logging.
--   **Mapping & Location**: Integrates Google Maps for location visualization and coverage analysis, with fallback SVG world map system. Live world map shows animated search activity.
--   **Coverage Maps & Issue Reporting**: Provides comprehensive coverage analysis with provider compatibility, Downdetector data integration, AI-powered provider comparison, and an AI-driven issue reporting system with pattern detection and device-specific analysis.
--   **Authentication**: Magic link email authentication via Resend (from rbm@dotmobile.app) for admin dashboard; API key authentication for external API access. All access attempts are tracked with session metadata.
--   **Messaging**: 
-    - **Web Push Notifications**: Firebase Cloud Messaging for browser push notifications to website visitors (public API endpoint: `/api/messaging/push`)
-    - **Internal Notifications**: SMS and email capabilities available as internal server-side APIs only (not exposed publicly) for system notifications and admin communications via Resend
--   **Voice Synthesis**: ElevenLabs integration supporting 30+ languages with multiple voice styles (standard, harmonizing, singing, rock ballad). Template-based caching optimizes API usage and costs.
+-   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, Admin Access Requests, and Network Policies.
+-   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme, Shadcn/ui.
+-   **Backend Services**: Handles IMEI analysis, database operations, RESTful APIs, NPS feedback, and voice synthesis. Includes real-time analytics, location tracking, network-agnostic compatibility, data export, and CORS-enabled APIs.
+-   **Smart Device Identification**: Three-tier priority system (Local TAC Database, Google Gemini AI, Unknown Fallback) for efficiency and cost reduction. Supports exact IMEI, full TAC, and FAC matches. Includes eSIM support detection.
+-   **NPS Feedback System**: Non-intrusive widget for collecting user ratings and text feedback, with an admin dashboard for real-time NPS scores and response analysis.
+-   **Security**: Enhanced rate limiting, API key management, magic link authentication via Resend, Zod input validation, and comprehensive audit logging.
+-   **Mapping & Location**: Integrates Google Maps for location visualization, coverage analysis, and live animated search activity. Includes IP geolocation for automatic location detection.
+-   **Coverage Maps & Issue Reporting**: Provides comprehensive coverage analysis with provider compatibility (DOTM-only pricing), Downdetector integration, AI-powered provider comparison, and an AI-driven issue reporting system.
+-   **Authentication**: Magic link email authentication for admin dashboard via Resend; API key authentication for external API access. All attempts tracked with session metadata.
+-   **Messaging**: Web Push Notifications via Firebase Cloud Messaging. Internal SMS and email capabilities for system notifications via Resend.
+-   **Voice Synthesis**: ElevenLabs integration supporting 30+ languages with template-based caching.
+-   **Blacklist Management**: Supports global and API-key specific blacklists with public API endpoints for management.
+-   **Network Policy CMS**: Allows dynamic editing of network policy content via an admin dashboard, stored in the database with versioning. Includes dynamic PDF generation.
+-   **Data Export**: Export endpoint supports both authenticated (real data) and unauthenticated (anonymized example data) access for demonstration purposes.
 
 ## External Dependencies
 
--   **AI Service**: Google Gemini 2.5 Pro (via `GEMINI_API_KEY`) for device identification, coverage analysis, and issue classification.
--   **Database**: PostgreSQL via Neon serverless (via `DATABASE_URL`).
--   **Voice Synthesis**: ElevenLabs API (via `ELEVENLABS_API_KEY`) for multilingual voice generation.
--   **Email Services**: 
-    - Resend (via `RESEND_API_KEY`) for magic link authentication and internal email notifications
-    - SendGrid (optional, via `SENDGRID_API_KEY`) for monthly insights
--   **Mapping**: Google Maps JavaScript API and Static API (via `GOOGLE_MAPS_API_KEY`).
--   **Build Tools**: Vite (frontend), ESBuild (backend), TypeScript compiler.
--   **PDF Generation**: Puppeteer (for policy document creation).
--   **Push Notifications**: Firebase Cloud Messaging (FCM, Admin SDK) for web push notifications to website visitors only. SMS and email are internal server-side APIs.
--   **ORM**: Drizzle ORM with PostgreSQL driver for type-safe database operations.
-
-## Recent Architecture Updates (January 2025)
-
-### Coverage Map Integration & DOTM Pricing (November 2025)
-- **DOTM-Only Pricing Display**: Pricing comparison now exclusively shows DOTM (FULL_MVNO) pricing, hiding all other carriers
-  - Integrated MCP endpoint (gorse.dotmobile.app/mcp) for real-time DOTM pricing updates
-  - Default pricing: $20 for 10GB, Global no-expiry data on AT&T network
-  - MCP service with automatic fallback if endpoint unavailable
-  - Coverage map for DOTM routes to AT&T (using AT&T network)
-- **Pricing Service Simplified**: Modified `server/services/pricing-service.ts` to only fetch DOTM pricing
-  - Removed multi-carrier Gemini AI pricing fetching
-  - Only returns FULL_MVNO/DOTM plan from MCP endpoint
-  - Reduced API costs by eliminating unnecessary carrier pricing queries
-- **Coverage Map Links**: Preserved coverage map integration for DOTM (links to AT&T coverage)
-- **Shared Coverage Utility**: Created `shared/coverage-maps.ts` with carrier URL mappings and fuzzy matching logic
-
-### Network Quality Metrics Integration (November 2025)
-- **AI-Powered Coverage Quality**: Integrated Gemini AI to generate realistic network quality metrics for 3G/4G/5G technologies
-- **Coverage Quality Service** (`server/services/coverage-quality-service.ts`):
-  - Fetches real-time signal strength, download/upload speeds, and latency estimates per carrier and location
-  - Uses Gemini 2.0 Flash model with specialized network analyst system instructions
-  - Graceful fallback to default metrics if API unavailable
-  - Returns data for multiple carriers in a single request to minimize API costs
-- **IP Geolocation Service** (`server/services/ip-geolocation.ts`):
-  - Automatic location detection from IP address for enhanced user experience
-  - Extracts city, region, country, and coordinates
-  - Handles proxy headers (CF-Connecting-IP, X-Real-IP, X-Forwarded-For)
-- **Quality Visualization on Pricing Cards**:
-  - Displays network quality metrics when user provides location (GPS or manual entry)
-  - Color-coded signal strength indicators: green (excellent), yellow (good), orange (fair), red (poor)
-  - Visual signal bars represent strength percentage (1-5 bars)
-  - Shows download speeds and signal strength for available technologies (5G, 4G LTE, 3G)
-  - Section appears below plan features with "Network Quality in [location]" header
-- **API Endpoints**:
-  - **Internal**: `POST /api/coverage-quality` - Used by frontend components
-  - **Public**: `POST /api/v1/coverage-quality` - External API with authentication
-    - Requires API key via Authorization header
-    - Auto-detects location from IP if not provided
-    - Returns quality data with detectedFromIp flag
-    - Subject to standard rate limiting (100 req/hour)
-- **Frontend Integration**:
-  - PricingComparison component automatically fetches quality data when location available
-  - Quality metrics displayed inline on each carrier pricing card
-  - Responsive design with mobile-friendly layout
-
-### Location & Carrier Detection (November 2025)
-- **Google Maps Autocomplete**: Location input field now features Google Maps Places Autocomplete for accurate address entry
-- **Smart Country Extraction**: Automatically extracts country from selected Google Maps places via address_components
-- **Carrier Caching**: Extended carrier data cache from 24 hours to 30 days (720 hours) to reduce API costs
-- **Dual Location Methods**:
-  - Checkbox: "Use my current location" with GPS geolocation + reverse geocoding
-  - Manual entry: Google Maps autocomplete with country detection
-- **Carrier API Flow**: Check cache first → if miss or expired (>30 days), fetch from Gemini API → cache result
-- **No Default Selection**: Carrier dropdown requires explicit user selection (no auto-selection of AT&T or other carriers)
-
-### NPS Feedback System
-- Added `nps_responses` table with rating (0-10), optional feedback text, search reference, and timestamps
-- Implemented storage methods: `createNpsResponse()`, `getNpsStats()`, `getNpsResponses()`
-- API endpoints: `POST /api/nps/submit`, `GET /api/admin/nps/stats`, `GET /api/admin/nps/responses`
-- Frontend: Non-intrusive widget component with smart positioning and auto-dismiss
-- Admin dashboard: Real-time NPS metrics with distribution charts and recent feedback display
-
-### Authentication Enhancements
-- Migrated admin authentication to Resend magic links (backend-only approach)
-- Added `admin_access_requests` table to track all login attempts with metadata
-- Session metadata includes: IP address, user agent, location, referrer, admin status, email delivery status
-- Supports future email marketing campaigns based on access request history
-
-### Blacklist Management (November 2025)
-- **API-Key Specific Blacklists**: Enhanced blacklist system with support for both global and local (API-key specific) blacklists
-- **Extended Schema**: Added optional `apiKeyId` field to `blacklisted_imeis` table
-  - Global blacklists: `apiKeyId = null` (admin-only, affects all users)
-  - Local blacklists: `apiKeyId = <id>` (API-key specific, managed by individual API key holders)
-- **Public API Endpoints** for blacklist management:
-  - `GET /api/v1/blacklist` - Retrieve all IMEIs in the API key's local blacklist
-  - `POST /api/v1/blacklist` - Add IMEI to local blacklist with reason (validates IMEI format and prevents duplicates)
-  - `DELETE /api/v1/blacklist/:imei` - Remove IMEI from local blacklist
-- **Enhanced IMEI Validation**: The `/api/v1/check` endpoint now checks both global and API-key specific blacklists
-  - Returns scope information (global vs. local) in blacklist error responses
-  - API users can only manage their own local blacklist, not the global blacklist
-- **Storage Methods**:
-  - `getLocalBlacklistedImeis(apiKeyId)` - Fetch local blacklist for specific API key
-  - `isImeiBlacklisted(imei, apiKeyId?)` - Check both global and local blacklists
-  - `removeBlacklistedImei(imei, apiKeyId?)` - Remove from specific blacklist scope
-
-### Network Policy CMS (January 2025)
-- **Dynamic Policy Management**: Admins can edit network policy content via admin dashboard
-- **Database-Driven Content**: Policy content stored in `network_policy` table with versioning
-- **Admin Editor Component**: Full-featured policy editor in admin dashboard with:
-  - Main title and subtitle editing
-  - Section title and description customization
-  - Document title and description fields
-  - Dynamic included items list (add/remove bullet points)
-  - Footer text customization
-  - Version tracking
-- **Separate Network Policy Page**: Dedicated page at `/network-policy` accessible from navigation menu
-- **Dynamic PDF Generation**: PDF generator reads policy content from database instead of hardcoded HTML
-- **API Endpoints**:
-  - `GET /api/network-policy` - Retrieve current policy content (public)
-  - `PUT /api/admin/network-policy` - Update policy content (admin-only)
-- **Storage Methods**:
-  - `getNetworkPolicy()` - Fetch current policy
-  - `updateNetworkPolicy(policy, updatedBy)` - Update policy with audit trail
-
-### Database Schema Additions
-```typescript
-// NPS Responses
-nps_responses: {
-  id: serial
-  searchId: integer (nullable, references imei_searches)
-  rating: integer (0-10)
-  feedback: text (nullable)
-  createdAt: timestamp
-}
-
-// Admin Access Tracking
-admin_access_requests: {
-  id: serial
-  email: text
-  ipAddress: text
-  userAgent: text
-  location: text (nullable)
-  referer: text (nullable)
-  isAdmin: boolean
-  emailSent: boolean
-  createdAt: timestamp
-}
-
-// Blacklisted IMEIs (Extended)
-blacklisted_imeis: {
-  id: serial
-  imei: text (unique)
-  reason: text
-  blacklistedAt: timestamp
-  addedBy: text
-  isActive: boolean
-  apiKeyId: integer (nullable, references api_keys) // null = global, non-null = API-key specific
-}
-
-// Network Policy (CMS)
-network_policy: {
-  id: serial
-  title: text
-  subtitle: text
-  policyContent: jsonb
-  version: text
-  updatedAt: timestamp
-  updatedBy: text
-}
-```
+-   **AI Service**: Google Gemini 2.5 Pro (device identification, coverage analysis, issue classification).
+-   **Database**: PostgreSQL via Neon serverless.
+-   **Voice Synthesis**: ElevenLabs API.
+-   **Email Services**: Resend (magic link authentication, internal notifications), SendGrid (optional).
+-   **Mapping**: Google Maps JavaScript API and Static API.
+-   **Push Notifications**: Firebase Cloud Messaging (FCM).
+-   **ORM**: Drizzle ORM.
+-   **PDF Generation**: Puppeteer.
