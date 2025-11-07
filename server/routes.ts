@@ -30,7 +30,7 @@ import {
 } from './services/elevenlabs.js';
 import { analyzeIssueWithAI } from './services/issue-analyzer.js';
 import { standardRateLimit, mcpRateLimit, premiumRateLimit } from './middleware/enhanced-rate-limit';
-import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema, publicBlacklistCreateSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -925,14 +925,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid IMEI format" });
       }
 
-      // Check if IMEI is blacklisted
-      const blacklistedImei = await storage.isImeiBlacklisted(imei);
+      // Check if IMEI is blacklisted (checks both global and API-key specific blacklists)
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      const blacklistedImei = await storage.isImeiBlacklisted(imei, apiKeyId);
       if (blacklistedImei) {
+        const isGlobal = blacklistedImei.apiKeyId === null;
         return res.status(403).json({ 
           error: "Blacklisted IMEI",
-          message: "It looks like the device IMEI you provided is on the 'naughty list'. Please contact support.",
+          message: isGlobal 
+            ? "It looks like the device IMEI you provided is on the global 'naughty list'. Please contact support."
+            : "It looks like the device IMEI you provided is on your local 'naughty list'.",
           success: false,
           blacklisted: true,
+          scope: isGlobal ? "global" : "local",
           reason: blacklistedImei.reason
         });
       }
@@ -957,7 +962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
-          apiKeyId: (req as AuthenticatedRequest).apiKeyId, // Associate with the API key
+          apiKeyId: apiKeyId, // Associate with the API key
         };
 
         const search = await storage.createImeiSearch(searchData);
@@ -1347,6 +1352,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Policy stats error:", error);
       res.status(500).json({ error: "Failed to fetch policy statistics" });
+    }
+  });
+
+  // ===== Blacklist Management Public API =====
+  
+  // Get blacklisted IMEIs (API key specific - returns only local blacklist for this API key)
+  app.get("/api/v1/blacklist", validateApiKey, async (req, res) => {
+    try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+
+      // Get only local blacklist for this API key
+      const blacklistedImeis = await storage.getLocalBlacklistedImeis(apiKeyId);
+
+      res.json({
+        success: true,
+        scope: "local",
+        apiKeyId,
+        count: blacklistedImeis.length,
+        blacklist: blacklistedImeis.map(item => ({
+          id: item.id,
+          imei: item.imei,
+          reason: item.reason,
+          blacklistedAt: item.blacklistedAt,
+          addedBy: item.addedBy
+        }))
+      });
+    } catch (error) {
+      console.error("Blacklist fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch blacklist" });
+    }
+  });
+
+  // Add IMEI to blacklist (API key specific - adds to local blacklist for this API key)
+  app.post("/api/v1/blacklist", validateApiKey, async (req, res) => {
+    try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+
+      const validated = publicBlacklistCreateSchema.parse(req.body);
+      
+      // Local blacklists are always API key specific
+      if (validated.scope === "global") {
+        return res.status(403).json({ 
+          error: "Forbidden", 
+          message: "Global blacklist management requires admin privileges. Use scope='local' for API key specific blacklists." 
+        });
+      }
+
+      // Check if IMEI is already blacklisted for this API key
+      const existing = await storage.isImeiBlacklisted(validated.imei, apiKeyId);
+      if (existing && existing.apiKeyId === apiKeyId) {
+        return res.status(409).json({ 
+          error: "IMEI already blacklisted",
+          message: "This IMEI is already in your blacklist",
+          blacklist: {
+            id: existing.id,
+            imei: existing.imei,
+            reason: existing.reason,
+            blacklistedAt: existing.blacklistedAt
+          }
+        });
+      }
+
+      // Add to local blacklist
+      const apiKey = await storage.getApiKeyById(apiKeyId);
+      const blacklistedImei = await storage.addBlacklistedImei({
+        imei: validated.imei,
+        reason: validated.reason,
+        apiKeyId: apiKeyId,
+        addedBy: apiKey?.email || "api_user",
+        isActive: true
+      });
+
+      res.status(201).json({
+        success: true,
+        scope: "local",
+        message: "IMEI added to your local blacklist",
+        blacklist: {
+          id: blacklistedImei.id,
+          imei: blacklistedImei.imei,
+          reason: blacklistedImei.reason,
+          apiKeyId: blacklistedImei.apiKeyId,
+          blacklistedAt: blacklistedImei.blacklistedAt,
+          addedBy: blacklistedImei.addedBy
+        }
+      });
+    } catch (error) {
+      console.error("Blacklist add error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+        });
+      }
+      res.status(500).json({ error: "Failed to add IMEI to blacklist" });
+    }
+  });
+
+  // Remove IMEI from blacklist (API key specific - removes from local blacklist only)
+  app.delete("/api/v1/blacklist/:imei", validateApiKey, async (req, res) => {
+    try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+
+      const imei = req.params.imei;
+      
+      // Validate IMEI format
+      if (!/^\d{15}$/.test(imei)) {
+        return res.status(400).json({ 
+          error: "Invalid IMEI", 
+          message: "IMEI must be exactly 15 digits" 
+        });
+      }
+
+      // Check if IMEI exists in this API key's blacklist
+      const existing = await storage.isImeiBlacklisted(imei, apiKeyId);
+      if (!existing || existing.apiKeyId !== apiKeyId) {
+        return res.status(404).json({ 
+          error: "IMEI not found in your blacklist",
+          message: "This IMEI is not in your local blacklist"
+        });
+      }
+
+      // Remove from local blacklist
+      await storage.removeBlacklistedImei(imei, apiKeyId);
+
+      res.json({
+        success: true,
+        scope: "local",
+        message: "IMEI removed from your local blacklist",
+        imei
+      });
+    } catch (error) {
+      console.error("Blacklist remove error:", error);
+      res.status(500).json({ error: "Failed to remove IMEI from blacklist" });
     }
   });
 
