@@ -10,6 +10,7 @@ import Analytics from "@/pages/analytics";
 import { CoverageMaps } from "@/pages/coverage-maps";
 import { CoverageApiDocs } from "@/components/coverage-api-docs";
 import IntegrationGuide from "@/pages/integration-guide";
+import NetworkPolicy from "@/pages/network-policy";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/coverage-maps" component={CoverageMaps} />
       <Route path="/coverage-api-docs" component={CoverageApiDocs} />
       <Route path="/integration-guide" component={IntegrationGuide} />
+      <Route path="/network-policy" component={NetworkPolicy} />
       <Route component={NotFound} />
     </Switch>
   );

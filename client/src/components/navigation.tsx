@@ -24,6 +24,9 @@ export default function Navigation() {
             <Link href="/" className="text-gray-700 hover:text-primary transition-colors">
               Home
             </Link>
+            <Link href="/network-policy" className="text-gray-700 hover:text-primary transition-colors">
+              Network Policy
+            </Link>
             <a href="#api" className="text-gray-700 hover:text-primary transition-colors">
               API Docs
             </a>
@@ -52,6 +55,9 @@ export default function Navigation() {
           <div className="md:hidden py-4 space-y-2">
             <Link href="/" className="block px-3 py-2 text-gray-700 hover:text-primary">
               Home
+            </Link>
+            <Link href="/network-policy" className="block px-3 py-2 text-gray-700 hover:text-primary">
+              Network Policy
             </Link>
             <a href="#api" className="block px-3 py-2 text-gray-700 hover:text-primary">
               API Docs
