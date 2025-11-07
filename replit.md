@@ -77,16 +77,24 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
   - Uses Gemini 2.0 Flash model with specialized network analyst system instructions
   - Graceful fallback to default metrics if API unavailable
   - Returns data for multiple carriers in a single request to minimize API costs
+- **IP Geolocation Service** (`server/services/ip-geolocation.ts`):
+  - Automatic location detection using ip-api.com (free, no API key required)
+  - Extracts city, region, country, and coordinates from IP address
+  - Handles proxy headers (CF-Connecting-IP, X-Real-IP, X-Forwarded-For)
+  - Rate limit: 45 requests/minute (enforced by ip-api.com)
 - **Quality Visualization on Pricing Cards**:
   - Displays network quality metrics when user provides location (GPS or manual entry)
   - Color-coded signal strength indicators: green (excellent), yellow (good), orange (fair), red (poor)
   - Visual signal bars represent strength percentage (1-5 bars)
   - Shows download speeds and signal strength for available technologies (5G, 4G LTE, 3G)
   - Section appears below plan features with "Network Quality in [location]" header
-- **API Endpoint**: `GET /api/coverage-quality?location={location}&carriers={carrier1,carrier2}`
-  - Accepts location (city/address) and comma-separated carrier list
-  - Returns quality data structure with 3G/4G/5G metrics per carrier
-  - Optional coordinates parameter for enhanced accuracy
+- **API Endpoints**:
+  - **Internal**: `POST /api/coverage-quality` - Used by frontend components
+  - **Public**: `POST /api/v1/coverage-quality` - External API with authentication
+    - Requires API key via Authorization header
+    - Auto-detects location from IP if not provided
+    - Returns quality data with detectedFromIp flag
+    - Subject to standard rate limiting (100 req/hour)
 - **Frontend Integration**:
   - PricingComparison component automatically fetches quality data when location available
   - Quality metrics displayed inline on each carrier pricing card

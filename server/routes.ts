@@ -204,7 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       authentication: {
         type: "Bearer Token",
         header: "Authorization: Bearer YOUR_API_KEY",
-        note: "Include any non-empty string as API key for Alpha testing purposes"
+        note: "API keys must be generated through the admin dashboard. Keys start with 'imei_' prefix.",
+        howToGetKey: "Visit the admin dashboard to generate an API key for your application"
       },
       important: {
         alphaWarning: "This is an Alpha service. All results are tentative and experimental.",
