@@ -12,6 +12,7 @@ interface DeviceResultsProps {
       modelNumber?: string;
       imei: string;
     };
+    esimSupport?: boolean;
     networkCompatibility?: {
       fourG: boolean;
       fiveG: boolean;
