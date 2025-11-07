@@ -1,6 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
+import { MVNO } from './config/mvno';
 
 // Extend Express Request interface
 interface AuthenticatedRequest extends Request {
@@ -553,8 +554,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userAgent = req.get('User-Agent') || 'unknown';
 
       try {
-        // Analyze device using AI with specified network (default DOTM)
-        const targetNetwork = network || "DOTM";
+        // Analyze device using AI with specified network (default from MVNO config)
+        const targetNetwork = network || MVNO.internationalCarrier;
         const deviceInfo = await analyzeIMEI(imei, targetNetwork);
 
         // Store search in database
