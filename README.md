@@ -93,9 +93,10 @@ This full-stack platform provides comprehensive IMEI device analysis and network
 - **RESTful Architecture**: Clean, documented endpoints
 - **OpenAPI Compatible**: Easy integration with any language/framework
 - **JSON Responses**: Structured data perfect for LLM/AI processing
-- **Export Capabilities**: CSV and JSON data export
+- **Export Capabilities**: CSV and JSON data export with example data for unauthenticated users
 - **Versioned APIs**: `/api/v1` for stable production use
 - **MCP Server Ready**: Optimized for Model Context Protocol integration
+- **Demo-Friendly**: Download example exports without authentication for testing
 
 ---
 
@@ -128,6 +129,13 @@ This full-stack platform provides comprehensive IMEI device analysis and network
 - ✅ **Issue Analyzer**: AI-powered network problem classification
 - ✅ **Pattern Recognition**: Identify widespread vs. isolated issues
 - ✅ **Mobile/Broadband Split**: Separate analysis for service types
+
+#### Data Export Enhancement
+- ✅ **Optional Authentication**: Export works with or without API key
+- ✅ **Example Data**: Download sample exports for testing and demonstration
+- ✅ **Clear Indicators**: Example files clearly marked with instructions
+- ✅ **User-Friendly**: No authentication errors for casual users exploring features
+- ✅ **Smart Detection**: Frontend automatically detects and labels example data
 
 ---
 
@@ -453,10 +461,47 @@ Authorization: Bearer your_api_key
 
 #### Export Search Data
 
+**With API Key** (Real Data):
 ```http
-GET /api/v1/export?format=csv&startDate=2025-01-01&endDate=2025-01-31
+GET /api/v1/export?format=csv
 Authorization: Bearer your_api_key
 ```
+
+**Without API Key** (Example Data):
+```http
+GET /api/v1/export?format=json
+# No authentication required - returns anonymized example data
+```
+
+**Response (Example Data):**
+```json
+{
+  "isExampleData": true,
+  "notice": "This is example data. Sign up for a free API key to export your real search data.",
+  "searches": [
+    {
+      "id": 1,
+      "imei": "123456789012345",
+      "device": {
+        "make": "Apple",
+        "model": "iPhone 15 Pro",
+        "year": "2023"
+      },
+      "location": "New York, USA",
+      "searchedAt": "2025-01-23T12:00:00Z"
+    }
+  ],
+  "apiKeyName": "Example Data",
+  "totalCount": 5
+}
+```
+
+**Features:**
+- ✅ Both CSV and JSON formats supported
+- ✅ Example data clearly marked with `isExampleData` flag
+- ✅ CSV files include header comments with instructions
+- ✅ Example files use `_example` suffix in filename
+- ✅ Real data requires valid API key authentication
 
 ### Rate Limits
 
