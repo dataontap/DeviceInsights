@@ -1128,23 +1128,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export search data (requires API key - only returns data for this API key)
-  app.get("/api/v1/export", validateApiKey, async (req, res) => {
+  // Export search data (provides example data without API key, real data with valid API key)
+  app.get("/api/v1/export", async (req, res) => {
     try {
       const format = req.query.format as string || 'json';
       const limit = parseInt(req.query.limit as string) || 1000;
 
-      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
-      if (!apiKeyId) {
-        return res.status(401).json({ error: "API key ID not found" });
+      // Check if API key is provided
+      const authHeader = req.headers.authorization;
+      const apiKey = authHeader?.replace('Bearer ', '');
+      let isAuthenticated = false;
+      let apiKeyId: number | undefined;
+      let apiKeyName: string | undefined;
+
+      // Try to validate API key if provided
+      if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('imei_')) {
+        try {
+          const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+          const storedKey = await storage.getApiKeyByHash(keyHash);
+          
+          if (storedKey && storedKey.isActive) {
+            isAuthenticated = true;
+            apiKeyId = storedKey.id;
+            apiKeyName = storedKey.name || 'Your API Key';
+          }
+        } catch (error) {
+          console.log("API key validation failed, returning example data");
+        }
       }
 
-      // Only get searches for this specific API key
-      const searches = await storage.getImeiSearchesByApiKey(apiKeyId, limit);
+      let searches: any[];
+      let isExampleData = !isAuthenticated;
+
+      if (isAuthenticated && apiKeyId) {
+        // Return real data for authenticated users
+        searches = await storage.getImeiSearchesByApiKey(apiKeyId, limit);
+      } else {
+        // Return anonymized example data for unauthenticated users
+        const now = new Date();
+        searches = [
+          {
+            id: 1,
+            imei: '123456789012345',
+            deviceMake: 'Apple',
+            deviceModel: 'iPhone 15 Pro',
+            deviceYear: '2023',
+            searchLocation: 'New York, USA',
+            ipAddress: '192.0.2.1',
+            searchedAt: new Date(now.getTime() - 86400000 * 7) // 7 days ago
+          },
+          {
+            id: 2,
+            imei: '234567890123456',
+            deviceMake: 'Samsung',
+            deviceModel: 'Galaxy S24 Ultra',
+            deviceYear: '2024',
+            searchLocation: 'Los Angeles, USA',
+            ipAddress: '192.0.2.2',
+            searchedAt: new Date(now.getTime() - 86400000 * 5) // 5 days ago
+          },
+          {
+            id: 3,
+            imei: '345678901234567',
+            deviceMake: 'Google',
+            deviceModel: 'Pixel 8 Pro',
+            deviceYear: '2023',
+            searchLocation: 'Chicago, USA',
+            ipAddress: '192.0.2.3',
+            searchedAt: new Date(now.getTime() - 86400000 * 3) // 3 days ago
+          },
+          {
+            id: 4,
+            imei: '456789012345678',
+            deviceMake: 'OnePlus',
+            deviceModel: 'OnePlus 11',
+            deviceYear: '2023',
+            searchLocation: 'Houston, USA',
+            ipAddress: '192.0.2.4',
+            searchedAt: new Date(now.getTime() - 86400000 * 2) // 2 days ago
+          },
+          {
+            id: 5,
+            imei: '567890123456789',
+            deviceMake: 'Apple',
+            deviceModel: 'iPhone 14 Pro Max',
+            deviceYear: '2022',
+            searchLocation: 'Miami, USA',
+            ipAddress: '192.0.2.5',
+            searchedAt: new Date(now.getTime() - 86400000) // 1 day ago
+          }
+        ];
+      }
 
       if (format === 'csv') {
+        const exampleNotice = isExampleData 
+          ? '# EXAMPLE DATA - Sign up for a free API key to export your real search data\n# Get your API key at: ' + (req.get('origin') || 'https://dotmobile.app') + '\n'
+          : '';
+        
         const csvData = [
-          'ID,IMEI,Device Make,Device Model,Device Year,Search Location,IP Address,Searched At',
+          exampleNotice + 'ID,IMEI,Device Make,Device Model,Device Year,Search Location,IP Address,Searched At',
           ...searches.map(search => [
             search.id,
             search.imei,
@@ -1158,10 +1240,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ].join('\n');
 
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=my_imei_searches.csv');
+        const filename = isExampleData ? 'imei_searches_example.csv' : 'my_imei_searches.csv';
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.send(csvData);
       } else {
         res.json({
+          isExampleData,
+          notice: isExampleData ? 'This is example data. Sign up for a free API key to export your real search data.' : undefined,
           searches: searches.map(search => ({
             id: search.id,
             imei: search.imei,
@@ -1173,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             location: search.searchLocation,
             searchedAt: search.searchedAt
           })),
-          apiKeyName: (req as AuthenticatedRequest).apiKeyName,
+          apiKeyName: isExampleData ? 'Example Data' : apiKeyName,
           totalCount: searches.length
         });
       }
