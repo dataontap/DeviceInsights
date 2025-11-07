@@ -2804,6 +2804,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === NETWORK POLICY CMS ===
+
+  // Get network policy (public)
+  app.get("/api/network-policy", async (req, res) => {
+    try {
+      const policy = await storage.getNetworkPolicy();
+
+      if (!policy) {
+        // Return default policy if none exists
+        return res.json({
+          success: true,
+          policy: {
+            title: "Device Compatibility Policy",
+            subtitle: "Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number.",
+            policyContent: {
+              sectionTitle: "Device Compatibility Policy",
+              sectionDescription: "Complete device compatibility guide and pre-porting checklist",
+              documentTitle: "Complete Policy Document",
+              documentDescription: "This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition onto this network.",
+              includedItems: [
+                "Device compatibility requirements and technical specifications",
+                "Pre-porting checklist to avoid service interruptions",
+                "Device unlock process and requirements",
+                "Network band requirements and feature support",
+                "Support contact information"
+              ],
+              footerText: "Policy version 2.0 | Updated January 2025 | Compatible with all devices"
+            },
+            version: "2.0"
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        policy
+      });
+    } catch (error) {
+      console.error("Get network policy error:", error);
+      res.status(500).json({
+        error: "Failed to fetch network policy"
+      });
+    }
+  });
+
+  // Update network policy (admin only)
+  app.put("/api/admin/network-policy", async (req, res) => {
+    try {
+      const { title, subtitle, policyContent, version, updatedBy } = req.body;
+
+      const updatedPolicy = await storage.updateNetworkPolicy({
+        title,
+        subtitle,
+        policyContent,
+        version,
+        updatedBy
+      });
+
+      res.json({
+        success: true,
+        policy: updatedPolicy
+      });
+    } catch (error) {
+      console.error("Update network policy error:", error);
+      res.status(500).json({
+        error: "Failed to update network policy"
+      });
+    }
+  });
+
   // === GITHUB UPLOAD TEST ===
 
   // Test GitHub integration and upload functionality
