@@ -916,8 +916,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             modelNumber: deviceInfo.modelNumber,
             imei: imei,
             isPopular: isPopular,
-            searchCount: searchCount
+            searchCount: searchCount,
+            esimSupport: deviceInfo.esimSupport
           },
+          esimSupport: deviceInfo.esimSupport,
           networkCompatibility: deviceInfo.networkCapabilities,
           analysis: deviceInfo.tacAnalysis || "Device analysis completed",
           specifications: deviceInfo.specifications,
@@ -1065,8 +1067,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             modelNumber: deviceInfo.modelNumber,
             imei: imei,
             isPopular: isPopular,
-            searchCount: searchCount
+            searchCount: searchCount,
+            esimSupport: deviceInfo.esimSupport
           },
+          esimSupport: deviceInfo.esimSupport,
           capabilities: deviceInfo.networkCapabilities,
           specifications: deviceInfo.specifications,
           tacAnalysis: deviceInfo.tacAnalysis,
