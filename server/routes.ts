@@ -16,6 +16,7 @@ import { sendSMS, sendEmail, sendPushNotification, initializeFirebaseAdmin } fro
 import { getCoverageAnalysis, getProviderCoverage } from './services/coverage-analyzer.js';
 import { matchDeviceToTAC, getExampleIMEIFromTAC } from './services/device-matcher.js';
 import { getCarrierPricing } from './services/pricing-service.js';
+import { getCoverageQualityForCarriers } from './services/coverage-quality-service.js';
 import { 
   generateVoiceAudio, 
   createMultiVoiceConversation, 
@@ -313,6 +314,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: "Failed to fetch pricing plans",
         message: "Could not retrieve carrier pricing information"
+      });
+    }
+  });
+
+  // Get coverage quality metrics for carriers by location
+  app.post("/api/coverage-quality", async (req, res) => {
+    try {
+      const { carriers, location, coordinates } = req.body;
+      
+      if (!carriers || !Array.isArray(carriers) || carriers.length === 0) {
+        return res.status(400).json({ error: "Carriers array is required" });
+      }
+      
+      if (!location) {
+        return res.status(400).json({ error: "Location is required" });
+      }
+
+      console.log(`Fetching coverage quality for ${carriers.length} carriers in ${location}`);
+      const qualityData = await getCoverageQualityForCarriers(carriers, location, coordinates);
+
+      res.json({
+        success: true,
+        data: qualityData
+      });
+    } catch (error) {
+      console.error("Coverage quality fetch error:", error);
+      res.status(500).json({
+        error: "Failed to fetch coverage quality metrics",
+        message: "Could not retrieve coverage quality information"
       });
     }
   });

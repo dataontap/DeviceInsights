@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, DollarSign, Wifi, Smartphone, Loader2, MapPin } from "lucide-react";
+import { Check, DollarSign, Wifi, Smartphone, Loader2, MapPin, Signal, Zap, Clock } from "lucide-react";
 import { getCoverageMapUrl } from "@shared/coverage-maps";
 
 interface PricingPlan {
@@ -17,21 +17,57 @@ interface PricingPlan {
   promotions?: string;
 }
 
+interface CoverageQuality {
+  threeG?: {
+    available: boolean;
+    signalStrength: number;
+    downloadSpeed: string;
+    uploadSpeed: string;
+    latency: string;
+    quality: "excellent" | "good" | "fair" | "poor" | "no_coverage";
+  };
+  fourG?: {
+    available: boolean;
+    signalStrength: number;
+    downloadSpeed: string;
+    uploadSpeed: string;
+    latency: string;
+    quality: "excellent" | "good" | "fair" | "poor" | "no_coverage";
+  };
+  fiveG?: {
+    available: boolean;
+    signalStrength: number;
+    downloadSpeed: string;
+    uploadSpeed: string;
+    latency: string;
+    quality: "excellent" | "good" | "fair" | "poor" | "no_coverage";
+  };
+}
+
 interface PricingComparisonProps {
   country: string;
   carriers?: string[];
   compatibleCarriers?: string[];
+  location?: string;
+  coordinates?: { lat: number; lng: number };
 }
 
-export function PricingComparison({ country, carriers, compatibleCarriers = [] }: PricingComparisonProps) {
+export function PricingComparison({ country, carriers, compatibleCarriers = [], location, coordinates }: PricingComparisonProps) {
   const [plans, setPlans] = useState<PricingPlan[]>([]);
   const [currency, setCurrency] = useState("USD");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [qualityData, setQualityData] = useState<Record<string, CoverageQuality>>({});
 
   useEffect(() => {
     fetchPricing();
   }, [country, carriers]);
+
+  useEffect(() => {
+    if (location && plans.length > 0) {
+      fetchCoverageQuality();
+    }
+  }, [location, plans]);
 
   const fetchPricing = async () => {
     try {
@@ -64,6 +100,31 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
     }
   };
 
+  const fetchCoverageQuality = async () => {
+    try {
+      const carrierNames = plans.map(p => p.carrier);
+      
+      const response = await fetch('/api/coverage-quality', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          carriers: carrierNames,
+          location: location,
+          coordinates: coordinates,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setQualityData(data.data || {});
+      }
+    } catch (err) {
+      console.error('Coverage quality fetch error:', err);
+    }
+  };
+
   const isCarrierCompatible = (carrier: string): boolean => {
     return compatibleCarriers.some(c => c.toLowerCase() === carrier.toLowerCase());
   };
@@ -78,6 +139,34 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
     };
     const symbol = currencySymbols[currency] || currency;
     return `${symbol}${price}`;
+  };
+
+  const getQualityColor = (quality: string): string => {
+    switch (quality) {
+      case 'excellent': return 'text-green-600 dark:text-green-400';
+      case 'good': return 'text-blue-600 dark:text-blue-400';
+      case 'fair': return 'text-yellow-600 dark:text-yellow-400';
+      case 'poor': return 'text-orange-600 dark:text-orange-400';
+      case 'no_coverage': return 'text-red-600 dark:text-red-400';
+      default: return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  const getSignalBars = (strength: number): JSX.Element => {
+    const bars = Math.ceil(strength / 25);
+    return (
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4].map((bar) => (
+          <div
+            key={bar}
+            className={`w-1 ${
+              bar <= bars ? 'bg-current' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            style={{ height: `${bar * 3 + 3}px` }}
+          />
+        ))}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -133,6 +222,7 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
         {plans.map((plan, index) => {
           const isCompatible = isCarrierCompatible(plan.carrier);
           const coverageMapUrl = getCoverageMapUrl(plan.carrier);
+          const quality = qualityData[plan.carrier];
           
           return (
             <Card
@@ -217,6 +307,73 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
                     </div>
                   ))}
                 </div>
+
+                {/* Coverage Quality Metrics */}
+                {quality && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Network Quality in {location}</p>
+                    
+                    {/* 5G */}
+                    {quality.fiveG?.available && (
+                      <div className="flex items-center justify-between text-xs" data-testid={`quality-5g-${index}`}>
+                        <div className="flex items-center gap-2">
+                          <Signal className="h-3 w-3" />
+                          <span className="font-medium">5G</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center gap-1 ${getQualityColor(quality.fiveG.quality)}`}>
+                            {getSignalBars(quality.fiveG.signalStrength)}
+                            <span className="text-xs">{quality.fiveG.signalStrength}%</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-gray-500" />
+                            <span className="text-gray-600 dark:text-gray-400">{quality.fiveG.downloadSpeed}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4G */}
+                    {quality.fourG?.available && (
+                      <div className="flex items-center justify-between text-xs" data-testid={`quality-4g-${index}`}>
+                        <div className="flex items-center gap-2">
+                          <Signal className="h-3 w-3" />
+                          <span className="font-medium">4G LTE</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center gap-1 ${getQualityColor(quality.fourG.quality)}`}>
+                            {getSignalBars(quality.fourG.signalStrength)}
+                            <span className="text-xs">{quality.fourG.signalStrength}%</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-gray-500" />
+                            <span className="text-gray-600 dark:text-gray-400">{quality.fourG.downloadSpeed}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3G */}
+                    {quality.threeG?.available && (
+                      <div className="flex items-center justify-between text-xs" data-testid={`quality-3g-${index}`}>
+                        <div className="flex items-center gap-2">
+                          <Signal className="h-3 w-3" />
+                          <span className="font-medium">3G</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`flex items-center gap-1 ${getQualityColor(quality.threeG.quality)}`}>
+                            {getSignalBars(quality.threeG.signalStrength)}
+                            <span className="text-xs">{quality.threeG.signalStrength}%</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Zap className="h-3 w-3 text-gray-500" />
+                            <span className="text-gray-600 dark:text-gray-400">{quality.threeG.downloadSpeed}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Promotions */}
                 {plan.promotions && (

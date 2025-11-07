@@ -243,6 +243,8 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
             <PricingComparison 
               country={extractCountry(result.location || '')}
               compatibleCarriers={getCompatibleCarriers(deviceCapabilities)}
+              location={result.location}
+              coordinates={result.coordinates}
             />
           </div>
 
