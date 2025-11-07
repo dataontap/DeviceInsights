@@ -31,6 +31,7 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
     - Supports exact IMEI match (15 digits), full TAC match (8 digits), and FAC match (6 digits)
     - Reduces API costs by ~80% through intelligent caching
     - Ensures consistent identification for known devices
+    - **eSIM Support Detection**: Automatically detects and displays eSIM capability with visual badge next to device make/model for supported devices
 -   **NPS Feedback System**: Non-intrusive widget appears 3 seconds after successful IMEI searches, collecting 0-10 ratings with optional text feedback. Admin dashboard displays real-time NPS score, promoter/passive/detractor breakdown, and recent responses.
 -   **Security**: Enhanced rate limiting with tiered access (100/500/1000 req/hour), API key management, secure magic link authentication via Resend, input validation with Zod schemas, and comprehensive audit logging.
 -   **Mapping & Location**: Integrates Google Maps for location visualization and coverage analysis, with fallback SVG world map system. Live world map shows animated search activity.
