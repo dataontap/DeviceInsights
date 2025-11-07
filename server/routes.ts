@@ -371,6 +371,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
           path: "/api/v1/my/searches",
           description: "Get your detailed search data with location info",
           authentication: "Required"
+        },
+        {
+          method: "GET",
+          path: "/api/v1/blacklist",
+          description: "Get your local blacklisted IMEIs (API key specific)",
+          authentication: "Required",
+          parameters: {},
+          response: {
+            success: true,
+            scope: "local",
+            apiKeyId: "number",
+            count: "number",
+            blacklist: "array of blacklisted IMEI objects"
+          },
+          example: {
+            curl: `curl -X GET ${baseUrl}/api/v1/blacklist \\
+  -H "Authorization: Bearer your-api-key"`
+          }
+        },
+        {
+          method: "POST",
+          path: "/api/v1/blacklist",
+          description: "Add IMEI to your local blacklist (API key specific)",
+          authentication: "Required",
+          parameters: {
+            imei: {
+              type: "string",
+              required: true,
+              description: "15-digit IMEI number to blacklist",
+              example: "123456789012345"
+            },
+            reason: {
+              type: "string",
+              required: true,
+              description: "Reason for blacklisting this IMEI",
+              example: "Reported stolen device"
+            },
+            scope: {
+              type: "string",
+              required: false,
+              description: "Must be 'local' for API keys (global requires admin)",
+              default: "local",
+              example: "local"
+            }
+          },
+          example: {
+            curl: `curl -X POST ${baseUrl}/api/v1/blacklist \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer your-api-key" \\
+  -d '{"imei": "123456789012345", "reason": "Reported stolen device", "scope": "local"}'`,
+            javascript: `fetch('${baseUrl}/api/v1/blacklist', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your-api-key'
+  },
+  body: JSON.stringify({
+    imei: '123456789012345',
+    reason: 'Reported stolen device',
+    scope: 'local'
+  })
+})`
+          }
+        },
+        {
+          method: "DELETE",
+          path: "/api/v1/blacklist/{imei}",
+          description: "Remove IMEI from your local blacklist (API key specific)",
+          authentication: "Required",
+          parameters: {
+            imei: {
+              type: "string",
+              required: true,
+              description: "15-digit IMEI number to remove from blacklist",
+              example: "123456789012345"
+            }
+          },
+          example: {
+            curl: `curl -X DELETE ${baseUrl}/api/v1/blacklist/123456789012345 \\
+  -H "Authorization: Bearer your-api-key"`
+          }
         }
       ],
       important: {
