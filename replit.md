@@ -123,6 +123,23 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 - Session metadata includes: IP address, user agent, location, referrer, admin status, email delivery status
 - Supports future email marketing campaigns based on access request history
 
+### Blacklist Management (November 2025)
+- **API-Key Specific Blacklists**: Enhanced blacklist system with support for both global and local (API-key specific) blacklists
+- **Extended Schema**: Added optional `apiKeyId` field to `blacklisted_imeis` table
+  - Global blacklists: `apiKeyId = null` (admin-only, affects all users)
+  - Local blacklists: `apiKeyId = <id>` (API-key specific, managed by individual API key holders)
+- **Public API Endpoints** for blacklist management:
+  - `GET /api/v1/blacklist` - Retrieve all IMEIs in the API key's local blacklist
+  - `POST /api/v1/blacklist` - Add IMEI to local blacklist with reason (validates IMEI format and prevents duplicates)
+  - `DELETE /api/v1/blacklist/:imei` - Remove IMEI from local blacklist
+- **Enhanced IMEI Validation**: The `/api/v1/check` endpoint now checks both global and API-key specific blacklists
+  - Returns scope information (global vs. local) in blacklist error responses
+  - API users can only manage their own local blacklist, not the global blacklist
+- **Storage Methods**:
+  - `getLocalBlacklistedImeis(apiKeyId)` - Fetch local blacklist for specific API key
+  - `isImeiBlacklisted(imei, apiKeyId?)` - Check both global and local blacklists
+  - `removeBlacklistedImei(imei, apiKeyId?)` - Remove from specific blacklist scope
+
 ### Database Schema Additions
 ```typescript
 // NPS Responses
@@ -145,5 +162,16 @@ admin_access_requests: {
   isAdmin: boolean
   emailSent: boolean
   createdAt: timestamp
+}
+
+// Blacklisted IMEIs (Extended)
+blacklisted_imeis: {
+  id: serial
+  imei: text (unique)
+  reason: text
+  blacklistedAt: timestamp
+  addedBy: text
+  isActive: boolean
+  apiKeyId: integer (nullable, references api_keys) // null = global, non-null = API-key specific
 }
 ```

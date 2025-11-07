@@ -164,19 +164,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       'http://localhost:3000'  // Common dev port
     ];
 
-    // Allow same-origin requests (when origin is undefined)
+    // Check if origin is allowed
     if (!origin || allowedOrigins.includes(origin)) {
       res.header('Access-Control-Allow-Origin', origin || '*');
-    }
+      res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
 
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+      } else {
+        next();
+      }
     } else {
-      next();
+      // Explicitly reject disallowed origins
+      res.status(403).json({ error: 'Origin not allowed by CORS policy' });
     }
   });
 
