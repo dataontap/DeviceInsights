@@ -4,10 +4,33 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { MVNO } from '../config/mvno';
+import { storage } from '../storage';
 
 export function registerPDFRoutes(app: Express) {
   app.get("/api/generate-policy-pdf", async (req, res) => {
     try {
+      // Fetch dynamic policy content from database
+      const policyData = await storage.getNetworkPolicy();
+      
+      const policy = policyData || {
+        title: "Device Compatibility Policy",
+        subtitle: "Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number.",
+        policyContent: {
+          sectionTitle: "Device Compatibility Policy",
+          sectionDescription: "Complete device compatibility guide and pre-porting checklist",
+          documentTitle: "Complete Policy Document",
+          documentDescription: "This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition onto this network.",
+          includedItems: [
+            "Device compatibility requirements and technical specifications",
+            "Pre-porting checklist to avoid service interruptions",
+            "Device unlock process and requirements",
+            "Network band requirements and feature support",
+            "Support contact information"
+          ],
+          footerText: "Policy version 2.0 | Updated January 2025 | Compatible with all devices"
+        },
+        version: "2.0"
+      };
       const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -296,7 +319,7 @@ export function registerPDFRoutes(app: Express) {
             <div class="subtitle">Connected. Simple. Reliable.</div>
         </div>
         
-        <h1>Device Compatibility Policy</h1>
+        <h1>${policy.title}</h1>
         
         <div class="alert-box">
             <div class="alert-content">
@@ -595,8 +618,7 @@ export function registerPDFRoutes(app: Express) {
         </div>
         
         <div class="footer">
-            <p><strong>${MVNO.name} Device Compatibility Policy</strong></p>
-            <p>Version 2.0 | Effective September 2025</p>
+            <p>${policy.policyContent?.footerText || 'Policy version 2.0 | Updated January 2025 | Compatible with all devices'}</p>
             <p>© 2025 ${MVNO.companyName}. All rights reserved.</p>
             <p style="margin-top: 1rem;">
                 This document is subject to change. Please visit ${MVNO.website} for the most current version.

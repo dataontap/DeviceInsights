@@ -9,6 +9,7 @@ import RecentSearches from "@/components/recent-searches";
 import NpsMetrics from "@/components/nps-metrics";
 import LocationAnalytics from "@/components/location-analytics";
 import ApiKeyAnalytics from "@/components/api-key-analytics";
+import NetworkPolicyEditor from "@/components/network-policy-editor";
 
 interface StatsData {
   totalSearches: number;
@@ -206,6 +207,11 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
 
           {/* Recent Searches */}
           <RecentSearches popularDevices={stats?.popularDevices || []} />
+        </div>
+
+        {/* Network Policy Editor */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <NetworkPolicyEditor />
         </div>
 
         {/* Firebase Messaging Center - Hidden for now */}
