@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { MVNO } from '../config/mvno';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -96,7 +97,7 @@ async function fetchDowndetectorReports(
   // This would be replaced with actual Downdetector API integration
   // For now, we'll simulate realistic data based on location
   
-  const providers = ['Verizon', 'AT&T', 'T-Mobile', 'DOTM', 'Rogers', 'Bell', 'Telus', 'Freedom Mobile'];
+  const providers = ['Verizon', 'AT&T', 'T-Mobile', MVNO.internationalCarrier, 'Rogers', 'Bell', 'Telus', 'Freedom Mobile'];
   const issueTypes = ['network_outage', 'slow_data', 'no_signal', 'dropped_calls', 'billing_issues'];
   const mockReports: DowndetectorReport[] = [];
   
@@ -322,7 +323,7 @@ export async function getCoverageAnalysis(
     } else {
       // Auto-detect: use country defaults for mobile, all major broadband
       const defaultMobile = getDefaultProviderForCountry(lat, lng);
-      mobileProviders = [...defaultMobile, 'DOTM']; // Include DOTM as specialty provider
+      mobileProviders = [...defaultMobile, MVNO.internationalCarrier]; // Include MVNO as specialty provider
       broadbandProviders = ['Comcast', 'Spectrum', 'Verizon Fios', 'AT&T Internet', 'Rogers Internet', 'Bell Internet', 'Telus Internet'];
       console.log(`Auto-detecting providers for country. Mobile defaults: ${defaultMobile.join(', ')}`);
     }
