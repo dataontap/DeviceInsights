@@ -59,8 +59,9 @@ export const policyAcceptances = pgTable("policy_acceptances", {
 
 export const blacklistedImeis = pgTable("blacklisted_imeis", {
   id: serial("id").primaryKey(),
-  imei: text("imei").notNull().unique(),
+  imei: text("imei").notNull(),
   reason: text("reason").notNull(),
+  apiKeyId: integer("api_key_id").references(() => apiKeys.id), // null = global blacklist, specific ID = local to that API key
   blacklistedAt: timestamp("blacklisted_at").defaultNow().notNull(),
   addedBy: text("added_by").notNull().default("system"),
   isActive: boolean("is_active").default(true).notNull(),
@@ -454,8 +455,21 @@ export const insertPolicyAcceptanceSchema = createInsertSchema(policyAcceptances
 export const insertBlacklistedImeiSchema = createInsertSchema(blacklistedImeis).pick({
   imei: true,
   reason: true,
+  apiKeyId: true,
   addedBy: true,
   isActive: true,
+});
+
+// Public API schema for blacklist management
+export const publicBlacklistCreateSchema = z.object({
+  imei: z.string()
+    .min(15, "IMEI must be at least 15 digits")
+    .max(15, "IMEI must be exactly 15 digits")
+    .regex(/^\d+$/, "IMEI must contain only digits"),
+  reason: z.string()
+    .min(1, "Reason is required")
+    .max(500, "Reason must be less than 500 characters"),
+  scope: z.enum(["global", "local"]).default("local"), // global requires admin, local is API key specific
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

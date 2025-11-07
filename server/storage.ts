@@ -59,10 +59,12 @@ export interface IStorage {
   }>;
   
   // Blacklisted IMEIs
-  isImeiBlacklisted(imei: string): Promise<BlacklistedImei | null>;
+  isImeiBlacklisted(imei: string, apiKeyId?: number): Promise<BlacklistedImei | null>;
   addBlacklistedImei(blacklistedImei: InsertBlacklistedImei): Promise<BlacklistedImei>;
-  removeBlacklistedImei(imei: string): Promise<void>;
-  getBlacklistedImeis(): Promise<BlacklistedImei[]>;
+  removeBlacklistedImei(imei: string, apiKeyId?: number): Promise<void>;
+  getBlacklistedImeis(apiKeyId?: number): Promise<BlacklistedImei[]>;
+  getGlobalBlacklistedImeis(): Promise<BlacklistedImei[]>;
+  getLocalBlacklistedImeis(apiKeyId: number): Promise<BlacklistedImei[]>;
   
   // Carrier Cache
   getCachedCarriers(country: string): Promise<{
@@ -485,15 +487,36 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async isImeiBlacklisted(imei: string): Promise<BlacklistedImei | null> {
-    const [result] = await db
+  async isImeiBlacklisted(imei: string, apiKeyId?: number): Promise<BlacklistedImei | null> {
+    // Check global blacklist first
+    const [globalBlacklist] = await db
       .select()
       .from(blacklistedImeis)
       .where(and(
         eq(blacklistedImeis.imei, imei),
-        eq(blacklistedImeis.isActive, true)
+        eq(blacklistedImeis.isActive, true),
+        sql`${blacklistedImeis.apiKeyId} IS NULL`
       ));
-    return result || null;
+    
+    if (globalBlacklist) {
+      return globalBlacklist;
+    }
+    
+    // If API key provided, check local blacklist
+    if (apiKeyId) {
+      const [localBlacklist] = await db
+        .select()
+        .from(blacklistedImeis)
+        .where(and(
+          eq(blacklistedImeis.imei, imei),
+          eq(blacklistedImeis.isActive, true),
+          eq(blacklistedImeis.apiKeyId, apiKeyId)
+        ));
+      
+      return localBlacklist || null;
+    }
+    
+    return null;
   }
 
   async addBlacklistedImei(blacklistedImei: InsertBlacklistedImei): Promise<BlacklistedImei> {
@@ -504,18 +527,59 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async removeBlacklistedImei(imei: string): Promise<void> {
+  async removeBlacklistedImei(imei: string, apiKeyId?: number): Promise<void> {
+    const conditions = [
+      eq(blacklistedImeis.imei, imei)
+    ];
+    
+    if (apiKeyId !== undefined) {
+      // Remove specific API key blacklist
+      conditions.push(eq(blacklistedImeis.apiKeyId, apiKeyId));
+    } else {
+      // Remove global blacklist only
+      conditions.push(sql`${blacklistedImeis.apiKeyId} IS NULL`);
+    }
+    
     await db
       .update(blacklistedImeis)
       .set({ isActive: false })
-      .where(eq(blacklistedImeis.imei, imei));
+      .where(and(...conditions));
   }
 
-  async getBlacklistedImeis(): Promise<BlacklistedImei[]> {
+  async getBlacklistedImeis(apiKeyId?: number): Promise<BlacklistedImei[]> {
+    const conditions = [eq(blacklistedImeis.isActive, true)];
+    
+    if (apiKeyId !== undefined) {
+      // Get API key specific blacklists only
+      conditions.push(eq(blacklistedImeis.apiKeyId, apiKeyId));
+    }
+    
     return await db
       .select()
       .from(blacklistedImeis)
-      .where(eq(blacklistedImeis.isActive, true))
+      .where(and(...conditions))
+      .orderBy(desc(blacklistedImeis.blacklistedAt));
+  }
+
+  async getGlobalBlacklistedImeis(): Promise<BlacklistedImei[]> {
+    return await db
+      .select()
+      .from(blacklistedImeis)
+      .where(and(
+        eq(blacklistedImeis.isActive, true),
+        sql`${blacklistedImeis.apiKeyId} IS NULL`
+      ))
+      .orderBy(desc(blacklistedImeis.blacklistedAt));
+  }
+
+  async getLocalBlacklistedImeis(apiKeyId: number): Promise<BlacklistedImei[]> {
+    return await db
+      .select()
+      .from(blacklistedImeis)
+      .where(and(
+        eq(blacklistedImeis.isActive, true),
+        eq(blacklistedImeis.apiKeyId, apiKeyId)
+      ))
       .orderBy(desc(blacklistedImeis.blacklistedAt));
   }
 
