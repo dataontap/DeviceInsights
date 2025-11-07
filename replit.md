@@ -55,6 +55,21 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 
 ## Recent Architecture Updates (January 2025)
 
+### Coverage Map Integration & FULL_MVNO Pricing (November 2025)
+- **Coverage Map Links**: Added clickable map button to all carrier pricing cards, linking to official coverage maps:
+  - AT&T: https://www.att.com/maps/wireless-coverage.html
+  - Verizon: https://www.verizon.com/coverage-map/
+  - T-Mobile: https://www.t-mobile.com/coverage/coverage-map
+  - Rogers: https://www.rogers.com/mobility/network-coverage-map
+  - Bell: https://www.bell.ca/Mobility/Our_network_coverage
+  - Telus: https://www.telus.com/en/mobility/network/coverage-map
+- **FULL_MVNO Integration**: Integrated MCP endpoint (gorse.dotmobile.app/mcp) for real-time FULL_MVNO pricing
+  - Default pricing: $20 for 10GB, Global no-expiry data on AT&T network
+  - MCP service with automatic fallback if endpoint unavailable
+  - FULL_MVNO always displayed first in pricing comparisons
+  - Coverage map for FULL_MVNO routes to AT&T (using AT&T network)
+- **Shared Coverage Utility**: Created `shared/coverage-maps.ts` with carrier URL mappings and fuzzy matching logic
+
 ### Location & Carrier Detection (November 2025)
 - **Google Maps Autocomplete**: Location input field now features Google Maps Places Autocomplete for accurate address entry
 - **Smart Country Extraction**: Automatically extracts country from selected Google Maps places via address_components
