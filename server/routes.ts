@@ -182,24 +182,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API Documentation endpoint
   app.get("/api/v1/docs", (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
     res.json({
       name: "IMEI Device Checker API",
       version: "1.0.0-alpha",
       status: "ALPHA - Use with caution",
       description: "AI-powered IMEI analysis and network compatibility checking (Alpha version)",
       disclaimer: "⚠️ ALPHA VERSION: This service is in early testing phase. Results are tentative and should be treated with caution. Use at your own discretion.",
-      baseUrl: `${req.protocol}://${req.get('host')}`,
+      baseUrl: baseUrl,
       rateLimits: {
         perHour: 100,
         note: "100 requests per hour per IP address"
-      },
-      endpoints: {
-        "POST /api/v1/check": "Analyze IMEI device compatibility",
-        "GET /api/v1/stats": "Get your API key's usage statistics",
-        "GET /api/v1/export": "Export your search data only",
-        "GET /api/v1/search/{id}": "Get individual search details (your searches only)",
-        "GET /api/v1/my/searches": "Get your detailed search data with location info",
-        "POST /api/v1/coverage-quality": "Get network quality metrics (3G/4G/5G) for carriers by location"
       },
       authentication: {
         type: "Bearer Token",
@@ -207,17 +201,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         note: "API keys must be generated through the admin dashboard. Keys start with 'imei_' prefix.",
         howToGetKey: "Visit the admin dashboard to generate an API key for your application"
       },
-      important: {
-        alphaWarning: "This is an Alpha service. All results are tentative and experimental.",
-        dataAccuracy: "Device compatibility information may not be 100% accurate.",
-        useAtOwnRisk: "Users acknowledge they use this service at their own discretion."
-      },
-      examples: {
-        curl: `curl -X POST ${req.protocol}://${req.get('host')}/api/v1/check \\
+      endpoints: [
+        {
+          method: "POST",
+          path: "/api/v1/check",
+          description: "Analyze IMEI device compatibility across carriers",
+          authentication: "Required",
+          parameters: {
+            imei: {
+              type: "string",
+              required: true,
+              description: "15-digit IMEI number",
+              example: "123456789012345"
+            },
+            location: {
+              type: "string",
+              required: false,
+              description: "Location for carrier analysis",
+              example: "San Francisco, CA"
+            },
+            network: {
+              type: "string",
+              required: false,
+              description: "Target carrier network",
+              example: "AT&T"
+            }
+          },
+          example: {
+            curl: `curl -X POST ${baseUrl}/api/v1/check \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer your-api-key" \\
   -d '{"imei": "123456789012345", "location": "San Francisco, CA"}'`,
-        javascript: `fetch('${req.protocol}://${req.get('host')}/api/v1/check', {
+            javascript: `fetch('${baseUrl}/api/v1/check', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -228,6 +243,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     location: 'San Francisco, CA'
   })
 })`
+          }
+        },
+        {
+          method: "POST",
+          path: "/api/v1/coverage-quality",
+          description: "Get network quality metrics (signal strength, speeds, latency) for carriers by location",
+          authentication: "Required",
+          parameters: {
+            carriers: {
+              type: "array",
+              required: true,
+              description: "Array of carrier names to check",
+              example: ["AT&T", "Verizon", "T-Mobile"]
+            },
+            location: {
+              type: "string",
+              required: false,
+              description: "Location (city, address). If omitted, location is automatically detected from your IP address.",
+              example: "New York, NY"
+            },
+            coordinates: {
+              type: "object",
+              required: false,
+              description: "GPS coordinates for enhanced accuracy",
+              example: { lat: 40.7128, lng: -74.0060 }
+            }
+          },
+          response: {
+            success: "boolean",
+            location: "string - resolved location",
+            coordinates: "object - { lat, lng }",
+            carriers: "object - quality metrics by carrier name",
+            carrierCount: "number - number of carriers analyzed",
+            detectedFromIp: "boolean - true if location was auto-detected"
+          },
+          carrierQualityFormat: {
+            fiveG: {
+              available: "boolean",
+              signalStrength: "number (0-100)",
+              quality: "string (excellent|good|fair|poor)",
+              downloadSpeed: "string (e.g., '500 Mbps')",
+              uploadSpeed: "string",
+              latency: "string (e.g., '15ms')"
+            },
+            fourG: "same format as 5G",
+            threeG: "same format as 5G",
+            lastUpdated: "ISO timestamp"
+          },
+          example: {
+            curl: `curl -X POST ${baseUrl}/api/v1/coverage-quality \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer your-api-key" \\
+  -d '{
+    "carriers": ["AT&T", "Verizon", "T-Mobile"],
+    "location": "Los Angeles, CA"
+  }'`,
+            javascript: `fetch('${baseUrl}/api/v1/coverage-quality', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your-api-key'
+  },
+  body: JSON.stringify({
+    carriers: ['AT&T', 'Verizon', 'T-Mobile'],
+    location: 'Los Angeles, CA'
+  })
+})`,
+            responseExample: {
+              success: true,
+              location: "Los Angeles, CA",
+              coordinates: { lat: 34.0522, lng: -118.2437 },
+              carrierCount: 3,
+              detectedFromIp: false,
+              carriers: {
+                "AT&T": {
+                  fiveG: {
+                    available: true,
+                    signalStrength: 85,
+                    quality: "excellent",
+                    downloadSpeed: "450 Mbps",
+                    uploadSpeed: "50 Mbps",
+                    latency: "18ms"
+                  },
+                  fourG: {
+                    available: true,
+                    signalStrength: 92,
+                    quality: "excellent",
+                    downloadSpeed: "85 Mbps",
+                    uploadSpeed: "25 Mbps",
+                    latency: "35ms"
+                  },
+                  threeG: {
+                    available: false
+                  },
+                  lastUpdated: "2025-01-07T16:53:00.000Z"
+                }
+              }
+            }
+          }
+        },
+        {
+          method: "GET",
+          path: "/api/v1/stats",
+          description: "Get your API key's usage statistics",
+          authentication: "Required",
+          parameters: {},
+          example: {
+            curl: `curl -X GET ${baseUrl}/api/v1/stats \\
+  -H "Authorization: Bearer your-api-key"`
+          }
+        },
+        {
+          method: "GET",
+          path: "/api/v1/export",
+          description: "Export your search data (CSV format)",
+          authentication: "Required"
+        },
+        {
+          method: "GET",
+          path: "/api/v1/search/{id}",
+          description: "Get individual search details (your searches only)",
+          authentication: "Required"
+        },
+        {
+          method: "GET",
+          path: "/api/v1/my/searches",
+          description: "Get your detailed search data with location info",
+          authentication: "Required"
+        }
+      ],
+      important: {
+        alphaWarning: "This is an Alpha service. All results are tentative and experimental.",
+        dataAccuracy: "Device compatibility information may not be 100% accurate.",
+        useAtOwnRisk: "Users acknowledge they use this service at their own discretion.",
+        locationDetection: "The coverage-quality endpoint can automatically detect your location if not provided, ensuring accurate network quality metrics."
       },
       documentation: "Visit the admin section for complete API documentation"
     });

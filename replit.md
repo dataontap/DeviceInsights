@@ -78,10 +78,9 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
   - Graceful fallback to default metrics if API unavailable
   - Returns data for multiple carriers in a single request to minimize API costs
 - **IP Geolocation Service** (`server/services/ip-geolocation.ts`):
-  - Automatic location detection using ip-api.com (free, no API key required)
-  - Extracts city, region, country, and coordinates from IP address
+  - Automatic location detection from IP address for enhanced user experience
+  - Extracts city, region, country, and coordinates
   - Handles proxy headers (CF-Connecting-IP, X-Real-IP, X-Forwarded-For)
-  - Rate limit: 45 requests/minute (enforced by ip-api.com)
 - **Quality Visualization on Pricing Cards**:
   - Displays network quality metrics when user provides location (GPS or manual entry)
   - Color-coded signal strength indicators: green (excellent), yellow (good), orange (fair), red (poor)
