@@ -1,4 +1,4 @@
-import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, ispCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type IspCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse } from "@shared/schema";
+import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, ispCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, networkPolicy, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type IspCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse, type NetworkPolicy, type InsertNetworkPolicy } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, sql, and } from "drizzle-orm";
 
@@ -226,6 +226,11 @@ export interface IStorage {
     passivePercentage: number;
     detractorPercentage: number;
   }>;
+  
+  // Network Policy CMS
+  getNetworkPolicy(): Promise<NetworkPolicy | null>;
+  updateNetworkPolicy(policy: Partial<InsertNetworkPolicy>): Promise<NetworkPolicy>;
+  createNetworkPolicy(policy: InsertNetworkPolicy): Promise<NetworkPolicy>;
   
   // Analytics Methods for Demo
   getTotalSearchCount(): Promise<number>;
@@ -1624,6 +1629,66 @@ export class DatabaseStorage implements IStorage {
       passivePercentage: Math.round(passivePercentage * 10) / 10,
       detractorPercentage: Math.round(detractorPercentage * 10) / 10,
     };
+  }
+  
+  // Network Policy CMS Implementation
+  async getNetworkPolicy(): Promise<NetworkPolicy | null> {
+    const [policy] = await db
+      .select()
+      .from(networkPolicy)
+      .orderBy(desc(networkPolicy.updatedAt))
+      .limit(1);
+    return policy || null;
+  }
+
+  async createNetworkPolicy(policy: InsertNetworkPolicy): Promise<NetworkPolicy> {
+    const [newPolicy] = await db
+      .insert(networkPolicy)
+      .values(policy)
+      .returning();
+    return newPolicy;
+  }
+
+  async updateNetworkPolicy(policyUpdate: Partial<InsertNetworkPolicy>): Promise<NetworkPolicy> {
+    // Get the current policy (there should only be one)
+    const current = await this.getNetworkPolicy();
+    
+    if (!current) {
+      // If no policy exists, create one with defaults and the updates
+      return this.createNetworkPolicy({
+        title: policyUpdate.title || "Device Compatibility Policy",
+        subtitle: policyUpdate.subtitle || "Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number.",
+        policyContent: policyUpdate.policyContent || {
+          sectionTitle: "Device Compatibility Policy",
+          sectionDescription: "Complete device compatibility guide and pre-porting checklist",
+          documentTitle: "Complete Policy Document",
+          documentDescription: "This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition onto this network.",
+          includedItems: [
+            "Device compatibility requirements and technical specifications",
+            "Pre-porting checklist to avoid service interruptions",
+            "Device unlock process and requirements",
+            "Network band requirements and feature support",
+            "Support contact information"
+          ],
+          footerText: "Policy version 2.0 | Updated January 2025 | Compatible with all devices"
+        },
+        version: policyUpdate.version || "2.0",
+        updatedBy: policyUpdate.updatedBy,
+        updatedAt: new Date(),
+      });
+    }
+    
+    // Update the existing policy
+    const [updated] = await db
+      .update(networkPolicy)
+      .set({
+        ...policyUpdate,
+        updatedAt: new Date(),
+      })
+      .where(eq(networkPolicy.id, current.id))
+      .returning();
+    
+    return updated;
   }
   
   // Analytics Methods Implementation
