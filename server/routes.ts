@@ -2860,6 +2860,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // MVNO Configuration endpoint (public, no authentication required)
+  app.get("/api/mvno-config", (req, res) => {
+    res.json({
+      name: MVNO.name,
+      companyName: MVNO.companyName,
+      website: MVNO.website,
+      phone: MVNO.phone,
+      supportEmail: MVNO.supportEmail,
+      internationalCarrier: MVNO.internationalCarrier
+    });
+  });
+
   // Register PDF generation routes
   registerPDFRoutes(app);
 

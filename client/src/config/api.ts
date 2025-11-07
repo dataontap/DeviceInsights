@@ -1,7 +1,7 @@
 
 // API Configuration for IMEI Checker
 export const API_CONFIG = {
-  // Using API Key #3 - aakstinas+test@dotm.io
+  // Default test API key
   API_KEY: 'imei_r_lQhdSAq8PTeVCrat....................', // Replace with full key
   BASE_URL: window.location.origin,
   ENDPOINTS: {
