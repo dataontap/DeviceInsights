@@ -58,19 +58,17 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
 
 ## Recent Architecture Updates (January 2025)
 
-### Coverage Map Integration & FULL_MVNO Pricing (November 2025)
-- **Coverage Map Links**: Added clickable map button to all carrier pricing cards, linking to official coverage maps:
-  - AT&T: https://www.att.com/maps/wireless-coverage.html
-  - Verizon: https://www.verizon.com/coverage-map/
-  - T-Mobile: https://www.t-mobile.com/coverage/coverage-map
-  - Rogers: https://www.rogers.com/mobility/network-coverage-map
-  - Bell: https://www.bell.ca/Mobility/Our_network_coverage
-  - Telus: https://www.telus.com/en/mobility/network/coverage-map
-- **FULL_MVNO Integration**: Integrated MCP endpoint (gorse.dotmobile.app/mcp) for real-time FULL_MVNO pricing
+### Coverage Map Integration & DOTM Pricing (November 2025)
+- **DOTM-Only Pricing Display**: Pricing comparison now exclusively shows DOTM (FULL_MVNO) pricing, hiding all other carriers
+  - Integrated MCP endpoint (gorse.dotmobile.app/mcp) for real-time DOTM pricing updates
   - Default pricing: $20 for 10GB, Global no-expiry data on AT&T network
   - MCP service with automatic fallback if endpoint unavailable
-  - FULL_MVNO always displayed first in pricing comparisons
-  - Coverage map for FULL_MVNO routes to AT&T (using AT&T network)
+  - Coverage map for DOTM routes to AT&T (using AT&T network)
+- **Pricing Service Simplified**: Modified `server/services/pricing-service.ts` to only fetch DOTM pricing
+  - Removed multi-carrier Gemini AI pricing fetching
+  - Only returns FULL_MVNO/DOTM plan from MCP endpoint
+  - Reduced API costs by eliminating unnecessary carrier pricing queries
+- **Coverage Map Links**: Preserved coverage map integration for DOTM (links to AT&T coverage)
 - **Shared Coverage Utility**: Created `shared/coverage-maps.ts` with carrier URL mappings and fuzzy matching logic
 
 ### Network Quality Metrics Integration (November 2025)
@@ -142,6 +140,25 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
   - `isImeiBlacklisted(imei, apiKeyId?)` - Check both global and local blacklists
   - `removeBlacklistedImei(imei, apiKeyId?)` - Remove from specific blacklist scope
 
+### Network Policy CMS (January 2025)
+- **Dynamic Policy Management**: Admins can edit network policy content via admin dashboard
+- **Database-Driven Content**: Policy content stored in `network_policy` table with versioning
+- **Admin Editor Component**: Full-featured policy editor in admin dashboard with:
+  - Main title and subtitle editing
+  - Section title and description customization
+  - Document title and description fields
+  - Dynamic included items list (add/remove bullet points)
+  - Footer text customization
+  - Version tracking
+- **Separate Network Policy Page**: Dedicated page at `/network-policy` accessible from navigation menu
+- **Dynamic PDF Generation**: PDF generator reads policy content from database instead of hardcoded HTML
+- **API Endpoints**:
+  - `GET /api/network-policy` - Retrieve current policy content (public)
+  - `PUT /api/admin/network-policy` - Update policy content (admin-only)
+- **Storage Methods**:
+  - `getNetworkPolicy()` - Fetch current policy
+  - `updateNetworkPolicy(policy, updatedBy)` - Update policy with audit trail
+
 ### Database Schema Additions
 ```typescript
 // NPS Responses
@@ -175,5 +192,16 @@ blacklisted_imeis: {
   addedBy: text
   isActive: boolean
   apiKeyId: integer (nullable, references api_keys) // null = global, non-null = API-key specific
+}
+
+// Network Policy (CMS)
+network_policy: {
+  id: serial
+  title: text
+  subtitle: text
+  policyContent: jsonb
+  version: text
+  updatedAt: timestamp
+  updatedBy: text
 }
 ```

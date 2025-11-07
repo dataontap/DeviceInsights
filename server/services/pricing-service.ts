@@ -1,7 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
 import { fetchFullMVNOPricing } from "./mcp-service";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export interface PricingPlan {
   carrier: string;
@@ -23,199 +20,118 @@ export interface PricingResponse {
 }
 
 /**
- * Fetch carrier pricing plans using Gemini AI
+ * Fetch carrier pricing plans
+ * Currently only returns DOTM/FULL_MVNO pricing from MCP endpoint
  */
 export async function getCarrierPricing(country: string, carriers?: string[]): Promise<PricingResponse> {
   try {
-    const carrierList = carriers && carriers.length > 0 
-      ? carriers.join(", ") 
-      : "the top 3-5 carriers";
-
-    const prompt = `You are a mobile carrier pricing analyst. Provide current pricing information for ${carrierList} in ${country}.
-
-For each carrier, list 2-3 popular plans (including at least one budget and one premium option) with:
-- Plan name
-- Monthly price (in local currency)
-- Data allowance
-- Network speed (4G/5G)
-- Key features (unlimited talk/text, hotspot, international, etc.)
-- Contract type (prepaid/postpaid)
-- Any additional fees or promotions
-
-Format as JSON:
-{
-  "country": "${country}",
-  "currency": "USD",
-  "plans": [
-    {
-      "carrier": "Carrier Name",
-      "planName": "Plan Name",
-      "monthlyPrice": 50,
-      "data": "Unlimited",
-      "speed": "5G",
-      "features": ["Unlimited talk & text", "Mobile hotspot", "International calling"],
-      "contractType": "postpaid",
-      "additionalFees": "Taxes and fees extra",
-      "promotions": "First 3 months free"
-    }
-  ]
-}
-
-Provide realistic, current pricing. If exact prices aren't available, use typical market rates.`;
-
-    const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      config: {
-        systemInstruction: "You are a mobile carrier pricing analyst providing accurate, current pricing data.",
-      },
-      contents: prompt,
-    });
-
-    const text = result.text || '';
-
-    // Extract JSON from markdown code blocks if present
-    const jsonMatch = text.match(/```(?:json)?\n?([\s\S]*?)\n?```/) || text.match(/\{[\s\S]*\}/);
-    const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : text;
-
-    const pricingData: PricingResponse = JSON.parse(jsonStr.trim());
-    pricingData.lastUpdated = new Date().toISOString();
-
-    // Add FULL_MVNO pricing from MCP endpoint
+    // Only fetch FULL_MVNO pricing from MCP endpoint
     const fullMVNOPlan = await fetchFullMVNOPricing();
-    if (fullMVNOPlan) {
-      pricingData.plans.unshift(fullMVNOPlan);
-    }
 
-    return pricingData;
+    return {
+      country,
+      currency: getCurrencyForCountry(country),
+      plans: fullMVNOPlan ? [fullMVNOPlan] : [getStaticDOTMPlan()],
+      lastUpdated: new Date().toISOString()
+    };
   } catch (error) {
-    console.error("Gemini pricing fetch failed:", error);
+    console.error("Failed to fetch FULL_MVNO pricing from MCP:", error);
     
-    // Fallback to basic US pricing if Gemini fails
+    // Fallback to static DOTM pricing
     return getFallbackPricing(country);
   }
 }
 
 /**
- * Fallback pricing data for when AI is unavailable
+ * Determine currency based on country name
+ */
+function getCurrencyForCountry(country: string): string {
+  const countryLower = country.toLowerCase();
+  
+  // Canada
+  if (countryLower.includes('canada')) {
+    return "CAD";
+  }
+  
+  // Eurozone countries
+  if (countryLower.includes('euro') || 
+      countryLower.includes('eu') ||
+      countryLower.includes('germany') ||
+      countryLower.includes('france') ||
+      countryLower.includes('spain') ||
+      countryLower.includes('italy') ||
+      countryLower.includes('netherlands') ||
+      countryLower.includes('belgium') ||
+      countryLower.includes('austria') ||
+      countryLower.includes('ireland')) {
+    return "EUR";
+  }
+  
+  // United Kingdom
+  if (countryLower.includes('uk') || 
+      countryLower.includes('britain') || 
+      countryLower.includes('united kingdom') ||
+      countryLower.includes('england') ||
+      countryLower.includes('scotland') ||
+      countryLower.includes('wales')) {
+    return "GBP";
+  }
+  
+  // Australia
+  if (countryLower.includes('australia')) {
+    return "AUD";
+  }
+  
+  // Default to USD
+  return "USD";
+}
+
+/**
+ * Get static DOTM pricing as a last resort
+ */
+function getStaticDOTMPlan(): PricingPlan {
+  return {
+    carrier: "FULL_MVNO",
+    planName: "Global Data Plan",
+    monthlyPrice: 20,
+    data: "10GB",
+    speed: "5G",
+    features: [
+      "Global coverage",
+      "No expiry data",
+      "AT&T network in US",
+      "No contracts"
+    ],
+    contractType: "prepaid",
+    additionalFees: "No additional fees",
+    promotions: "Pay only for what you use",
+  };
+}
+
+/**
+ * Fallback pricing data for when MCP endpoint is unavailable
+ * Only returns DOTM/FULL_MVNO pricing
  */
 async function getFallbackPricing(country: string): Promise<PricingResponse> {
-  const isUS = country.toLowerCase().includes('us') || country.toLowerCase().includes('united states') || country.toLowerCase().includes('america');
-  
-  // Get FULL_MVNO pricing
-  const fullMVNOPlan = await fetchFullMVNOPricing();
-  
-  if (isUS) {
-    const plans: PricingPlan[] = [];
-    
-    // Add FULL_MVNO first if available
-    if (fullMVNOPlan) {
-      plans.push(fullMVNOPlan);
-    }
-    
-    plans.push(
-        {
-          carrier: "AT&T",
-          planName: "Unlimited Starter",
-          monthlyPrice: 65,
-          data: "Unlimited",
-          speed: "5G",
-          features: ["Unlimited talk & text", "Talk/text to Mexico & Canada"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees extra ($10-15/month)"
-        },
-        {
-          carrier: "AT&T",
-          planName: "Unlimited Premium",
-          monthlyPrice: 85,
-          data: "Unlimited Premium",
-          speed: "5G+",
-          features: ["Unlimited talk & text", "50GB hotspot", "4K streaming", "International calling"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees extra"
-        },
-        {
-          carrier: "Verizon",
-          planName: "5G Start",
-          monthlyPrice: 70,
-          data: "Unlimited",
-          speed: "5G",
-          features: ["Unlimited talk & text", "Apple Music (6 months)"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees extra"
-        },
-        {
-          carrier: "Verizon",
-          planName: "5G Get More",
-          monthlyPrice: 90,
-          data: "Unlimited Premium",
-          speed: "5G UW",
-          features: ["Unlimited talk & text", "50GB hotspot", "Disney Bundle", "International"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees extra"
-        },
-        {
-          carrier: "T-Mobile",
-          planName: "Essentials",
-          monthlyPrice: 60,
-          data: "Unlimited",
-          speed: "5G",
-          features: ["Unlimited talk & text", "Talk/text to Mexico & Canada"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees included"
-        },
-        {
-          carrier: "T-Mobile",
-          planName: "Magenta MAX",
-          monthlyPrice: 85,
-          data: "Unlimited Premium",
-          speed: "5G UC",
-          features: ["Unlimited talk & text", "40GB hotspot", "4K streaming", "Netflix included"],
-          contractType: "postpaid",
-          additionalFees: "Taxes and fees included"
-        },
-    );
+  try {
+    // Try to get FULL_MVNO pricing from MCP
+    const fullMVNOPlan = await fetchFullMVNOPricing();
     
     return {
-      country: "United States",
-      currency: "USD",
+      country: country,
+      currency: getCurrencyForCountry(country),
       lastUpdated: new Date().toISOString(),
-      plans
+      plans: fullMVNOPlan ? [fullMVNOPlan] : [getStaticDOTMPlan()]
+    };
+  } catch (error) {
+    console.error("MCP endpoint failed in fallback, using static DOTM pricing:", error);
+    
+    // Use static DOTM pricing as last resort
+    return {
+      country: country,
+      currency: getCurrencyForCountry(country),
+      lastUpdated: new Date().toISOString(),
+      plans: [getStaticDOTMPlan()]
     };
   }
-  
-  // Generic fallback for other countries
-  const genericPlans: PricingPlan[] = [];
-  
-  // Add FULL_MVNO first if available
-  if (fullMVNOPlan) {
-    genericPlans.push(fullMVNOPlan);
-  }
-  
-  genericPlans.push(
-    {
-      carrier: "Local Carrier",
-      planName: "Basic Plan",
-      monthlyPrice: 30,
-      data: "10GB",
-      speed: "4G",
-      features: ["Unlimited talk & text"],
-      contractType: "prepaid"
-    },
-    {
-      carrier: "Local Carrier",
-      planName: "Premium Plan",
-      monthlyPrice: 60,
-      data: "Unlimited",
-      speed: "5G",
-      features: ["Unlimited talk & text", "International roaming"],
-      contractType: "postpaid"
-    }
-  );
-  
-  return {
-    country: country,
-    currency: "USD",
-    lastUpdated: new Date().toISOString(),
-    plans: genericPlans
-  };
 }
