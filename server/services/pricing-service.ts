@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { fetchFullMVNOPricing } from "./mcp-service";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -79,6 +80,12 @@ Provide realistic, current pricing. If exact prices aren't available, use typica
     const pricingData: PricingResponse = JSON.parse(jsonStr.trim());
     pricingData.lastUpdated = new Date().toISOString();
 
+    // Add FULL_MVNO pricing from MCP endpoint
+    const fullMVNOPlan = await fetchFullMVNOPricing();
+    if (fullMVNOPlan) {
+      pricingData.plans.unshift(fullMVNOPlan);
+    }
+
     return pricingData;
   } catch (error) {
     console.error("Gemini pricing fetch failed:", error);
@@ -91,15 +98,21 @@ Provide realistic, current pricing. If exact prices aren't available, use typica
 /**
  * Fallback pricing data for when AI is unavailable
  */
-function getFallbackPricing(country: string): PricingResponse {
+async function getFallbackPricing(country: string): Promise<PricingResponse> {
   const isUS = country.toLowerCase().includes('us') || country.toLowerCase().includes('united states') || country.toLowerCase().includes('america');
   
+  // Get FULL_MVNO pricing
+  const fullMVNOPlan = await fetchFullMVNOPricing();
+  
   if (isUS) {
-    return {
-      country: "United States",
-      currency: "USD",
-      lastUpdated: new Date().toISOString(),
-      plans: [
+    const plans: PricingPlan[] = [];
+    
+    // Add FULL_MVNO first if available
+    if (fullMVNOPlan) {
+      plans.push(fullMVNOPlan);
+    }
+    
+    plans.push(
         {
           carrier: "AT&T",
           planName: "Unlimited Starter",
@@ -160,34 +173,49 @@ function getFallbackPricing(country: string): PricingResponse {
           contractType: "postpaid",
           additionalFees: "Taxes and fees included"
         },
-      ]
+    );
+    
+    return {
+      country: "United States",
+      currency: "USD",
+      lastUpdated: new Date().toISOString(),
+      plans
     };
   }
   
   // Generic fallback for other countries
+  const genericPlans: PricingPlan[] = [];
+  
+  // Add FULL_MVNO first if available
+  if (fullMVNOPlan) {
+    genericPlans.push(fullMVNOPlan);
+  }
+  
+  genericPlans.push(
+    {
+      carrier: "Local Carrier",
+      planName: "Basic Plan",
+      monthlyPrice: 30,
+      data: "10GB",
+      speed: "4G",
+      features: ["Unlimited talk & text"],
+      contractType: "prepaid"
+    },
+    {
+      carrier: "Local Carrier",
+      planName: "Premium Plan",
+      monthlyPrice: 60,
+      data: "Unlimited",
+      speed: "5G",
+      features: ["Unlimited talk & text", "International roaming"],
+      contractType: "postpaid"
+    }
+  );
+  
   return {
     country: country,
     currency: "USD",
     lastUpdated: new Date().toISOString(),
-    plans: [
-      {
-        carrier: "Local Carrier",
-        planName: "Basic Plan",
-        monthlyPrice: 30,
-        data: "10GB",
-        speed: "4G",
-        features: ["Unlimited talk & text"],
-        contractType: "prepaid"
-      },
-      {
-        carrier: "Local Carrier",
-        planName: "Premium Plan",
-        monthlyPrice: 60,
-        data: "Unlimited",
-        speed: "5G",
-        features: ["Unlimited talk & text", "International roaming"],
-        contractType: "postpaid"
-      }
-    ]
+    plans: genericPlans
   };
 }

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, DollarSign, Wifi, Smartphone, Loader2 } from "lucide-react";
+import { Check, DollarSign, Wifi, Smartphone, Loader2, MapPin } from "lucide-react";
+import { getCoverageMapUrl } from "@shared/coverage-maps";
 
 interface PricingPlan {
   carrier: string;
@@ -131,6 +132,7 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan, index) => {
           const isCompatible = isCarrierCompatible(plan.carrier);
+          const coverageMapUrl = getCoverageMapUrl(plan.carrier);
           
           return (
             <Card
@@ -150,10 +152,24 @@ export function PricingComparison({ country, carriers, compatibleCarriers = [] }
               
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl mb-1" data-testid={`text-carrier-${index}`}>
-                      {plan.carrier}
-                    </CardTitle>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-xl mb-1" data-testid={`text-carrier-${index}`}>
+                        {plan.carrier}
+                      </CardTitle>
+                      {coverageMapUrl && (
+                        <a
+                          href={coverageMapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-7 w-7"
+                          title="View Coverage Map"
+                          data-testid={`button-coverage-map-${index}`}
+                        >
+                          <MapPin className="h-4 w-4 text-primary" />
+                        </a>
+                      )}
+                    </div>
                     <CardDescription data-testid={`text-plan-name-${index}`}>
                       {plan.planName}
                     </CardDescription>
