@@ -70,6 +70,28 @@ The application is a full-stack TypeScript monorepo, separating client, server, 
   - Coverage map for FULL_MVNO routes to AT&T (using AT&T network)
 - **Shared Coverage Utility**: Created `shared/coverage-maps.ts` with carrier URL mappings and fuzzy matching logic
 
+### Network Quality Metrics Integration (November 2025)
+- **AI-Powered Coverage Quality**: Integrated Gemini AI to generate realistic network quality metrics for 3G/4G/5G technologies
+- **Coverage Quality Service** (`server/services/coverage-quality-service.ts`):
+  - Fetches real-time signal strength, download/upload speeds, and latency estimates per carrier and location
+  - Uses Gemini 2.0 Flash model with specialized network analyst system instructions
+  - Graceful fallback to default metrics if API unavailable
+  - Returns data for multiple carriers in a single request to minimize API costs
+- **Quality Visualization on Pricing Cards**:
+  - Displays network quality metrics when user provides location (GPS or manual entry)
+  - Color-coded signal strength indicators: green (excellent), yellow (good), orange (fair), red (poor)
+  - Visual signal bars represent strength percentage (1-5 bars)
+  - Shows download speeds and signal strength for available technologies (5G, 4G LTE, 3G)
+  - Section appears below plan features with "Network Quality in [location]" header
+- **API Endpoint**: `GET /api/coverage-quality?location={location}&carriers={carrier1,carrier2}`
+  - Accepts location (city/address) and comma-separated carrier list
+  - Returns quality data structure with 3G/4G/5G metrics per carrier
+  - Optional coordinates parameter for enhanced accuracy
+- **Frontend Integration**:
+  - PricingComparison component automatically fetches quality data when location available
+  - Quality metrics displayed inline on each carrier pricing card
+  - Responsive design with mobile-friendly layout
+
 ### Location & Carrier Detection (November 2025)
 - **Google Maps Autocomplete**: Location input field now features Google Maps Places Autocomplete for accurate address entry
 - **Smart Country Extraction**: Automatically extracts country from selected Google Maps places via address_components
