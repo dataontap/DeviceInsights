@@ -1,5 +1,6 @@
 import { storage } from '../storage';
 import { sendEmail } from './firebase-admin.js';
+import { MVNO } from '../config/mvno';
 
 interface MonthlyInsightData {
   period: {
@@ -368,14 +369,14 @@ export function generateInsightEmailHTML(userName: string, data: MonthlyInsightD
           
           <p>Keep monitoring your connection for optimal performance. If you notice persistent issues, don't hesitate to contact your internet service provider.</p>
           
-          <p>Best regards,<br>The DOTM Team</p>
+          <p>Best regards,<br>The ${MVNO.name} Team</p>
         </div>
         
         <div class="footer">
           <p>This report was automatically generated based on your registered email preferences.</p>
           <div class="unsubscribe">
             <a href="#">Update your email preferences</a> | 
-            <a href="mailto:rbm@dotmobile.app?subject=Unsubscribe Monthly Reports">Unsubscribe</a>
+            <a href="mailto:${MVNO.supportEmail}?subject=Unsubscribe Monthly Reports">Unsubscribe</a>
           </div>
         </div>
       </div>
@@ -416,7 +417,7 @@ export async function sendMonthlyInsights(): Promise<void> {
             recommendations: insightData.recommendations,
             comparisonData: insightData.comparison
           },
-          emailSubject: `Your ${insightData.period.month} Connectivity Report - DOTM Insights`,
+          emailSubject: `Your ${insightData.period.month} Connectivity Report - ${MVNO.name} Insights`,
           emailTemplate: "monthly_insights"
         });
         
@@ -427,7 +428,7 @@ export async function sendMonthlyInsights(): Promise<void> {
         // Send email
         const emailSent = await sendEmail(
           user.email,
-          `Your ${insightData.period.month} Connectivity Report - DOTM Insights`,
+          `Your ${insightData.period.month} Connectivity Report - ${MVNO.name} Insights`,
           emailHTML
         );
         

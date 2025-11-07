@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { MVNO } from '../config/mvno';
 
 // Initialize Resend with API key
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -17,9 +18,9 @@ export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<bool
     }
 
     const { data: result, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'rbm@dotmobile.app',
+      from: process.env.RESEND_FROM_EMAIL || MVNO.fromEmail,
       to: [data.email],
-      subject: `Admin Login - ${data.appName || 'Device Insights'}`,
+      subject: `Admin Login - ${data.appName || MVNO.name}`,
       html: createMagicLinkEmailTemplate(data),
     });
 
@@ -141,8 +142,8 @@ function createMagicLinkEmailTemplate(data: MagicLinkEmailData): string {
           <div class="alternative-link">${data.magicLink}</div>
           
           <div class="footer">
-            <p>This is an automated message from ${data.appName || 'Device Insights'} Admin System.</p>
-            <p>© 2025 DOTM - Device Insights Platform</p>
+            <p>This is an automated message from ${data.appName || MVNO.name} Admin System.</p>
+            <p>© 2025 ${MVNO.companyName}</p>
           </div>
         </div>
       </body>
@@ -163,7 +164,7 @@ export async function sendAdminNotificationEmail(
     }
 
     const { data: result, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'rbm@dotmobile.app',
+      from: process.env.RESEND_FROM_EMAIL || MVNO.fromEmail,
       to: [email],
       subject: subject,
       html: `
@@ -173,7 +174,7 @@ export async function sendAdminNotificationEmail(
             ${content}
           </div>
           <p style="color: #666; font-size: 14px; margin-top: 20px;">
-            This is an automated notification from Device Insights Admin System.
+            This is an automated notification from ${MVNO.name} Admin System.
           </p>
         </div>
       `,
