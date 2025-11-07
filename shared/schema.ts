@@ -352,6 +352,38 @@ export const npsResponses = pgTable("nps_responses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Network Policy CMS
+export const networkPolicy = pgTable("network_policy", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().default("Device Compatibility Policy"),
+  subtitle: text("subtitle").notNull().default("Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number."),
+  policyContent: jsonb("policy_content").$type<{
+    sectionTitle: string;
+    sectionDescription: string;
+    documentTitle: string;
+    documentDescription: string;
+    includedItems: string[];
+    footerText: string;
+  }>().default({
+    sectionTitle: "Device Compatibility Policy",
+    sectionDescription: "Complete device compatibility guide and pre-porting checklist",
+    documentTitle: "Complete Policy Document",
+    documentDescription: "This comprehensive guide includes device unlock requirements, technical specifications, pre-porting checklist, and contact information to ensure a smooth transition onto this network.",
+    includedItems: [
+      "Device compatibility requirements and technical specifications",
+      "Pre-porting checklist to avoid service interruptions",
+      "Device unlock process and requirements",
+      "Network band requirements and feature support",
+      "Support contact information"
+    ],
+    footerText: "Policy version 2.0 | Updated January 2025 | Compatible with all devices"
+  }),
+  version: text("version").notNull().default("2.0"),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const imeiSearchesRelations = relations(imeiSearches, ({ one }) => ({
   policyAcceptance: one(policyAcceptances, {
     fields: [imeiSearches.id],
@@ -553,6 +585,11 @@ export const insertNpsResponseSchema = createInsertSchema(npsResponses).pick({
   userAgent: true,
 });
 
+export const insertNetworkPolicySchema = createInsertSchema(networkPolicy).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertLoginTokenSchema = createInsertSchema(loginTokens).pick({
   email: true,
   token: true,
@@ -661,6 +698,8 @@ export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSche
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertNpsResponse = z.infer<typeof insertNpsResponseSchema>;
 export type NpsResponse = typeof npsResponses.$inferSelect;
+export type InsertNetworkPolicy = z.infer<typeof insertNetworkPolicySchema>;
+export type NetworkPolicy = typeof networkPolicy.$inferSelect;
 
 // Pricing Cache types
 export type PricingCache = typeof pricingCache.$inferSelect;
