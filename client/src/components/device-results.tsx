@@ -1,5 +1,6 @@
-import { Signal, Radio, Phone, Wifi, CheckCircle, AlertTriangle, XCircle, MapPin, ArrowRight } from "lucide-react";
+import { Signal, Radio, Phone, Wifi, CheckCircle, AlertTriangle, XCircle, MapPin, ArrowRight, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PricingComparison } from "./pricing-comparison";
 
 interface DeviceResultsProps {
@@ -150,7 +151,19 @@ export default function DeviceResults({ result }: DeviceResultsProps) {
           <div className="bg-gradient-to-r from-primary to-secondary text-white p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">{result.device.make} {result.device.model}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold">{result.device.make} {result.device.model}</h2>
+                  {result.esimSupport && (
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-white/20 text-white border-white/30 flex items-center gap-1.5 px-2.5 py-1"
+                      data-testid="badge-esim"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">eSIM</span>
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-blue-100">{result.device.make} Inc.</p>
               </div>
               <div className="text-right">

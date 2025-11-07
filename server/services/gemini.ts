@@ -11,6 +11,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "iPhone 14 Pro",
     year: 2022,
     modelNumber: "A2892",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -29,6 +30,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "iPhone 15",
     year: 2023,
     modelNumber: "A3089",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -47,6 +49,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "Galaxy S23 Ultra",
     year: 2023,
     modelNumber: "SM-S918U",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -65,6 +68,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "Pixel 8 Pro",
     year: 2023,
     modelNumber: "GD2H3",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -83,6 +87,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "Pixel 8 Pro",
     year: 2023,
     modelNumber: "GHMP3",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -101,6 +106,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "OnePlus 11",
     year: 2023,
     modelNumber: "CPH2449",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -119,6 +125,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "Pixel 10",
     year: 2025,
     modelNumber: "GB17L",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -137,6 +144,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "Galaxy S24 Ultra",
     year: 2024,
     modelNumber: "SM-S928U",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -155,6 +163,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     model: "iPhone 16 Pro",
     year: 2024,
     modelNumber: "A3294",
+    esimSupport: true,
     networkCapabilities: {
       fourG: true,
       fiveG: true,
@@ -172,6 +181,7 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
     make: "Unknown",
     model: "Unknown Device",
     year: 2023,
+    esimSupport: false,
     networkCapabilities: {
       fourG: false,
       fiveG: false,
@@ -187,6 +197,7 @@ export interface DeviceInfo {
   year?: number;
   modelNumber?: string;
   tacAnalysis?: string;
+  esimSupport?: boolean;
   networkCapabilities: {
     fourG: boolean;
     fiveG: boolean;
@@ -381,6 +392,7 @@ Provide your analysis in JSON format:
   "year": release_year_number,
   "modelNumber": "Official model number (e.g., A2892, SM-S918U, GD2M3)",
   "tacAnalysis": "Brief explanation of what the TAC reveals about this device",
+  "esimSupport": boolean_true_if_device_supports_esim,
   "networkCapabilities": {
     "fourG": boolean_based_on_actual_specs,
     "fiveG": boolean_based_on_actual_specs,
@@ -424,6 +436,7 @@ Always respond with valid JSON in the exact format specified.`;
             year: { type: "number" },
             modelNumber: { type: "string" },
             tacAnalysis: { type: "string" },
+            esimSupport: { type: "boolean" },
             networkCapabilities: {
               type: "object",
               properties: {
@@ -465,6 +478,7 @@ Always respond with valid JSON in the exact format specified.`;
       year: result.year || new Date().getFullYear(),
       modelNumber: result.modelNumber,
       tacAnalysis: result.tacAnalysis,
+      esimSupport: result.esimSupport ?? false,
       networkCapabilities: {
         fourG: result.networkCapabilities?.fourG ?? false,
         fiveG: result.networkCapabilities?.fiveG ?? false,
