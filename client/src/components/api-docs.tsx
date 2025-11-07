@@ -80,19 +80,53 @@ export default function APIDocs() {
   const downloadExport = async (format: 'json' | 'csv') => {
     try {
       const response = await fetch(`/api/v1/export?format=${format}`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `imei_searches.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Check if it's example data (for JSON format, we can inspect the response)
+      let isExampleData = false;
+      let filename = `imei_searches.${format}`;
+      
+      if (format === 'json') {
+        const data = await response.json();
+        isExampleData = data.isExampleData || false;
+        
+        if (isExampleData) {
+          filename = `imei_searches_example.${format}`;
+        }
+        
+        // Convert JSON back to blob for download
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        // For CSV, check the filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition && contentDisposition.includes('example')) {
+          isExampleData = true;
+          filename = 'imei_searches_example.csv';
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
       
       toast({
-        title: "Export Started",
-        description: `Downloading ${format.toUpperCase()} export`,
+        title: isExampleData ? "Example Data Downloaded" : "Export Started",
+        description: isExampleData 
+          ? `This is sample data. Sign up for a free API key to export your real search data.`
+          : `Downloading your ${format.toUpperCase()} export`,
       });
     } catch (error) {
       toast({
