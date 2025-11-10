@@ -478,35 +478,6 @@ Content-Type: application/json`}
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold text-gray-900">Data Export</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
-                  Download search data in your preferred format:
-                </p>
-                <div className="space-y-2">
-                  <Button 
-                    onClick={() => downloadExport('json')} 
-                    variant="outline" 
-                    className="w-full justify-start"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export as JSON
-                  </Button>
-                  <Button 
-                    onClick={() => downloadExport('csv')} 
-                    variant="outline" 
-                    className="w-full justify-start"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export as CSV
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

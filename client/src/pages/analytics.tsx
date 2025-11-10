@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Smartphone, ArrowLeft, TrendingUp, Users, Activity, Globe, ChevronRight } from "lucide-react";
+import { Smartphone, ArrowLeft, TrendingUp, Users, Activity, Globe, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -69,6 +70,66 @@ export default function Analytics() {
       title: "Demo Access Granted!",
       description: "You now have access to view aggregate analytics insights.",
     });
+  };
+
+  const downloadExport = async (format: 'json' | 'csv') => {
+    try {
+      const response = await fetch(`/api/v1/export?format=${format}`);
+      
+      // Check if it's example data (for JSON format, we can inspect the response)
+      let isExampleData = false;
+      let filename = `imei_searches.${format}`;
+      
+      if (format === 'json') {
+        const data = await response.json();
+        isExampleData = data.isExampleData || false;
+        
+        if (isExampleData) {
+          filename = `imei_searches_example.${format}`;
+        }
+        
+        // Convert JSON back to blob for download
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        // For CSV, check the filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition && contentDisposition.includes('example')) {
+          isExampleData = true;
+          filename = 'imei_searches_example.csv';
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+      
+      toast({
+        title: isExampleData ? "Example Data Downloaded" : "Export Started",
+        description: isExampleData 
+          ? `This is sample data. Sign up for a free API key to export your real search data.`
+          : `Downloading your ${format.toUpperCase()} export`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to download export file",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!demoAccess) {
@@ -367,6 +428,36 @@ export default function Analytics() {
               )}
             </div>
           </div>
+
+          {/* Data Export */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-900">Data Export</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Download search data in your preferred format:
+              </p>
+              <div className="space-y-2">
+                <Button 
+                  onClick={() => downloadExport('json')} 
+                  variant="outline" 
+                  className="w-full justify-start"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export as JSON
+                </Button>
+                <Button 
+                  onClick={() => downloadExport('csv')} 
+                  variant="outline" 
+                  className="w-full justify-start"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export as CSV
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Privacy Notice */}
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
