@@ -117,21 +117,6 @@ export default function Home() {
       {/* API Documentation Section */}
       <APIDocs />
       
-      {/* Policy PDF Download Section */}
-      <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Device Compatibility Policy
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Download our comprehensive guide to ensure your device is compatible and unlocked before porting your number.
-            </p>
-          </div>
-          <PolicyPDFDownload />
-        </div>
-      </section>
-      
       {/* Live World Map - Temporarily Hidden */}
       {/* <LiveWorldMap /> */}
       
