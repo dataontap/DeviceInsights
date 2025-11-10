@@ -18,13 +18,59 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Check for Firebase magic link and auth state
+  // Check for magic link token and auth state
   useEffect(() => {
     let unsubscribe: any;
 
     const initAuth = async () => {
       try {
-        // Check if this is a magic link sign-in
+        // Check for backend magic link token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (token) {
+          console.log('🔐 Processing magic link token');
+          try {
+            // Verify the token with backend
+            const verifyResponse = await fetch('/api/admin/verify-temp-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token }),
+            });
+            
+            if (verifyResponse.ok) {
+              const { email } = await verifyResponse.json();
+              console.log('✅ Token verified for:', email);
+              
+              // Create admin session
+              await createAdminSession(email);
+              
+              // Clean URL
+              window.history.replaceState({}, '', '/admin');
+              setIsLoading(false);
+              return;
+            } else {
+              const error = await verifyResponse.json();
+              console.error('❌ Token verification failed:', error);
+              toast({
+                title: "Login failed",
+                description: error.message || "Invalid or expired magic link",
+                variant: "destructive",
+              });
+            }
+          } catch (error) {
+            console.error('Magic link verification error:', error);
+            toast({
+              title: "Login failed",
+              description: "Failed to verify magic link",
+              variant: "destructive",
+            });
+          }
+          // Clean URL even on error
+          window.history.replaceState({}, '', '/admin');
+        }
+        
+        // Check if this is a Firebase magic link sign-in
         if (isMagicLinkSignIn()) {
           const email = await completeMagicLinkSignIn();
           if (email) {

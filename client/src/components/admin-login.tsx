@@ -20,7 +20,7 @@ export default function AdminLogin() {
 
   const sendMagicLinkMutation = useMutation({
     mutationFn: async (email: string) => {
-      // First check if email is registered (has API key)
+      // First check if email is registered as admin
       const checkResponse = await fetch("/api/admin/validate-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,9 +32,19 @@ export default function AdminLogin() {
         throw new Error(error.message || "Email not registered");
       }
       
-      // Send Firebase magic link
-      await sendMagicLink(email);
-      return { success: true };
+      // Send backend magic link via Resend email
+      const linkResponse = await fetch("/api/admin/send-temp-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!linkResponse.ok) {
+        const error = await linkResponse.json();
+        throw new Error(error.message || "Failed to send magic link");
+      }
+      
+      return await linkResponse.json();
     },
     onSuccess: (data: any) => {
       setEmailSent(true);
