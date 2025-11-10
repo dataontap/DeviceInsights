@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Code, CheckCircle, AlertTriangle } from "lucide-react";
+import { Search, Smartphone, Code, CheckCircle, AlertTriangle, CreditCard } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import RecentSearches from "@/components/recent-searches";
 // import { NotificationManager } from "@/components/notification-manager"; // Hidden for now
@@ -10,6 +11,7 @@ import NpsMetrics from "@/components/nps-metrics";
 import LocationAnalytics from "@/components/location-analytics";
 import ApiKeyAnalytics from "@/components/api-key-analytics";
 import NetworkPolicyEditor from "@/components/network-policy-editor";
+import BatchEsimChecker from "@/components/batch-esim-checker";
 
 interface StatsData {
   totalSearches: number;
@@ -149,12 +151,22 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Analytics Dashboard</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Admin Dashboard</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Comprehensive insights into IMEI searches, device trends, and usage patterns
+            Analytics, batch processing, and system management
           </p>
         </div>
 
+        <Tabs defaultValue="analytics" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="batch-esim">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Batch eSIM
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="analytics">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, index) => {
@@ -246,6 +258,14 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
         {/* <div className="max-w-4xl mx-auto">
           <NotificationManager />
         </div> */}
+          </TabsContent>
+
+          <TabsContent value="batch-esim">
+            <div className="max-w-6xl mx-auto">
+              <BatchEsimChecker sessionToken={sessionToken} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </section>
   );

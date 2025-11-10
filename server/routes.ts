@@ -1188,6 +1188,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch eSIM Compatibility Check - Process multiple IMEIs at once
+  app.post("/api/v1/esim-check/batch", validateApiKey, standardRateLimit, async (req, res) => {
+    try {
+      const { imeis } = req.body;
+
+      if (!imeis || !Array.isArray(imeis)) {
+        return res.status(400).json({ 
+          error: "Invalid request",
+          message: "Please provide an array of IMEI numbers" 
+        });
+      }
+
+      if (imeis.length === 0) {
+        return res.status(400).json({ 
+          error: "Empty batch",
+          message: "Please provide at least one IMEI number" 
+        });
+      }
+
+      if (imeis.length > 100) {
+        return res.status(400).json({ 
+          error: "Batch too large",
+          message: "Maximum 100 IMEIs per batch request" 
+        });
+      }
+
+      const results = [];
+      let processedCount = 0;
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const imei of imeis) {
+        try {
+          processedCount++;
+
+          // Validate IMEI format
+          if (!validateIMEI(imei)) {
+            results.push({
+              imei,
+              success: false,
+              error: "Invalid IMEI format",
+              esimSupport: null,
+              device: null
+            });
+            errorCount++;
+            continue;
+          }
+
+          // First try to match against local TAC database (fastest)
+          const tacMatch = matchDeviceToTAC(imei);
+          
+          if (tacMatch.found && tacMatch.deviceInfo) {
+            // Get device info from TAC database
+            const deviceInfo = await analyzeIMEI(imei, "AT&T");
+            
+            results.push({
+              imei,
+              success: true,
+              esimSupport: deviceInfo.esimSupport ?? false,
+              device: {
+                make: tacMatch.deviceInfo.make,
+                model: tacMatch.deviceInfo.model,
+                year: tacMatch.deviceInfo.year
+              },
+              source: "tac_database"
+            });
+            successCount++;
+            continue;
+          }
+
+          // If not in TAC database, use AI analysis
+          try {
+            const deviceInfo = await analyzeIMEI(imei, "AT&T");
+            
+            results.push({
+              imei,
+              success: true,
+              esimSupport: deviceInfo.esimSupport ?? false,
+              device: {
+                make: deviceInfo.make,
+                model: deviceInfo.model,
+                year: deviceInfo.year
+              },
+              source: "ai_analysis"
+            });
+            successCount++;
+          } catch (aiError) {
+            console.error(`eSIM AI analysis error for ${imei}:`, aiError);
+            
+            results.push({
+              imei,
+              success: true,
+              esimSupport: false,
+              device: {
+                make: "Unknown",
+                model: "Unknown Device",
+                year: null
+              },
+              source: "unknown",
+              warning: "Device information could not be verified"
+            });
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error processing IMEI ${imei}:`, error);
+          results.push({
+            imei,
+            success: false,
+            error: "Processing error",
+            esimSupport: null,
+            device: null
+          });
+          errorCount++;
+        }
+      }
+
+      res.json({
+        success: true,
+        summary: {
+          total: imeis.length,
+          processed: processedCount,
+          successful: successCount,
+          errors: errorCount,
+          esimCompatible: results.filter(r => r.esimSupport === true).length,
+          esimNotCompatible: results.filter(r => r.esimSupport === false).length
+        },
+        results
+      });
+    } catch (error) {
+      console.error("Batch eSIM check error:", error);
+      res.status(500).json({ 
+        error: "Failed to process batch eSIM check",
+        message: "An error occurred while processing the batch request" 
+      });
+    }
+  });
+
   // Get search statistics (API key specific for authenticated requests)
   app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {
