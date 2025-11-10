@@ -277,9 +277,6 @@ export default function APIDocs() {
             >
               📚 Integration Guide
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/coverage-api-docs'}>
-              Coverage Maps API Docs
-            </Button>
             <Button variant="outline" onClick={() => window.location.href = '/coverage-maps'}>
               Interactive Coverage Testing
             </Button>

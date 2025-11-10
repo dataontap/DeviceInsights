@@ -8,7 +8,6 @@ import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import Analytics from "@/pages/analytics";
 import { CoverageMaps } from "@/pages/coverage-maps";
-import { CoverageApiDocs } from "@/components/coverage-api-docs";
 import APIDocs from "@/components/api-docs";
 import IntegrationGuide from "@/pages/integration-guide";
 import NetworkPolicy from "@/pages/network-policy";
@@ -21,7 +20,6 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/coverage-maps" component={CoverageMaps} />
       <Route path="/api-docs" component={APIDocs} />
-      <Route path="/coverage-api-docs" component={CoverageApiDocs} />
       <Route path="/integration-guide" component={IntegrationGuide} />
       <Route path="/network-policy" component={NetworkPolicy} />
       <Route component={NotFound} />
