@@ -137,11 +137,25 @@ export default function APIDocs() {
     }
   };
 
-  const endpoints = [
+  const endpoints: Array<{
+    method: string;
+    path: string;
+    description: string;
+    request?: string;
+    example: string;
+  }> = [
     {
       method: "POST",
       path: "/api/v1/check",
       description: "Check device compatibility by IMEI number",
+      request: `curl -X POST https://your-domain.com/api/v1/check \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imei": "013266008012345",
+    "location": "New York, NY",
+    "network": "AT&T"
+  }'`,
       example: `{
   "device": {
     "make": "Apple",
@@ -160,6 +174,12 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/v1/esim-check",
       description: "Check eSIM compatibility for a device (lightweight endpoint)",
+      request: `curl -X POST https://your-domain.com/api/v1/esim-check \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imei": "013266008012345"
+  }'`,
       example: `{
   "success": true,
   "imei": "013266008012345",
@@ -177,6 +197,8 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/stats",
       description: "Get platform usage statistics",
+      request: `curl -X GET https://your-domain.com/api/v1/stats \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "totalSearches": 24567,
   "uniqueDevices": 8432,
@@ -189,6 +211,8 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/export",
       description: "Export search data in CSV/JSON format",
+      request: `curl -X GET "https://your-domain.com/api/v1/export?format=json" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "searches": [
     {
@@ -202,26 +226,17 @@ export default function APIDocs() {
     },
     {
       method: "POST",
-      path: "/api/messaging/sms",
-      description: "Send SMS notification via Firebase messaging",
-      example: `{
-  "success": true,
-  "message": "SMS sent successfully"
-}`
-    },
-    {
-      method: "POST",
-      path: "/api/messaging/email",
-      description: "Send email notification via Firebase messaging",
-      example: `{
-  "success": true,
-  "message": "Email sent successfully"
-}`
-    },
-    {
-      method: "POST",
       path: "/api/messaging/push",
       description: "Send push notification via Firebase Cloud Messaging",
+      request: `curl -X POST https://your-domain.com/api/messaging/push \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "token": "FCM_DEVICE_TOKEN",
+    "title": "New Message",
+    "body": "You have a new notification",
+    "data": { "key": "value" }
+  }'`,
       example: `{
   "success": true,
   "message": "Push notification sent successfully"
@@ -231,6 +246,8 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/search/{id}",
       description: "Get individual search by ID",
+      request: `curl -X GET https://your-domain.com/api/v1/search/123 \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "id": 1,
   "imei": "123456789012345",
@@ -243,6 +260,14 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/coverage/analyze",
       description: "Analyze network coverage for mobile carriers and broadband providers",
+      request: `curl -X POST https://your-domain.com/api/coverage/analyze \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "location": "Toronto, ON",
+    "latitude": 43.6532,
+    "longitude": -79.3832
+  }'`,
       example: `{
   "success": true,
   "data": {
@@ -260,6 +285,15 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/coverage/analyze-issue",
       description: "Report network issues with AI-powered pattern recognition",
+      request: `curl -X POST https://your-domain.com/api/coverage/analyze-issue \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "issue": "No signal in downtown area",
+    "provider": "Rogers",
+    "device": "iPhone 14 Pro",
+    "location": "Toronto, ON"
+  }'`,
       example: `{
   "success": true,
   "data": {
@@ -326,14 +360,38 @@ export default function APIDocs() {
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{endpoint.description}</p>
+                  
+                  {/* Example Request */}
+                  {endpoint.request && (
+                    <div className="bg-gray-50 rounded p-3 mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium text-gray-700">Example Request:</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(endpoint.request || '')}
+                          className="h-6 w-6 p-0"
+                          data-testid={`button-copy-request-${index}`}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <pre className="text-xs text-gray-700 overflow-x-auto">
+                        <code>{endpoint.request}</code>
+                      </pre>
+                    </div>
+                  )}
+                  
+                  {/* Example Response */}
                   <div className="bg-gray-50 rounded p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs text-gray-500">Example Response:</p>
+                      <p className="text-xs font-medium text-gray-700">Example Response:</p>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => copyToClipboard(endpoint.example)}
                         className="h-6 w-6 p-0"
+                        data-testid={`button-copy-response-${index}`}
                       >
                         <Copy className="w-3 h-3" />
                       </Button>
