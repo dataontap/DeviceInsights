@@ -17,7 +17,7 @@ const DEFAULTS: MVNOConfig = {
   domain: 'dotmobile.app',
   supportEmail: 'rbm@dotmobile.app',
   fromEmail: 'rbm@dotmobile.app',
-  phone: '1-800-DOTM-HELP',
+  phone: '+16475500007',
   website: 'gorse.dotmobile.app',
   internationalCarrier: 'DOTM (International)'
 };
