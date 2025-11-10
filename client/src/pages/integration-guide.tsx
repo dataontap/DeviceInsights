@@ -956,13 +956,6 @@ X-RateLimit-Reset: 1640995200`}
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.location.href = '/coverage-api-docs'}
-                  data-testid="button-coverage-docs"
-                >
-                  View Coverage API Docs
-                </Button>
-                <Button
-                  variant="outline"
                   onClick={() => window.location.href = '/'}
                   data-testid="button-try-demo"
                 >

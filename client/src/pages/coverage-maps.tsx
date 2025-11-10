@@ -12,7 +12,7 @@ export function CoverageMaps() {
             <h1 className="text-3xl font-bold">Provider Coverage Maps</h1>
             <Button 
               variant="outline" 
-              onClick={() => window.location.href = '/coverage-api-docs'}
+              onClick={() => window.location.href = '/api-docs'}
               className="flex items-center gap-2"
             >
               <BookOpen className="h-4 w-4" />
