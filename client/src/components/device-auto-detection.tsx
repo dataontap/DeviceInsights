@@ -69,10 +69,17 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
       });
       
       if (!response.ok) {
-        throw new Error('Failed to detect device');
+        const errorText = await response.text();
+        console.error('Device detection API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to detect device: ${response.status} ${response.statusText}`);
       }
       
       const data: DetectionData = await response.json();
+      console.log('Device detection API success:', data);
       
       // Add connection info from browser
       const enrichedData = {
@@ -84,6 +91,11 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
       setDetectionData(enrichedData);
     } catch (error) {
       console.error('Device detection failed:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error
+      });
       // Fail silently - user can still use manual IMEI entry
     } finally {
       setIsLoading(false);
