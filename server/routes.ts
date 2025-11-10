@@ -157,15 +157,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SECURE CORS configuration - restrict to trusted domains
   app.use('/api', (req, res, next) => {
     const origin = req.headers.origin;
-    const allowedOrigins = [
-      'https://imei-checker.replit.app', // Production domain
-      'https://3253a27d-7995-4bba-9336-127493ad92d8-00-1dfw0f3xq3gjv.riker.replit.dev', // Replit dev domain
-      'http://localhost:5000', // Local development
-      'http://localhost:3000'  // Common dev port
-    ];
-
+    
     // Check if origin is allowed
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isAllowedOrigin = !origin || // No origin header (same-origin request)
+      origin.endsWith('.replit.dev') || // Any Replit dev domain
+      origin.endsWith('.replit.app') || // Any Replit deployed domain
+      origin === 'https://deviceinsights.net' || // Production custom domain
+      origin === 'http://deviceinsights.net' || // Production custom domain (http)
+      origin === 'http://localhost:5000' || // Local development
+      origin === 'http://localhost:3000' || // Common dev port
+      origin.startsWith('http://localhost:'); // Any localhost port
+
+    if (isAllowedOrigin) {
       res.header('Access-Control-Allow-Origin', origin || '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
       res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -177,7 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         next();
       }
     } else {
-      // Explicitly reject disallowed origins
+      // Log rejected origin for debugging
+      console.warn(`CORS: Rejected origin: ${origin}`);
       res.status(403).json({ error: 'Origin not allowed by CORS policy' });
     }
   });
