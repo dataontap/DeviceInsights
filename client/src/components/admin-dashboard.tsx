@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Code, CheckCircle } from "lucide-react";
+import { Search, Smartphone, Code, CheckCircle, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import RecentSearches from "@/components/recent-searches";
@@ -27,11 +27,13 @@ interface StatsData {
 
 interface AdminDashboardProps {
   sessionToken: string;
+  onSessionExpired?: () => void;
 }
 
-export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
+export default function AdminDashboard({ sessionToken, onSessionExpired }: AdminDashboardProps) {
   const { data: stats, isLoading, error } = useQuery<StatsData>({
-    queryKey: ['/api/admin/stats'],
+    queryKey: ['/api/admin/stats', sessionToken],
+    enabled: !!sessionToken,
     queryFn: async () => {
       const response = await fetch('/api/admin/stats', {
         headers: {
@@ -41,7 +43,16 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch stats');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Admin stats fetch error:', errorData);
+        
+        // If session is invalid or expired, clear it and notify parent
+        if (response.status === 401 && onSessionExpired) {
+          console.log('Session expired or invalid, triggering logout');
+          setTimeout(() => onSessionExpired(), 1000);
+        }
+        
+        throw new Error(errorData.message || errorData.error || 'Failed to fetch stats');
       }
       
       return response.json();
@@ -76,11 +87,28 @@ export default function AdminDashboard({ sessionToken }: AdminDashboardProps) {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unable to load analytics data';
+    const isSessionError = errorMessage.includes('session') || errorMessage.includes('expired') || errorMessage.includes('invalid');
+    
     return (
       <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Analytics</h2>
-          <p className="text-gray-600">Unable to load analytics data. Please try again later.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center max-w-2xl mx-auto">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              {isSessionError ? 'Session Expired' : 'Error Loading Analytics'}
+            </h2>
+            <p className="text-gray-600 mb-4">{errorMessage}</p>
+            {isSessionError && (
+              <p className="text-sm text-gray-500">
+                Please log out and log back in to continue.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );

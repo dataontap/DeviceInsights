@@ -202,7 +202,21 @@ export default function Admin() {
               <p className="text-blue-700">Monitor IMEI searches, device trends, and system analytics</p>
             </div>
             
-            <AdminDashboard sessionToken={sessionToken} />
+            <AdminDashboard 
+              sessionToken={sessionToken} 
+              onSessionExpired={() => {
+                // Clear expired session
+                setSessionToken(null);
+                setUserEmail(null);
+                localStorage.removeItem('adminSessionToken');
+                localStorage.removeItem('adminEmail');
+                toast({
+                  title: "Session Expired",
+                  description: "Your session has expired. Please log in again.",
+                  variant: "destructive",
+                });
+              }}
+            />
           </div>
         </div>
       </div>
