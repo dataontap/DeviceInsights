@@ -21,9 +21,9 @@ The application is a full-stack TypeScript monorepo with separate client, server
 
 ### Key Components & Features
 
--   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, Admin Access Requests, and Network Policies.
--   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme, Shadcn/ui.
--   **Backend Services**: Handles IMEI analysis, database operations, RESTful APIs, NPS feedback, and voice synthesis. Includes real-time analytics, location tracking, network-agnostic compatibility, data export, and CORS-enabled APIs. Features dedicated eSIM compatibility check endpoint (`/api/v1/esim-check`) for lightweight queries.
+-   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, Admin Access Requests, and Network Policies. IMEI searches include eSIM support tracking in networkCapabilities field.
+-   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme, Shadcn/ui. Admin dashboard features tabbed interface for Analytics and Batch eSIM processing.
+-   **Backend Services**: Handles IMEI analysis, database operations, RESTful APIs, NPS feedback, and voice synthesis. Includes real-time analytics, location tracking, network-agnostic compatibility, data export, and CORS-enabled APIs. Features dedicated eSIM compatibility check endpoint (`/api/v1/esim-check`) for lightweight queries and batch processing endpoint (`/api/v1/esim-check/batch`) supporting up to 100 IMEIs per request.
 -   **Smart Device Identification**: Three-tier priority system (Local TAC Database, Google Gemini AI, Unknown Fallback) for efficiency and cost reduction. Supports exact IMEI, full TAC, and FAC matches. Includes eSIM support detection.
 -   **NPS Feedback System**: Non-intrusive widget for collecting user ratings and text feedback, with an admin dashboard for real-time NPS scores and response analysis.
 -   **Security**: Enhanced rate limiting, API key management, magic link authentication via Resend, Zod input validation, and comprehensive audit logging.
@@ -35,6 +35,8 @@ The application is a full-stack TypeScript monorepo with separate client, server
 -   **Blacklist Management**: Supports global and API-key specific blacklists with public API endpoints for management.
 -   **Network Policy CMS**: Allows dynamic editing of network policy content via an admin dashboard, stored in the database with versioning. Includes dynamic PDF generation.
 -   **Data Export**: Export endpoint supports both authenticated (real data) and unauthenticated (anonymized example data) access for demonstration purposes.
+-   **eSIM Analytics**: Comprehensive analytics tracking for eSIM compatibility with daily trend charts, summary metrics (compatibility rate, compatible/incompatible counts), and top eSIM-compatible devices. Supports 7d, 30d, and 90d time periods.
+-   **Batch eSIM Processing**: Admin tool for checking eSIM compatibility of up to 100 IMEIs at once with text/file input, JSON/CSV export functionality, and detailed per-device results with summary statistics.
 
 ## External Dependencies
 
