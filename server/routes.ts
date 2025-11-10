@@ -1099,6 +1099,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // eSIM Compatibility Check - Lightweight endpoint for checking eSIM support only
+  app.post("/api/v1/esim-check", validateApiKey, standardRateLimit, async (req, res) => {
+    try {
+      const { imei } = req.body;
+
+      if (!imei) {
+        return res.status(400).json({ 
+          error: "IMEI is required",
+          message: "Please provide an IMEI number" 
+        });
+      }
+
+      // Validate IMEI format
+      if (!validateIMEI(imei)) {
+        return res.status(400).json({ 
+          error: "Invalid IMEI format",
+          message: "The IMEI number format is invalid" 
+        });
+      }
+
+      // First try to match against local TAC database (fastest)
+      const tacMatch = matchDeviceToTAC(imei);
+      
+      if (tacMatch.found && tacMatch.deviceInfo) {
+        // Get device info from TAC database
+        const deviceInfo = await analyzeIMEI(imei, "AT&T");
+        
+        // Found in TAC database - return with full device info including eSIM support
+        return res.json({
+          success: true,
+          imei,
+          esimSupport: deviceInfo.esimSupport ?? false,
+          device: {
+            make: tacMatch.deviceInfo.make,
+            model: tacMatch.deviceInfo.model,
+            year: tacMatch.deviceInfo.year
+          },
+          source: "tac_database",
+          message: deviceInfo.esimSupport 
+            ? "This device supports eSIM technology" 
+            : "This device does not support eSIM"
+        });
+      }
+
+      // If not in TAC database, use AI analysis (slower but comprehensive)
+      try {
+        const deviceInfo = await analyzeIMEI(imei, "AT&T"); // Network doesn't affect eSIM support
+        
+        return res.json({
+          success: true,
+          imei,
+          esimSupport: deviceInfo.esimSupport ?? false,
+          device: {
+            make: deviceInfo.make,
+            model: deviceInfo.model,
+            year: deviceInfo.year
+          },
+          source: "ai_analysis",
+          message: deviceInfo.esimSupport 
+            ? "This device supports eSIM technology" 
+            : "This device does not support eSIM"
+        });
+      } catch (aiError) {
+        console.error("eSIM AI analysis error:", aiError);
+        
+        // Return unknown status if AI fails
+        return res.json({
+          success: true,
+          imei,
+          esimSupport: false,
+          device: {
+            make: "Unknown",
+            model: "Unknown Device",
+            year: null
+          },
+          source: "unknown",
+          message: "Unable to determine eSIM support for this device",
+          warning: "Device information could not be verified"
+        });
+      }
+    } catch (error) {
+      console.error("eSIM check error:", error);
+      res.status(500).json({ 
+        error: "Failed to check eSIM compatibility",
+        message: "An error occurred while checking eSIM support" 
+      });
+    }
+  });
+
   // Get search statistics (API key specific for authenticated requests)
   app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {

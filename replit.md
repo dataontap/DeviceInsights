@@ -23,7 +23,7 @@ The application is a full-stack TypeScript monorepo with separate client, server
 
 -   **Database Schema**: Manages Users, IMEI Searches, API Keys, Blacklisted IMEIs, NPS Responses, Admin Access Requests, and Network Policies.
 -   **Frontend Architecture**: Component-based, mobile-first responsive design, React Hook Form with Zod validation, CSS variable-based theme, Shadcn/ui.
--   **Backend Services**: Handles IMEI analysis, database operations, RESTful APIs, NPS feedback, and voice synthesis. Includes real-time analytics, location tracking, network-agnostic compatibility, data export, and CORS-enabled APIs.
+-   **Backend Services**: Handles IMEI analysis, database operations, RESTful APIs, NPS feedback, and voice synthesis. Includes real-time analytics, location tracking, network-agnostic compatibility, data export, and CORS-enabled APIs. Features dedicated eSIM compatibility check endpoint (`/api/v1/esim-check`) for lightweight queries.
 -   **Smart Device Identification**: Three-tier priority system (Local TAC Database, Google Gemini AI, Unknown Fallback) for efficiency and cost reduction. Supports exact IMEI, full TAC, and FAC matches. Includes eSIM support detection.
 -   **NPS Feedback System**: Non-intrusive widget for collecting user ratings and text feedback, with an admin dashboard for real-time NPS scores and response analysis.
 -   **Security**: Enhanced rate limiting, API key management, magic link authentication via Resend, Zod input validation, and comprehensive audit logging.

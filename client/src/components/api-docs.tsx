@@ -157,6 +157,23 @@ export default function APIDocs() {
 }`
     },
     {
+      method: "POST",
+      path: "/api/v1/esim-check",
+      description: "Check eSIM compatibility for a device (lightweight endpoint)",
+      example: `{
+  "success": true,
+  "imei": "013266008012345",
+  "esimSupport": true,
+  "device": {
+    "make": "Apple",
+    "model": "iPhone 14 Pro",
+    "year": 2022
+  },
+  "source": "tac_database",
+  "message": "This device supports eSIM technology"
+}`
+    },
+    {
       method: "GET",
       path: "/api/v1/stats",
       description: "Get platform usage statistics",
