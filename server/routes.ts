@@ -2875,6 +2875,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get eSIM analytics (admin only)
+  app.get("/api/admin/esim-analytics", validateAdminSession, async (req, res) => {
+    try {
+      const period = req.query.period as string || '30d';
+      
+      // Validate period
+      if (!['7d', '30d', '90d'].includes(period)) {
+        return res.status(400).json({ error: 'Invalid period. Use 7d, 30d, or 90d.' });
+      }
+
+      // Calculate time threshold
+      const now = new Date();
+      let timeThreshold = new Date();
+      
+      switch (period) {
+        case '7d':
+          timeThreshold.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          timeThreshold.setDate(now.getDate() - 30);
+          break;
+        case '90d':
+          timeThreshold.setDate(now.getDate() - 90);
+          break;
+      }
+
+      // Get all searches within time period
+      const allSearches = await storage.getImeiSearches(10000);
+      const filteredSearches = allSearches.filter((search: any) => {
+        const searchDate = new Date(search.searchedAt);
+        return searchDate >= timeThreshold;
+      });
+
+      // Calculate eSIM metrics
+      const esimSearches = filteredSearches.filter((s: any) => 
+        s.networkCapabilities?.esimSupport !== undefined
+      );
+      
+      const compatibleCount = esimSearches.filter((s: any) => 
+        s.networkCapabilities?.esimSupport === true
+      ).length;
+      
+      const incompatibleCount = esimSearches.filter((s: any) => 
+        s.networkCapabilities?.esimSupport === false
+      ).length;
+
+      const totalEsimSearches = esimSearches.length;
+      const compatibilityRate = totalEsimSearches > 0 
+        ? Math.round((compatibleCount / totalEsimSearches) * 100) 
+        : 0;
+
+      // Get daily trend data
+      const trendData: { [key: string]: { compatible: number; incompatible: number } } = {};
+      esimSearches.forEach((search: any) => {
+        const date = new Date(search.searchedAt).toISOString().split('T')[0];
+        if (!trendData[date]) {
+          trendData[date] = { compatible: 0, incompatible: 0 };
+        }
+        
+        if (search.networkCapabilities?.esimSupport === true) {
+          trendData[date].compatible++;
+        } else {
+          trendData[date].incompatible++;
+        }
+      });
+
+      const trends = Object.entries(trendData)
+        .map(([date, counts]) => ({
+          date,
+          compatible: counts.compatible,
+          incompatible: counts.incompatible
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Get top eSIM compatible devices
+      const deviceEsimCounts: { 
+        [key: string]: { 
+          make: string; 
+          model: string; 
+          compatibleCount: number;
+          lastSeen: string;
+        } 
+      } = {};
+      
+      esimSearches.forEach((search: any) => {
+        if (search.deviceMake && search.deviceModel && search.networkCapabilities?.esimSupport === true) {
+          const key = `${search.deviceMake}-${search.deviceModel}`;
+          if (!deviceEsimCounts[key]) {
+            deviceEsimCounts[key] = {
+              make: search.deviceMake,
+              model: search.deviceModel,
+              compatibleCount: 0,
+              lastSeen: search.searchedAt
+            };
+          }
+          deviceEsimCounts[key].compatibleCount++;
+          // Update lastSeen if this search is more recent
+          if (new Date(search.searchedAt) > new Date(deviceEsimCounts[key].lastSeen)) {
+            deviceEsimCounts[key].lastSeen = search.searchedAt;
+          }
+        }
+      });
+
+      const topDevices = Object.values(deviceEsimCounts)
+        .sort((a, b) => b.compatibleCount - a.compatibleCount)
+        .slice(0, 10)
+        .map(device => ({
+          make: device.make,
+          model: device.model,
+          compatibleCount: device.compatibleCount,
+          lastSeen: device.lastSeen
+        }));
+
+      res.json({
+        summary: {
+          totalEsimSearches,
+          compatibilityRate,
+          compatibleCount,
+          incompatibleCount,
+          lastUpdated: new Date().toISOString()
+        },
+        trends,
+        topDevices
+      });
+    } catch (error) {
+      console.error("eSIM analytics error:", error);
+      res.status(500).json({
+        error: "Failed to fetch eSIM analytics"
+      });
+    }
+  });
+
   // Helper function to normalize location strings (hide coordinates, normalize country names)
   function normalizeLocation(location: string | null | undefined): string {
     if (!location || location === 'unknown' || location === 'Unknown') {

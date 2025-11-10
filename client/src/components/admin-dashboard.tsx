@@ -12,6 +12,7 @@ import LocationAnalytics from "@/components/location-analytics";
 import ApiKeyAnalytics from "@/components/api-key-analytics";
 import NetworkPolicyEditor from "@/components/network-policy-editor";
 import BatchEsimChecker from "@/components/batch-esim-checker";
+import EsimAnalytics from "@/components/esim-analytics";
 
 interface StatsData {
   totalSearches: number;
@@ -206,6 +207,11 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
         {/* API Key Analytics Section */}
         <div className="max-w-6xl mx-auto mb-8">
           <ApiKeyAnalytics sessionToken={sessionToken} />
+        </div>
+
+        {/* eSIM Analytics Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <EsimAnalytics sessionToken={sessionToken} />
         </div>
 
         {/* Charts Grid */}

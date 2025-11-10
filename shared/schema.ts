@@ -20,6 +20,7 @@ export const imeiSearches = pgTable("imei_searches", {
     fiveG: boolean;
     volte: boolean;
     wifiCalling: string;
+    esimSupport?: boolean;
   }>(),
   aiResponse: jsonb("ai_response").$type<any>(),
   searchLocation: text("search_location"),
