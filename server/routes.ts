@@ -955,7 +955,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("IMEI check error:", error);
-      res.status(500).json({ error: "Failed to process IMEI check" });
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      res.status(500).json({ 
+        error: "Failed to process IMEI check",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
