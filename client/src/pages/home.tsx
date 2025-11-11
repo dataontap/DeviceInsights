@@ -78,7 +78,7 @@ export default function Home() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Analyzing Device...</h3>
-              <p className="text-gray-600">Using AI to identify your device and check AT&T compatibility</p>
+              <p className="text-gray-600">Using AI to identify your device and check network compatibility</p>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                 <div className="bg-primary h-2 rounded-full transition-all duration-1000 w-3/5"></div>
               </div>
