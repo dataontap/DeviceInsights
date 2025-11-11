@@ -10,7 +10,7 @@ export default function Navigation() {
   const isAdmin = location.startsWith('/admin');
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-3">
@@ -27,9 +27,9 @@ export default function Navigation() {
             <Link href="/network-policy" className="text-gray-700 hover:text-primary transition-colors">
               Network Policy
             </Link>
-            <a href="#api" className="text-gray-700 hover:text-primary transition-colors">
+            <Link href="/api-docs" className="text-gray-700 hover:text-primary transition-colors">
               API Docs
-            </a>
+            </Link>
             <Link href="/analytics" className="text-gray-700 hover:text-primary transition-colors">
               Analytics
             </Link>
@@ -59,9 +59,9 @@ export default function Navigation() {
             <Link href="/network-policy" className="block px-3 py-2 text-gray-700 hover:text-primary">
               Network Policy
             </Link>
-            <a href="#api" className="block px-3 py-2 text-gray-700 hover:text-primary">
+            <Link href="/api-docs" className="block px-3 py-2 text-gray-700 hover:text-primary">
               API Docs
-            </a>
+            </Link>
             <Link href="/analytics" className="block px-3 py-2 text-gray-700 hover:text-primary">
               Analytics
             </Link>

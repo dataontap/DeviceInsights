@@ -6,7 +6,6 @@ import NpsFeedback from "@/components/nps-feedback";
 
 import PolicyPDFDownload from "@/components/policy-pdf-download";
 import LiveWorldMap from "@/components/live-world-map";
-import APIDocs from "@/components/api-docs";
 import { ProviderCoverageMaps } from "@/components/provider-coverage-maps";
 import { Loader2, Wifi, AlertTriangle } from "lucide-react";
 import { useMVNOConfig } from "@/hooks/use-mvno-config";
@@ -113,9 +112,6 @@ export default function Home() {
           <ProviderCoverageMaps />
         </div>
       </section>
-      
-      {/* API Documentation Section */}
-      <APIDocs />
       
       {/* Live World Map - Temporarily Hidden */}
       {/* <LiveWorldMap /> */}
