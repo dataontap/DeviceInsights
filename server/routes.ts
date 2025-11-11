@@ -900,6 +900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           searchLocation: location || 'unknown',
           ipAddress,
           userAgent,
+          apiKeyId: null as any, // Web searches don't use API keys
         };
 
         const search = await storage.createImeiSearch(searchData);
