@@ -138,6 +138,25 @@ const DEMO_DEVICES: Record<string, DeviceInfo> = {
       carrierVariant: "US Model"
     }
   },
+  // Google Pixel 10 (TAC: 35440766 - Additional variant)
+  "354407661244664": {
+    make: "Google",
+    model: "Pixel 10",
+    year: 2025,
+    modelNumber: "GB17L",
+    esimSupport: true,
+    networkCapabilities: {
+      fourG: true,
+      fiveG: true,
+      volte: true,
+      wifiCalling: "supported"
+    },
+    specifications: {
+      networkBands: "LTE: 1, 2, 3, 4, 5, 7, 8, 12, 13, 14, 17, 18, 19, 20, 25, 26, 28, 29, 30, 38, 39, 40, 41, 42, 46, 48, 66, 71; 5G: n1, n2, n3, n5, n7, n8, n12, n20, n25, n28, n30, n38, n40, n41, n66, n71, n77, n78, n79",
+      releaseYear: 2025,
+      carrierVariant: "Global/International Model"
+    }
+  },
   // Samsung Galaxy S24 Ultra (Real Samsung TAC: 35932811)
   "359328118012345": {
     make: "Samsung",
@@ -368,13 +387,14 @@ CRITICAL INSTRUCTIONS FOR TAC ANALYSIS:
    - 35596523: Google Pixel 8 Pro (Global/Unlocked model, GC3VE)
    - 35404911: Google Pixel 8 Pro (US model, GD2H3)
    - 35596524: Google Pixel 8 (standard model)
-   - 35448766: Google Pixel 10 (Latest model, GB17L)
+   - 35448766: Google Pixel 10 (US model, GB17L)
+   - 35440766: Google Pixel 10 (Global/International model, GB17L)
    - 35940110: Apple iPhone 15 Pro Max
    - 35596522: Apple iPhone 14 Pro Max (A2651)
    - 86178305: OnePlus devices
    - 35216411: Samsung Galaxy S23 series
    - Apple TACs: 01xxxxxx, 35940xxx, 35596522, 86xxxxxx series
-   - Google TACs: 35596523, 35404xxx, 35596524, 35448766 series
+   - Google TACs: 35596523, 35404xxx, 35596524, 35448766, 35440766 series
    - Samsung TACs: 35216xxx, 86xxxxxx series
    - NEVER confuse manufacturers - Google 35596523 is NOT Apple
 
