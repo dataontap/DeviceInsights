@@ -33,6 +33,8 @@ interface IMEICheckerProps {
   onLoading: (loading: boolean) => void;
   onRequestCoverage?: (location: LocationSnapshot) => void;
   onRequestIssue?: (location: LocationSnapshot) => void;
+  detectedCountry?: string | null;
+  onCountryDetected?: (country: string) => void;
 }
 
 interface Carrier {
@@ -41,7 +43,7 @@ interface Carrier {
   description: string;
 }
 
-export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, onRequestIssue }: IMEICheckerProps) {
+export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, onRequestIssue, detectedCountry, onCountryDetected }: IMEICheckerProps) {
   const [imei, setImei] = useState("");
   const [manualLocation, setManualLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
@@ -76,7 +78,8 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
       setCarriers(data.carriers || []);
       setCountry(data.country || "Unknown");
       console.log("Carriers loaded successfully, country:", data.country);
-      // Don't auto-select a carrier - let user choose
+      // Set "All providers" as default selection
+      setSelectedCarrier("ALL_PROVIDERS");
     },
     onError: (error: any) => {
       setCarriersLoading(false);
@@ -156,8 +159,10 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
 
   // Handle location changes and carrier fetching
   useEffect(() => {
-    // Clear selected carrier when location changes
-    setSelectedCarrier("");
+    // Don't clear carrier if it's already ALL_PROVIDERS (preserve default after carrier load)
+    if (selectedCarrier !== "ALL_PROVIDERS") {
+      setSelectedCarrier("");
+    }
     
     if (useCurrentLocation) {
       // When using current location, get GPS coordinates first
@@ -198,34 +203,8 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
           }
         );
       }
-    } else if (manualLocation && manualLocation.length > 2 && !autocompleteUsedRef.current) {
-      // Only use manual parsing if autocomplete wasn't used
-      const timer = setTimeout(() => {
-        setCarriersLoading(true);
-        // Update country based on manual location
-        const locationParts = manualLocation.split(',');
-        const potentialCountry = locationParts[locationParts.length - 1].trim();
-
-        // If it looks like a country name or if location contains specific countries
-        if (manualLocation.toLowerCase().includes('lithuania')) {
-          setCountry('Lithuania');
-          fetchCarriersMutation.mutate('Lithuania');
-        } else if (manualLocation.toLowerCase().includes('canada')) {
-          setCountry('Canada');
-          fetchCarriersMutation.mutate('Canada');
-        } else if (manualLocation.toLowerCase().includes('uk') || manualLocation.toLowerCase().includes('united kingdom') || manualLocation.toLowerCase().includes('england')) {
-          setCountry('United Kingdom');
-          fetchCarriersMutation.mutate('United Kingdom');
-        } else {
-          // Extract last part as country
-          const country = potentialCountry;
-          setCountry(country);
-          fetchCarriersMutation.mutate(country);
-        }
-      }, 1000); // 1 second delay to avoid too many API calls
-
-      return () => clearTimeout(timer);
     }
+    // Manual typing no longer triggers carrier search - only autocomplete selection does
     
     // Reset autocomplete flag when user starts typing again
     if (manualLocation.length === 0) {
@@ -233,17 +212,49 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
     }
   }, [manualLocation, useCurrentLocation]);
 
-  // Initialize Google Maps Autocomplete
+  // Initialize Google Maps Autocomplete  
   useEffect(() => {
     if (!locationInputRef.current || !window.google?.maps?.places) {
       return;
     }
 
-    // Create autocomplete instance
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, {
+    // Use detected country (from props or window global) to bias autocomplete results
+    const biasCountry = detectedCountry || (window as any).__detectedCountry;
+    
+    // Create autocomplete instance with location biasing
+    const autocompleteOptions: any = {
       types: ['(regions)'], // Cities, regions, countries
       fields: ['address_components', 'formatted_address', 'geometry']
-    });
+    };
+    
+    // Bias results based on detected country
+    if (biasCountry) {
+      // Country-specific coordinate biasing for better local results
+      const countryBounds: { [key: string]: any } = {
+        'Canada': {
+          north: 83.11, south: 41.68, east: -52.62, west: -141.00
+        },
+        'United States': {
+          north: 49.38, south: 24.52, east: -66.95, west: -124.77
+        },
+        'United Kingdom': {
+          north: 60.86, south: 49.96, east: 1.76, west: -8.65
+        },
+        'France': {
+          north: 51.09, south: 41.33, east: 9.56, west: -5.14
+        }
+      };
+      
+      if (countryBounds[biasCountry]) {
+        autocompleteOptions.bounds = new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(countryBounds[biasCountry].south, countryBounds[biasCountry].west),
+          new window.google.maps.LatLng(countryBounds[biasCountry].north, countryBounds[biasCountry].east)
+        );
+        autocompleteOptions.strictBounds = false; // Allow results outside bounds but prioritize within
+      }
+    }
+    
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(locationInputRef.current, autocompleteOptions);
 
     // Listen for place selection
     autocompleteRef.current.addListener('place_changed', () => {
@@ -278,7 +289,7 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, []);
+  }, [detectedCountry]); // Re-initialize when detected country changes
 
   // Update locationSnapshot when location data changes
   useEffect(() => {
@@ -452,7 +463,17 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
 
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
           {/* Auto-Detection Component */}
-          <DeviceAutoDetection onQuickCheck={handleQuickCheck} onDeviceDetected={handleDeviceDetected} />
+          <DeviceAutoDetection 
+            onQuickCheck={handleQuickCheck} 
+            onDeviceDetected={handleDeviceDetected}
+            onCountryDetected={(country) => {
+              // Pass country up to Home component and store globally for fallback
+              if (onCountryDetected) {
+                onCountryDetected(country);
+              }
+              (window as any).__detectedCountry = country;
+            }}
+          />
           
           <form onSubmit={handleSubmit}>
             {/* Location Section */}
@@ -647,6 +668,15 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
                         <SelectValue placeholder="Select a carrier" className="text-gray-700 dark:text-gray-200" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800">
+                        <SelectItem value="ALL_PROVIDERS" className="text-gray-700 dark:text-gray-200 focus:text-gray-900 dark:focus:text-white">
+                          <div className="flex items-center space-x-2">
+                            <Globe className="w-4 h-4 text-primary" />
+                            <div>
+                              <div className="font-medium text-gray-800 dark:text-gray-100">All providers</div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Check compatibility with all carriers</div>
+                            </div>
+                          </div>
+                        </SelectItem>
                         {carriers.map((carrier) => (
                           <SelectItem key={carrier.name} value={carrier.name} className="text-gray-700 dark:text-gray-200 focus:text-gray-900 dark:focus:text-white">
                             <div className="flex items-center space-x-2">
@@ -661,7 +691,14 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
                       </SelectContent>
                     </Select>
 
-                    {selectedCarrier && carriers.find(c => c.name === selectedCarrier) && (
+                    {selectedCarrier && selectedCarrier === "ALL_PROVIDERS" && (
+                      <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-200">
+                          <strong className="text-blue-800 dark:text-blue-100">All providers:</strong> Analyzes compatibility across all major carriers in {country}.
+                        </p>
+                      </div>
+                    )}
+                    {selectedCarrier && selectedCarrier !== "ALL_PROVIDERS" && carriers.find(c => c.name === selectedCarrier) && (
                       <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                         <p className="text-sm text-gray-700 dark:text-gray-200">
                           <strong className="text-gray-800 dark:text-gray-100">{selectedCarrier}:</strong> {carriers.find(c => c.name === selectedCarrier)?.description}
@@ -670,7 +707,7 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
                     )}
 
                     <p className="text-xs text-gray-500">
-                      Shows all major carriers for your region. Please select your carrier to check compatibility.
+                      Select "All providers" for comprehensive compatibility across carriers, or choose a specific carrier for detailed analysis.
                     </p>
                   </div>
                 ) : null}
@@ -681,9 +718,10 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
               type="submit"
               disabled={checkIMEIMutation.isPending || imei.length !== 15}
               className="w-full bg-primary text-white py-3 px-6 text-lg hover:bg-blue-700 disabled:opacity-50"
+              data-testid="button-check-compatibility"
             >
               <Search className="w-5 h-5 mr-2" />
-{checkIMEIMutation.isPending ? "Analyzing..." : `Check ${selectedCarrier || 'Network'} Compatibility`}
+              {checkIMEIMutation.isPending ? "Analyzing..." : selectedCarrier === "ALL_PROVIDERS" ? "Check Network Compatibility" : `Check ${selectedCarrier} Compatibility`}
             </Button>
           </form>
         </div>

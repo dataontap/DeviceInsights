@@ -22,6 +22,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [coveragePreset, setCoveragePreset] = useState<LocationPreset | null>(null);
   const [shouldOpenIssue, setShouldOpenIssue] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
   const { config: mvnoConfig } = useMVNOConfig();
   const providerMapsRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +65,8 @@ export default function Home() {
         onLoading={handleLoading}
         onRequestCoverage={handleRequestCoverage}
         onRequestIssue={handleRequestIssue}
+        detectedCountry={detectedCountry}
+        onCountryDetected={setDetectedCountry}
       />
       
       {isLoading && (

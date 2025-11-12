@@ -228,6 +228,12 @@ export interface DeviceInfo {
     releaseYear?: number;
     carrierVariant?: string;
   };
+  carrierSummaries?: Array<{
+    name: string;
+    compatible: boolean;
+    notes: string;
+  }>;
+  coverageSummary?: string;
 }
 
 // Extract TAC (Type Allocation Code) from IMEI
@@ -349,7 +355,17 @@ export async function getTopCarriers(location: string): Promise<{ carriers: Arra
   }
 }
 
-export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promise<DeviceInfo> {
+export interface AnalyzeIMEIOptions {
+  mode?: 'single' | 'aggregate';
+  carriers?: string[];
+  country?: string;
+}
+
+export async function analyzeIMEI(
+  imei: string, 
+  network: string = "AT&T",
+  options?: AnalyzeIMEIOptions
+): Promise<DeviceInfo> {
   try {
     // PRIORITY 1: Check local database first (faster, more reliable for known devices)
     console.log(`[DEVICE ID] Checking local database for IMEI: ${imei}`);
@@ -371,7 +387,95 @@ export async function analyzeIMEI(imei: string, network: string = "AT&T"): Promi
     // Extract TAC and other components for enhanced analysis
     const { tac, fac } = analyzeIMEIStructure(imei);
     
-    const prompt = `You are an expert in mobile device identification and network compatibility analysis with access to comprehensive TAC (Type Allocation Code) databases.
+    // Determine if we're in aggregate mode
+    const isAggregateMode = options?.mode === 'aggregate' && options?.carriers && options.carriers.length > 0;
+    
+    let prompt: string;
+    
+    if (isAggregateMode) {
+      const carrierList = options.carriers!.join(', ');
+      const country = options.country || 'North America';
+      
+      prompt = `You are an expert in mobile device identification and network compatibility analysis with access to comprehensive TAC (Type Allocation Code) databases.
+
+IMEI Analysis Request:
+- Full IMEI: ${imei}
+- TAC (Type Allocation Code): ${tac}
+- FAC (Final Assembly Code): ${fac}
+- Analysis Mode: AGGREGATE (Multiple Carriers)
+- Target Carriers: ${carrierList}
+- Country/Region: ${country}
+
+CRITICAL INSTRUCTIONS FOR TAC ANALYSIS:
+1. The TAC (${tac}) is the most important identifier - it uniquely identifies the device model and manufacturer
+2. Use your knowledge of TAC databases to provide precise device identification
+3. Different TAC codes can identify different variants, colors, or storage capacities of the same device family
+4. Consider that TACs are assigned by the GSMA and are manufacturer-specific
+5. IMPORTANT TAC KNOWLEDGE:
+   - 35596523: Google Pixel 8 Pro (Global/Unlocked model, GC3VE)
+   - 35404911: Google Pixel 8 Pro (US model, GD2H3)
+   - 35596524: Google Pixel 8 (standard model)
+   - 35448766: Google Pixel 10 (US model, GB17L)
+   - 35440766: Google Pixel 10 (Global/International model, GB17L)
+   - 35940110: Apple iPhone 15 Pro Max
+   - 35596522: Apple iPhone 14 Pro Max (A2651)
+   - 86178305: OnePlus devices
+   - 35216411: Samsung Galaxy S23 series
+   - Apple TACs: 01xxxxxx, 35940xxx, 35596522, 86xxxxxx series
+   - Google TACs: 35596523, 35404xxx, 35596524, 35448766, 35440766 series
+   - Samsung TACs: 35216xxx, 86xxxxxx series
+   - NEVER confuse manufacturers - Google 35596523 is NOT Apple
+
+AGGREGATE ANALYSIS - Analyze compatibility across ALL listed carriers (${carrierList}):
+- Compare device network bands against each carrier's network infrastructure
+- Assess LTE Band compatibility (especially bands 2, 4, 5, 12, 13, 17, 25, 26, 41, 66, 71)
+- Assess 5G compatibility (n2, n5, n25, n41, n66, n71, n77, n78 for US carriers)
+- Evaluate VoLTE provisioning status with each carrier
+- Check Wi-Fi Calling support for each carrier
+- Consider device unlock status implications
+
+Provide aggregated analysis with:
+1. Overall networkCapabilities (UNION - true if ANY carrier supports the feature)
+2. Per-carrier summaries with compatibility assessment
+3. Overall coverage summary
+
+JSON Response Format:
+{
+  "make": "Exact manufacturer name",
+  "model": "Precise model with variant (storage/color) if identifiable from TAC",
+  "year": release_year_number,
+  "modelNumber": "Official model number (e.g., A2892, SM-S918U, GD2M3)",
+  "tacAnalysis": "Brief explanation of what the TAC reveals about this device",
+  "esimSupport": boolean_true_if_device_supports_esim,
+  "networkCapabilities": {
+    "fourG": true_if_ANY_carrier_supports_4G,
+    "fiveG": true_if_ANY_carrier_supports_5G,
+    "volte": true_if_ANY_carrier_supports_VoLTE,
+    "wifiCalling": "supported"/"limited"/"not_supported" (best case across carriers)
+  },
+  "specifications": {
+    "networkBands": "Complete list of supported LTE and 5G bands",
+    "releaseYear": actual_release_year,
+    "carrierVariant": "variant info if applicable"
+  },
+  "carrierSummaries": [
+    {
+      "name": "Carrier Name",
+      "compatible": boolean,
+      "notes": "Brief compatibility notes (e.g., 'Full 5G support with VoLTE' or 'Limited to 4G only')"
+    }
+  ],
+  "coverageSummary": "Overall assessment: e.g., 'Excellent compatibility across all major carriers with full 5G support' or 'Limited compatibility - works on 3 of 5 carriers'"
+}
+
+ACCURACY REQUIREMENTS:
+- If the TAC is known, provide highly accurate device information
+- If TAC is unknown, clearly indicate uncertainty but provide best estimate
+- Be specific about each carrier's compatibility
+- Include actual network band numbers in specifications
+- Distinguish between theoretical device capabilities and carrier-specific support`;
+    } else {
+      prompt = `You are an expert in mobile device identification and network compatibility analysis with access to comprehensive TAC (Type Allocation Code) databases.
 
 IMEI Analysis Request:
 - Full IMEI: ${imei}
@@ -432,6 +536,7 @@ ACCURACY REQUIREMENTS:
 - Be specific about ${network} network compatibility
 - Include actual network band numbers, not generic descriptions
 - Distinguish between theoretical device capabilities and carrier-specific support`;
+    }
 
     const systemPrompt = `You are a world-class expert in mobile device identification and IMEI/TAC analysis with comprehensive knowledge of:
 - GSMA TAC database and allocation patterns
@@ -443,41 +548,60 @@ ACCURACY REQUIREMENTS:
 Use your expertise to provide the most accurate device identification possible based on the TAC analysis.
 Always respond with valid JSON in the exact format specified.`;
 
+    const baseSchema: any = {
+      type: "object",
+      properties: {
+        make: { type: "string" },
+        model: { type: "string" },
+        year: { type: "number" },
+        modelNumber: { type: "string" },
+        tacAnalysis: { type: "string" },
+        esimSupport: { type: "boolean" },
+        networkCapabilities: {
+          type: "object",
+          properties: {
+            fourG: { type: "boolean" },
+            fiveG: { type: "boolean" },
+            volte: { type: "boolean" },
+            wifiCalling: { type: "string" }
+          },
+          required: ["fourG", "fiveG", "volte", "wifiCalling"]
+        },
+        specifications: {
+          type: "object",
+          properties: {
+            networkBands: { type: "string" },
+            releaseYear: { type: "number" },
+            carrierVariant: { type: "string" }
+          }
+        }
+      },
+      required: ["make", "model", "networkCapabilities", "tacAnalysis"]
+    };
+
+    if (isAggregateMode) {
+      baseSchema.properties.carrierSummaries = {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            compatible: { type: "boolean" },
+            notes: { type: "string" }
+          },
+          required: ["name", "compatible", "notes"]
+        }
+      };
+      baseSchema.properties.coverageSummary = { type: "string" };
+      baseSchema.required.push("carrierSummaries", "coverageSummary");
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-pro",
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            make: { type: "string" },
-            model: { type: "string" },
-            year: { type: "number" },
-            modelNumber: { type: "string" },
-            tacAnalysis: { type: "string" },
-            esimSupport: { type: "boolean" },
-            networkCapabilities: {
-              type: "object",
-              properties: {
-                fourG: { type: "boolean" },
-                fiveG: { type: "boolean" },
-                volte: { type: "boolean" },
-                wifiCalling: { type: "string" }
-              },
-              required: ["fourG", "fiveG", "volte", "wifiCalling"]
-            },
-            specifications: {
-              type: "object",
-              properties: {
-                networkBands: { type: "string" },
-                releaseYear: { type: "number" },
-                carrierVariant: { type: "string" }
-              }
-            }
-          },
-          required: ["make", "model", "networkCapabilities", "tacAnalysis"]
-        },
+        responseSchema: baseSchema,
       },
       contents: prompt,
     });
@@ -511,7 +635,12 @@ Always respond with valid JSON in the exact format specified.`;
       }
     };
 
-    console.log(`[DEVICE ID] ✅ Device identified via Gemini: ${deviceInfo.make} ${deviceInfo.model}`);
+    if (isAggregateMode && result.carrierSummaries) {
+      deviceInfo.carrierSummaries = result.carrierSummaries;
+      deviceInfo.coverageSummary = result.coverageSummary;
+    }
+
+    console.log(`[DEVICE ID] ✅ Device identified via Gemini: ${deviceInfo.make} ${deviceInfo.model}${isAggregateMode ? ' (aggregate mode)' : ''}`);
     return deviceInfo;
   } catch (error) {
     console.error("[DEVICE ID] Gemini API error:", error);

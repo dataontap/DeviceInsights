@@ -28,9 +28,10 @@ interface DetectionData {
 interface DeviceAutoDetectionProps {
   onQuickCheck?: (imei: string) => void;
   onDeviceDetected?: (detected: boolean) => void;
+  onCountryDetected?: (country: string) => void;
 }
 
-export function DeviceAutoDetection({ onQuickCheck, onDeviceDetected }: DeviceAutoDetectionProps) {
+export function DeviceAutoDetection({ onQuickCheck, onDeviceDetected, onCountryDetected }: DeviceAutoDetectionProps) {
   const [detectionData, setDetectionData] = useState<DetectionData | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +47,12 @@ export function DeviceAutoDetection({ onQuickCheck, onDeviceDetected }: DeviceAu
       const hasValidDevice = detectionData?.device?.exampleImei && !isDismissed;
       onDeviceDetected(!!hasValidDevice);
     }
-  }, [detectionData, isDismissed, onDeviceDetected]);
+    
+    // Notify parent of detected country for location biasing
+    if (onCountryDetected && detectionData?.country) {
+      onCountryDetected(detectionData.country);
+    }
+  }, [detectionData, isDismissed, onDeviceDetected, onCountryDetected]);
 
   const detectDevice = async () => {
     try {

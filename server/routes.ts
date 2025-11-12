@@ -889,9 +889,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userAgent = req.get('User-Agent') || 'unknown';
 
       try {
-        // Analyze device using AI with specified network (default from MVNO config)
-        const targetNetwork = network || MVNO.internationalCarrier;
-        const deviceInfo = await analyzeIMEI(imei, targetNetwork);
+        // Check if ALL_PROVIDERS mode is requested
+        const isAllProvidersMode = !network || network === '' || network === 'ALL_PROVIDERS';
+        let deviceInfo;
+        let targetNetwork = network || MVNO.internationalCarrier;
+
+        if (isAllProvidersMode && location) {
+          console.log('[ALL_PROVIDERS] Aggregate mode requested');
+          
+          // Extract country from location for caching
+          const country = extractCountryFromLocation(location);
+          console.log(`[ALL_PROVIDERS] Extracted country: ${country}`);
+
+          // Try to get cached carriers
+          let carriersData = await storage.getCachedCarriers(country);
+          
+          if (!carriersData) {
+            console.log(`[ALL_PROVIDERS] No cache found, fetching carriers for location: ${location}`);
+            carriersData = await getTopCarriers(location);
+            
+            // Cache the carriers for 30 days
+            if (country !== 'Unknown' && country !== 'GPS_COORDINATES') {
+              await storage.setCachedCarriers(country, carriersData, 720);
+            }
+          } else {
+            console.log(`[ALL_PROVIDERS] Using cached carriers for country: ${country}`);
+          }
+
+          const carrierNames = carriersData.carriers.map(c => c.name);
+          console.log(`[ALL_PROVIDERS] Analyzing against carriers: ${carrierNames.join(', ')}`);
+
+          // Analyze in aggregate mode
+          deviceInfo = await analyzeIMEI(imei, '', {
+            mode: 'aggregate',
+            carriers: carrierNames,
+            country: carriersData.country
+          });
+
+          targetNetwork = 'ALL_PROVIDERS';
+        } else {
+          // Single carrier mode (existing behavior)
+          deviceInfo = await analyzeIMEI(imei, targetNetwork);
+        }
 
         // Store search in database
         const searchData = {
@@ -915,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           storage.getDeviceSearchCount(deviceInfo.make || '', deviceInfo.model || '')
         ]);
 
-        res.json({
+        const response: any = {
           success: true,
           searchId: search.id,
           device: {
@@ -933,7 +972,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           analysis: deviceInfo.tacAnalysis || "Device analysis completed",
           specifications: deviceInfo.specifications,
           recommendations: []
-        });
+        };
+
+        // Add aggregate mode fields if present
+        if (deviceInfo.carrierSummaries) {
+          response.carrierSummaries = deviceInfo.carrierSummaries;
+        }
+        if (deviceInfo.coverageSummary) {
+          response.coverageSummary = deviceInfo.coverageSummary;
+        }
+
+        res.json(response);
       } catch (error) {
         console.error("AI Analysis failed:", error);
 
