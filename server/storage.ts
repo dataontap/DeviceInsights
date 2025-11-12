@@ -1,6 +1,6 @@
 import { imeiSearches, apiKeys, policyAcceptances, blacklistedImeis, carrierCache, pricingCache, ispCache, voiceCache, loginTokens, adminSessions, adminUsers, adminAccessRequests, registeredUsers, connectivityMetrics, emailReports, connectivityAlerts, apiUsageTracking, adminNotifications, npsResponses, networkPolicy, type ImeiSearch, type InsertImeiSearch, type ApiKey, type InsertApiKey, type PolicyAcceptance, type InsertPolicyAcceptance, type BlacklistedImei, type InsertBlacklistedImei, type PricingCache, type IspCache, type VoiceCache, type InsertVoiceCache, users, type User, type InsertUser, type LoginToken, type InsertLoginToken, type AdminSession, type InsertAdminSession, type AdminUser, type InsertAdminUser, type AdminAccessRequest, type InsertAdminAccessRequest, type RegisteredUser, type InsertRegisteredUser, type ConnectivityMetric, type InsertConnectivityMetric, type EmailReport, type InsertEmailReport, type ConnectivityAlert, type InsertConnectivityAlert, type ApiUsageTracking, type InsertApiUsageTracking, type AdminNotification, type InsertAdminNotification, type NpsResponse, type InsertNpsResponse, type NetworkPolicy, type InsertNetworkPolicy } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, count, sql, and } from "drizzle-orm";
+import { eq, desc, count, sql, and, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -43,10 +43,24 @@ export interface IStorage {
     searchCount: number;
   }>>;
   
+  // Multi-API key methods for RBAC (null apiKeyIds = all data for OWNER)
+  getImeiSearchesByApiKeys(apiKeyIds: number[] | null, limit?: number): Promise<ImeiSearch[]>;
+  getSearchStatisticsByApiKeys(apiKeyIds: number[] | null): Promise<{
+    totalSearches: number;
+    uniqueDevices: number;
+    successRate: number;
+  }>;
+  getPopularDevicesByApiKeys(apiKeyIds: number[] | null, limit?: number): Promise<Array<{
+    deviceMake: string;
+    deviceModel: string;
+    searchCount: number;
+  }>>;
+  
   // API Keys
   createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
   getApiKeyByHash(keyHash: string): Promise<ApiKey | undefined>;
   getApiKeyById(id: number): Promise<ApiKey | undefined>;
+  getApiKeysByEmail(email: string): Promise<ApiKey[]>;
   incrementApiKeyUsage(keyHash: string): Promise<void>;
   
   // Policy Acceptances
@@ -418,6 +432,14 @@ export class DatabaseStorage implements IStorage {
       .from(apiKeys)
       .where(eq(apiKeys.id, id));
     return apiKey || undefined;
+  }
+
+  async getApiKeysByEmail(email: string): Promise<ApiKey[]> {
+    return await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.email, email))
+      .orderBy(desc(apiKeys.createdAt));
   }
 
   async getAllApiKeys(): Promise<ApiKey[]> {
@@ -958,6 +980,126 @@ export class DatabaseStorage implements IStorage {
         eq(imeiSearches.apiKeyId, apiKeyId),
         sql`device_make IS NOT NULL AND device_model IS NOT NULL AND device_make != 'Unknown' AND device_model != 'Unknown' AND device_model NOT LIKE '%Unknown%'`
       ))
+      .groupBy(imeiSearches.deviceMake, imeiSearches.deviceModel)
+      .orderBy(desc(count()))
+      .limit(limit) as Array<{
+        deviceMake: string;
+        deviceModel: string;
+        searchCount: number;
+      }>;
+  }
+
+  // Multi-API key methods for RBAC
+  async getImeiSearchesByApiKeys(apiKeyIds: number[] | null, limit = 100): Promise<ImeiSearch[]> {
+    // Admin with no API keys - return empty
+    if (apiKeyIds !== null && apiKeyIds.length === 0) {
+      return [];
+    }
+
+    let query = db
+      .select()
+      .from(imeiSearches);
+    
+    // ADMIN - filter by their API keys
+    if (apiKeyIds !== null) {
+      query = query.where(inArray(imeiSearches.apiKeyId, apiKeyIds));
+    }
+    
+    // OWNER (apiKeyIds === null) - no filter, returns all data
+    return await query
+      .orderBy(desc(imeiSearches.searchedAt))
+      .limit(limit);
+  }
+
+  async getSearchStatisticsByApiKeys(apiKeyIds: number[] | null): Promise<{
+    totalSearches: number;
+    uniqueDevices: number;
+    successRate: number;
+  }> {
+    // Admin with no API keys - return zeros
+    if (apiKeyIds !== null && apiKeyIds.length === 0) {
+      return { totalSearches: 0, uniqueDevices: 0, successRate: 0 };
+    }
+
+    // Build base where condition for valid device data
+    const validDeviceCondition = sql`device_make IS NOT NULL AND device_model IS NOT NULL`;
+    
+    // Total searches
+    let totalQuery = db.select({ count: count() }).from(imeiSearches);
+    if (apiKeyIds !== null) {
+      totalQuery = totalQuery.where(inArray(imeiSearches.apiKeyId, apiKeyIds));
+    }
+    const [totalSearchesResult] = await totalQuery;
+
+    // Unique devices
+    let uniqueQuery = db
+      .select({ count: sql<number>`COUNT(DISTINCT CONCAT(device_make, ' ', device_model))` })
+      .from(imeiSearches);
+    if (apiKeyIds !== null) {
+      uniqueQuery = uniqueQuery.where(and(
+        inArray(imeiSearches.apiKeyId, apiKeyIds),
+        validDeviceCondition
+      ));
+    } else {
+      uniqueQuery = uniqueQuery.where(validDeviceCondition);
+    }
+    const [uniqueDevicesResult] = await uniqueQuery;
+
+    // Successful searches (with device info)
+    let successQuery = db.select({ count: count() }).from(imeiSearches);
+    if (apiKeyIds !== null) {
+      successQuery = successQuery.where(and(
+        inArray(imeiSearches.apiKeyId, apiKeyIds),
+        validDeviceCondition
+      ));
+    } else {
+      successQuery = successQuery.where(validDeviceCondition);
+    }
+    const [successfulSearchesResult] = await successQuery;
+
+    const totalSearches = totalSearchesResult.count;
+    const uniqueDevices = uniqueDevicesResult.count;
+    const successfulSearches = successfulSearchesResult.count;
+    const successRate = totalSearches > 0 ? (successfulSearches / totalSearches) * 100 : 0;
+
+    return {
+      totalSearches,
+      uniqueDevices,
+      successRate: Math.round(successRate * 10) / 10
+    };
+  }
+
+  async getPopularDevicesByApiKeys(apiKeyIds: number[] | null, limit = 10): Promise<Array<{
+    deviceMake: string;
+    deviceModel: string;
+    searchCount: number;
+  }>> {
+    // Admin with no API keys - return empty
+    if (apiKeyIds !== null && apiKeyIds.length === 0) {
+      return [];
+    }
+
+    const validDeviceCondition = sql`device_make IS NOT NULL AND device_model IS NOT NULL AND device_make != 'Unknown' AND device_model != 'Unknown' AND device_model NOT LIKE '%Unknown%'`;
+
+    let query = db
+      .select({
+        deviceMake: imeiSearches.deviceMake,
+        deviceModel: imeiSearches.deviceModel,
+        searchCount: count()
+      })
+      .from(imeiSearches);
+
+    // Apply filter based on role
+    if (apiKeyIds !== null) {
+      query = query.where(and(
+        inArray(imeiSearches.apiKeyId, apiKeyIds),
+        validDeviceCondition
+      ));
+    } else {
+      query = query.where(validDeviceCondition);
+    }
+
+    return await query
       .groupBy(imeiSearches.deviceMake, imeiSearches.deviceModel)
       .orderBy(desc(count()))
       .limit(limit) as Array<{

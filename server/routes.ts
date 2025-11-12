@@ -8,6 +8,7 @@ interface AuthenticatedRequest extends Request {
   apiKeyId?: number;
   apiKeyName?: string;
   adminEmail?: string;
+  userRole?: 'OWNER' | 'ADMIN';
 }
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
@@ -2494,6 +2495,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to determine user role
+  function getUserRole(email: string): 'OWNER' | 'ADMIN' {
+    const OWNER_EMAIL = 'aa@dotmobile.app';
+    return email.toLowerCase().trim() === OWNER_EMAIL.toLowerCase() ? 'OWNER' : 'ADMIN';
+  }
+
+  // Helper function to get accessible API key IDs for a user
+  // Returns null for OWNER (access all), array of IDs for ADMIN (only their keys)
+  async function getAccessibleApiKeyIds(req: AuthenticatedRequest): Promise<number[] | null> {
+    if (!req.adminEmail || !req.userRole) {
+      return [];
+    }
+
+    // OWNER has access to all API keys (return null to indicate no filter)
+    if (req.userRole === 'OWNER') {
+      return null;
+    }
+
+    // ADMIN can only access API keys they created
+    const userApiKeys = await storage.getApiKeysByEmail(req.adminEmail);
+    return userApiKeys.map(key => key.id);
+  }
+
   // Admin session validation middleware
   async function validateAdminSession(req: AuthenticatedRequest, res: any, next: any) {
     try {
@@ -2515,6 +2539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.adminEmail = session.email;
+      req.userRole = getUserRole(session.email);
       next();
     } catch (error) {
       console.error("Session validation error:", error);
@@ -3166,56 +3191,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get overall statistics (admin only)
-  app.get("/api/admin/stats", validateAdminSession, async (req, res) => {
+  app.get("/api/admin/stats", validateAdminSession, async (req: AuthenticatedRequest, res) => {
     try {
-      // Get overall system stats (not limited to specific API key)
-      const allSearches = await storage.getImeiSearches(10000);
-      const totalSearches = allSearches.length;
-      
-      // Calculate unique devices
-      const uniqueDevices = new Set(
-        allSearches
-          .filter((s: any) => s.deviceMake && s.deviceModel)
-          .map((s: any) => `${s.deviceMake}-${s.deviceModel}`)
-      ).size;
+      // Get accessible API key IDs based on user role
+      const apiKeyIds = await getAccessibleApiKeyIds(req);
 
-      // Calculate success rate (searches with device info)
-      const successfulSearches = allSearches.filter((s: any) => s.deviceMake && s.deviceModel).length;
-      const successRate = totalSearches > 0 
-        ? Math.round((successfulSearches / totalSearches) * 100) 
-        : 0;
-
-      // Get popular devices across all searches
-      const deviceCounts: { [key: string]: { make: string; model: string; count: number } } = {};
-      allSearches.forEach((search: any) => {
-        if (search.deviceMake && search.deviceModel) {
-          const key = `${search.deviceMake}-${search.deviceModel}`;
-          if (!deviceCounts[key]) {
-            deviceCounts[key] = {
-              make: search.deviceMake,
-              model: search.deviceModel,
-              count: 0
-            };
-          }
-          deviceCounts[key].count++;
-        }
-      });
-
-      const popularDevices = Object.values(deviceCounts)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
-        .map(device => ({
-          name: `${device.make} ${device.model}`,
-          manufacturer: device.make,
-          searches: device.count
-        }));
+      // Get statistics filtered by role
+      const stats = await storage.getSearchStatisticsByApiKeys(apiKeyIds);
+      const popularDevices = await storage.getPopularDevicesByApiKeys(apiKeyIds, 5);
 
       res.json({
-        totalSearches,
-        uniqueDevices,
-        successRate,
-        apiCalls: totalSearches, // For consistency with the v1 API
-        popularDevices
+        totalSearches: stats.totalSearches,
+        uniqueDevices: stats.uniqueDevices,
+        successRate: Math.round(stats.successRate),
+        apiCalls: stats.totalSearches, // For consistency with the v1 API
+        popularDevices: popularDevices.map(device => ({
+          name: `${device.deviceMake} ${device.deviceModel}`,
+          manufacturer: device.deviceMake,
+          searches: device.searchCount
+        }))
       });
     } catch (error) {
       console.error("Admin stats error:", error);
@@ -3226,7 +3220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get eSIM analytics (admin only)
-  app.get("/api/admin/esim-analytics", validateAdminSession, async (req, res) => {
+  app.get("/api/admin/esim-analytics", validateAdminSession, async (req: AuthenticatedRequest, res) => {
     try {
       const period = req.query.period as string || '30d';
       
@@ -3251,8 +3245,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
       }
 
-      // Get all searches within time period
-      const allSearches = await storage.getImeiSearches(10000);
+      // Get accessible API key IDs based on user role
+      const apiKeyIds = await getAccessibleApiKeyIds(req);
+
+      // Get searches filtered by role (OWNER sees all, ADMIN sees only their API keys)
+      const allSearches = await storage.getImeiSearchesByApiKeys(apiKeyIds, 10000);
       const filteredSearches = allSearches.filter((search: any) => {
         const searchDate = new Date(search.searchedAt);
         return searchDate >= timeThreshold;
@@ -3398,7 +3395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Get location statistics with time filtering (admin only)
-  app.get("/api/admin/location-stats", validateAdminSession, async (req, res) => {
+  app.get("/api/admin/location-stats", validateAdminSession, async (req: AuthenticatedRequest, res) => {
     try {
       const period = req.query.period as string || '30d'; // 1h, 1d, 30d
       
@@ -3420,8 +3417,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timeThreshold.setDate(now.getDate() - 30);
       }
 
-      // Get searches within time period
-      const allSearches = await storage.getImeiSearches(10000);
+      // Get accessible API key IDs based on user role
+      const apiKeyIds = await getAccessibleApiKeyIds(req);
+
+      // Get searches filtered by role (OWNER sees all, ADMIN sees only their API keys)
+      const allSearches = await storage.getImeiSearchesByApiKeys(apiKeyIds, 10000);
       const filteredSearches = allSearches.filter((search: any) => {
         const searchDate = new Date(search.searchedAt);
         return searchDate >= timeThreshold;
@@ -3464,7 +3464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get top API keys usage statistics (admin only)
-  app.get("/api/admin/api-keys/top", validateAdminSession, async (req, res) => {
+  app.get("/api/admin/api-keys/top", validateAdminSession, async (req: AuthenticatedRequest, res) => {
     try {
       const period = req.query.period as string || '30d';
       
@@ -3486,8 +3486,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timeThreshold.setDate(now.getDate() - 30);
       }
 
-      // Get all searches with API key info
-      const allSearches = await storage.getImeiSearches(10000);
+      // Get accessible API key IDs based on user role
+      const accessibleApiKeyIds = await getAccessibleApiKeyIds(req);
+
+      // Get searches filtered by role (OWNER sees all, ADMIN sees only their API keys)
+      const allSearches = await storage.getImeiSearchesByApiKeys(accessibleApiKeyIds, 10000);
       
       // Filter by time period and aggregate by API key
       const apiKeyStats: { 
@@ -3552,6 +3555,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Top API keys stats error:", error);
       res.status(500).json({
         error: "Failed to fetch API key statistics"
+      });
+    }
+  });
+
+  // Get recently provisioned API keys (admin only)
+  app.get("/api/admin/api-keys/recent", validateAdminSession, async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get accessible API key IDs based on user role
+      const accessibleApiKeyIds = await getAccessibleApiKeyIds(req);
+
+      // For OWNER - get all API keys
+      // For ADMIN - filter by their email
+      let recentKeys;
+      if (accessibleApiKeyIds === null) {
+        // OWNER - get all recent API keys
+        const allKeys = await storage.getAllApiKeys();
+        recentKeys = allKeys.slice(0, 10);
+      } else {
+        // ADMIN - get only their API keys
+        const userKeys = await storage.getApiKeysByEmail(req.adminEmail!);
+        recentKeys = userKeys.slice(0, 10);
+      }
+
+      // Map to response format with key value visible
+      const keysWithDetails = recentKeys.map(key => ({
+        id: key.id,
+        email: key.email,
+        name: key.name,
+        website: key.website,
+        key: key.key, // Full key value for copy functionality
+        createdAt: key.createdAt,
+        isActive: key.isActive
+      }));
+
+      res.json({
+        success: true,
+        recentKeys: keysWithDetails
+      });
+    } catch (error) {
+      console.error("Recent API keys error:", error);
+      res.status(500).json({
+        error: "Failed to fetch recent API keys"
       });
     }
   });

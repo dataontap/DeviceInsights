@@ -10,6 +10,7 @@ import RecentSearches from "@/components/recent-searches";
 import NpsMetrics from "@/components/nps-metrics";
 import LocationAnalytics from "@/components/location-analytics";
 import ApiKeyAnalytics from "@/components/api-key-analytics";
+import RecentApiKeys from "@/components/recent-api-keys";
 import NetworkPolicyEditor from "@/components/network-policy-editor";
 import BatchEsimChecker from "@/components/batch-esim-checker";
 import EsimAnalytics from "@/components/esim-analytics";
@@ -212,6 +213,11 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
         {/* API Key Analytics Section */}
         <div className="max-w-6xl mx-auto mb-8">
           <ApiKeyAnalytics sessionToken={sessionToken} />
+        </div>
+
+        {/* Recently Provisioned API Keys Section */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <RecentApiKeys sessionToken={sessionToken} />
         </div>
 
         {/* eSIM Analytics Section */}
