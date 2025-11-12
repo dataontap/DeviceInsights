@@ -27,16 +27,16 @@ export function registerPDFRoutes(app: Express) {
             "Network band requirements and feature support",
             "Support contact information"
           ],
-          footerText: "Policy version 2.0 | Updated January 2025 | Compatible with all devices"
+          footerText: "Policy version 3.0 | Updated November 11, 2025 | Compatible with all devices"
         },
-        version: "2.0"
+        version: "3.0"
       };
       const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${MVNO.name} Device Compatibility Policy</title>
+    <title>Device Compatibility Policy</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -314,18 +314,13 @@ export function registerPDFRoutes(app: Express) {
 </head>
 <body>
     <div class="document">
-        <div class="header">
-            <div class="logo">${MVNO.name}</div>
-            <div class="subtitle">Connected. Simple. Reliable.</div>
-        </div>
-        
-        <h1>${policy.title}</h1>
+        <h1 style="text-align: center; margin-top: 2rem;">${policy.title}</h1>
         
         <div class="alert-box">
             <div class="alert-content">
                 <div class="alert-title">Important Notice</div>
                 <div class="alert-text">
-                    Before porting your number to ${MVNO.name}, please ensure your device is compatible with our network and unlocked from your current carrier to avoid service interruptions.
+                    Before porting your number to our network, please ensure your device is compatible with our network and unlocked from your current carrier to avoid service interruptions.
                 </div>
             </div>
         </div>
@@ -333,7 +328,7 @@ export function registerPDFRoutes(app: Express) {
         <h2>📱 Device Compatibility Overview</h2>
         
         <p>
-            ${MVNO.name} operates on a modern LTE and 5G network infrastructure designed to provide exceptional coverage and performance. To ensure the best possible experience, your device must meet specific technical requirements and be properly configured for our network.
+            Our network operates on a modern LTE and 5G network infrastructure designed to provide exceptional coverage and performance. To ensure the best possible experience, your device must meet specific technical requirements and be properly configured for our network.
         </p>
         
         <div class="compatibility-grid">
@@ -368,7 +363,7 @@ export function registerPDFRoutes(app: Express) {
             <div class="checklist-item">
                 <div class="checkbox"></div>
                 <div>
-                    <strong>Device Compatibility:</strong> Verify your device supports the required network bands and features using our online compatibility checker at ${MVNO.website}/compatibility
+                    <strong>Device Compatibility:</strong> Verify your device supports the required network bands and features using our online compatibility checker
                 </div>
             </div>
             
@@ -406,7 +401,7 @@ export function registerPDFRoutes(app: Express) {
         <h2>🔓 Device Unlock Requirements</h2>
         
         <p>
-            A locked device is tied to a specific carrier and cannot be used with other networks. To use your device with ${MVNO.name}, it must be unlocked from your current provider.
+            A locked device is tied to a specific carrier and cannot be used with other networks. To use your device with our network, it must be unlocked from your current provider.
         </p>
         
         <div class="steps-container">
@@ -435,7 +430,7 @@ export function registerPDFRoutes(app: Express) {
                 <div class="step-content">
                     <div class="step-title">Verify Unlock</div>
                     <div class="step-description">
-                        Once unlocked, test with a different carrier's SIM card or contact ${MVNO.name} support for verification assistance.
+                        Once unlocked, test with a different carrier's SIM card or contact support for verification assistance.
                     </div>
                 </div>
             </div>
@@ -444,7 +439,7 @@ export function registerPDFRoutes(app: Express) {
         <div class="info-box">
             <div class="info-title">Unlock Timeline</div>
             <p>
-                Device unlocking typically takes 1-3 business days but can vary by carrier. We recommend initiating this process before starting your number port to ${MVNO.name}.
+                Device unlocking typically takes 1-3 business days but can vary by carrier. We recommend initiating this process before starting your number port to our network.
             </p>
         </div>
         
@@ -492,7 +487,7 @@ export function registerPDFRoutes(app: Express) {
         <h2>🔧 Technical Requirements</h2>
         
         <h3>Minimum Network Band Support</h3>
-        <p>Your device must support the following LTE bands for optimal ${MVNO.name} network performance:</p>
+        <p>Your device must support the following LTE bands for optimal network performance:</p>
         
         <div class="steps-container">
             <div class="step">
@@ -582,22 +577,22 @@ export function registerPDFRoutes(app: Express) {
                 <div class="step-content">
                     <div class="step-title">Outdated Software</div>
                     <div class="step-description">
-                        Device software doesn't support ${MVNO.name}'s network configuration
+                        Device software doesn't support the network configuration
                     </div>
                 </div>
             </div>
         </div>
         
-        <h2>🛠️ ${MVNO.name} Compatibility Checker</h2>
+        <h2>🛠️ Network Compatibility Checker</h2>
         
         <p>
-            We provide a free online tool to verify your device's compatibility with the ${MVNO.name} network. This tool analyzes your device's IMEI number and provides detailed compatibility information.
+            We provide a free online tool to verify your device's compatibility with the network. This tool analyzes your device's IMEI number and provides detailed compatibility information.
         </p>
         
         <div class="info-box">
             <div class="info-title">How to Use the Compatibility Checker</div>
             <ol style="margin-left: 1.5rem; margin-top: 1rem;">
-                <li>Visit <strong>${MVNO.website}/compatibility</strong></li>
+                <li>Visit our online compatibility checker</li>
                 <li>Enter your device's 15-digit IMEI number (dial *#06# on your device)</li>
                 <li>Review the detailed compatibility report</li>
                 <li>Contact our support team if you have questions about the results</li>
@@ -608,9 +603,8 @@ export function registerPDFRoutes(app: Express) {
             <div class="contact-title">Need Help?</div>
             <p>Our technical support team is available to assist with device compatibility questions and unlock guidance.</p>
             <div class="contact-info">
-                📞 ${MVNO.phone}<br>
-                📧 ${MVNO.supportEmail}<br>
-                💬 Live chat at ${MVNO.website}
+                📞 +1-647-550-0007<br>
+                📧 ${MVNO.supportEmail}
             </div>
             <p style="margin-top: 1rem; font-size: 0.9rem; color: #6B7280;">
                 Support hours: Monday-Friday 8AM-8PM EST, Weekend 10AM-6PM EST
@@ -618,11 +612,8 @@ export function registerPDFRoutes(app: Express) {
         </div>
         
         <div class="footer">
-            <p>${policy.policyContent?.footerText || 'Policy version 2.0 | Updated January 2025 | Compatible with all devices'}</p>
+            <p>${policy.policyContent?.footerText || 'Policy version 3.0 | Updated November 11, 2025 | Compatible with all devices'}</p>
             <p>© 2025 ${MVNO.companyName}. All rights reserved.</p>
-            <p style="margin-top: 1rem;">
-                This document is subject to change. Please visit ${MVNO.website} for the most current version.
-            </p>
         </div>
     </div>
 </body>
@@ -677,7 +668,7 @@ export function registerPDFRoutes(app: Express) {
       await browser.close();
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${MVNO.name}_Device_Compatibility_Policy.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="Device_Compatibility_Policy.pdf"`);
       res.send(pdf);
 
     } catch (error) {
