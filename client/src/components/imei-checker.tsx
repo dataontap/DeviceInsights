@@ -380,6 +380,56 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
           <DeviceAutoDetection onQuickCheck={handleQuickCheck} onDeviceDetected={handleDeviceDetected} />
           
           <form onSubmit={handleSubmit}>
+            {/* Location Section */}
+            <div className="text-left mb-6 space-y-4">
+              <Label className="block text-sm font-medium text-gray-700">
+                Location (Optional)
+              </Label>
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useCurrentLocation"
+                    checked={useCurrentLocation}
+                    onChange={(e) => {
+                      setUseCurrentLocation(e.target.checked);
+                      if (e.target.checked) {
+                        setManualLocation(""); // Clear manual location if using current
+                      }
+                    }}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="useCurrentLocation" className="text-sm text-gray-700 flex items-center">
+                    <MapPin className="w-4 h-4 mr-1 text-primary" />
+                    Use my current location
+                  </label>
+                </div>
+
+                <div className="relative">
+                  <Input
+                    ref={locationInputRef}
+                    type="text"
+                    value={manualLocation}
+                    onChange={(e) => {
+                      setManualLocation(e.target.value);
+                      if (e.target.value) {
+                        setUseCurrentLocation(false); // Clear current location if typing manually
+                      }
+                    }}
+                    placeholder="Or enter your location (e.g., New York, NY)"
+                    className="w-full text-sm"
+                    disabled={useCurrentLocation}
+                    data-testid="input-location"
+                  />
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Location helps us provide more accurate network coverage information for your area.
+                </p>
+              </div>
+            </div>
+
             {deviceDetected ? (
               <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} className="mb-6">
                 <CollapsibleTrigger asChild>
@@ -475,56 +525,6 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} deviceInfo={deviceResult?.device} />}
               </div>
             )}
-
-            {/* Location Section */}
-            <div className="text-left mb-6 space-y-4">
-              <Label className="block text-sm font-medium text-gray-700">
-                Location (Optional)
-              </Label>
-
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useCurrentLocation"
-                    checked={useCurrentLocation}
-                    onChange={(e) => {
-                      setUseCurrentLocation(e.target.checked);
-                      if (e.target.checked) {
-                        setManualLocation(""); // Clear manual location if using current
-                      }
-                    }}
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                  />
-                  <label htmlFor="useCurrentLocation" className="text-sm text-gray-700 flex items-center">
-                    <MapPin className="w-4 h-4 mr-1 text-primary" />
-                    Use my current location
-                  </label>
-                </div>
-
-                <div className="relative">
-                  <Input
-                    ref={locationInputRef}
-                    type="text"
-                    value={manualLocation}
-                    onChange={(e) => {
-                      setManualLocation(e.target.value);
-                      if (e.target.value) {
-                        setUseCurrentLocation(false); // Clear current location if typing manually
-                      }
-                    }}
-                    placeholder="Or enter your location (e.g., New York, NY)"
-                    className="w-full text-sm"
-                    disabled={useCurrentLocation}
-                    data-testid="input-location"
-                  />
-                </div>
-
-                <p className="text-xs text-gray-500">
-                  Location helps us provide more accurate network coverage information for your area.
-                </p>
-              </div>
-            </div>
 
             {/* Carrier Selection Section - Only show when we have location */}
             {(country || carriers.length > 0) && (
