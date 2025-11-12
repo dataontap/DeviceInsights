@@ -502,7 +502,7 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
                   </label>
                 </div>
 
-                <div className="relative">
+                <div className="relative hidden">
                   <Input
                     ref={locationInputRef}
                     type="text"
