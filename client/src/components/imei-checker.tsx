@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio, ChevronDown, ChevronUp } from "lucide-react";
+import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio, ChevronDown, ChevronUp, Wifi, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
@@ -21,9 +21,18 @@ declare global {
   }
 }
 
+interface LocationSnapshot {
+  lat?: number;
+  lng?: number;
+  address?: string;
+  source: 'gps' | 'manual';
+}
+
 interface IMEICheckerProps {
   onResult: (result: any) => void;
   onLoading: (loading: boolean) => void;
+  onRequestCoverage?: (location: LocationSnapshot) => void;
+  onRequestIssue?: (location: LocationSnapshot) => void;
 }
 
 interface Carrier {
@@ -32,7 +41,7 @@ interface Carrier {
   description: string;
 }
 
-export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
+export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, onRequestIssue }: IMEICheckerProps) {
   const [imei, setImei] = useState("");
   const [manualLocation, setManualLocation] = useState("");
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
@@ -47,6 +56,7 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [showVoiceHelper, setShowVoiceHelper] = useState(false);
   const [deviceDetected, setDeviceDetected] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [locationSnapshot, setLocationSnapshot] = useState<LocationSnapshot | null>(null);
   const { toast } = useToast();
   const locationInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
@@ -270,6 +280,71 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     };
   }, []);
 
+  // Update locationSnapshot when location data changes
+  useEffect(() => {
+    if (useCurrentLocation) {
+      // Get GPS coordinates for location snapshot
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Try to get address from reverse geocoding
+            try {
+              const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+              const geoData = await geoResponse.json();
+              const address = geoData.city ? `${geoData.city}, ${geoData.countryName}` : geoData.countryName;
+              
+              setLocationSnapshot({
+                lat,
+                lng,
+                address: address || 'Current Location',
+                source: 'gps'
+              });
+            } catch (error) {
+              // Even if geocoding fails, we have coordinates
+              setLocationSnapshot({
+                lat,
+                lng,
+                address: 'Current Location',
+                source: 'gps'
+              });
+            }
+          },
+          () => {
+            // GPS failed, clear location snapshot
+            setLocationSnapshot(null);
+          }
+        );
+      }
+    } else if (manualLocation && manualLocation.trim().length > 0) {
+      // Manual location input
+      // Check if autocomplete was used (which provides coordinates)
+      if (autocompleteRef.current) {
+        const place = autocompleteRef.current.getPlace?.();
+        if (place?.geometry?.location) {
+          setLocationSnapshot({
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+            address: manualLocation,
+            source: 'manual'
+          });
+          return;
+        }
+      }
+      
+      // No coordinates available, just address
+      setLocationSnapshot({
+        address: manualLocation,
+        source: 'manual'
+      });
+    } else {
+      // No location data
+      setLocationSnapshot(null);
+    }
+  }, [useCurrentLocation, manualLocation]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -427,6 +502,32 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
                 <p className="text-xs text-gray-500">
                   Location helps us provide more accurate network coverage information for your area.
                 </p>
+
+                {/* Coverage Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                  <Button
+                    type="button"
+                    onClick={() => onRequestCoverage?.(locationSnapshot!)}
+                    disabled={!locationSnapshot || !locationSnapshot.lat || !locationSnapshot.lng}
+                    variant="default"
+                    className="flex-1"
+                    data-testid="button-analyze-coverage"
+                  >
+                    <Wifi className="h-4 w-4 mr-2" />
+                    Analyze Coverage
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => onRequestIssue?.(locationSnapshot!)}
+                    disabled={!locationSnapshot || !locationSnapshot.lat || !locationSnapshot.lng}
+                    variant="outline"
+                    className="flex-1"
+                    data-testid="button-report-issue"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Report an Issue
+                  </Button>
+                </div>
               </div>
             </div>
 

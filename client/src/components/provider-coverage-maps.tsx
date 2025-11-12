@@ -34,16 +34,29 @@ interface LocationCoverage {
   data_period: string;
 }
 
+interface LocationPreset {
+  lat?: number;
+  lng?: number;
+  address?: string;
+  source: 'gps' | 'manual';
+}
+
 interface ProviderCoverageMapsProps {
   initialLat?: number;
   initialLng?: number;
   initialAddress?: string;
+  preset?: LocationPreset | null;
+  openIssueRequest?: boolean;
+  onIssueHandled?: () => void;
 }
 
 export function ProviderCoverageMaps({ 
   initialLat = 0, 
   initialLng = 0, 
-  initialAddress = '' 
+  initialAddress = '',
+  preset = null,
+  openIssueRequest = false,
+  onIssueHandled
 }: ProviderCoverageMapsProps) {
   const [coordinates, setCoordinates] = useState({
     lat: initialLat,
@@ -71,6 +84,40 @@ export function ProviderCoverageMaps({
     const lng = parseFloat(locationInput.lng);
     setHasValidLocation(!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
   }, [locationInput]);
+
+  // Handle preset location from IMEI checker
+  useEffect(() => {
+    if (preset) {
+      // Only proceed if we have valid coordinates
+      if (preset.lat !== undefined && preset.lng !== undefined) {
+        const lat = preset.lat;
+        const lng = preset.lng;
+        const address = preset.address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        setLocationInput({
+          lat: lat.toString(),
+          lng: lng.toString(),
+          address
+        });
+        
+        // Auto-trigger analysis with coordinates
+        setCoordinates({
+          lat,
+          lng,
+          address
+        });
+      }
+    }
+  }, [preset]);
+
+  // Handle issue report request from IMEI checker
+  useEffect(() => {
+    if (openIssueRequest) {
+      setShowReportIssue(true);
+      // Acknowledge the request
+      onIssueHandled?.();
+    }
+  }, [openIssueRequest, onIssueHandled]);
 
   // Get user's current location
   const getCurrentLocation = () => {

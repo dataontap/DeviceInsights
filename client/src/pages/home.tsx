@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Navigation from "@/components/navigation";
 import IMEIChecker from "@/components/imei-checker";
 import DeviceResults from "@/components/device-results";
@@ -10,10 +10,20 @@ import { ProviderCoverageMaps } from "@/components/provider-coverage-maps";
 import { Loader2, Wifi, AlertTriangle } from "lucide-react";
 import { useMVNOConfig } from "@/hooks/use-mvno-config";
 
+interface LocationPreset {
+  lat?: number;
+  lng?: number;
+  address?: string;
+  source: 'gps' | 'manual';
+}
+
 export default function Home() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [coveragePreset, setCoveragePreset] = useState<LocationPreset | null>(null);
+  const [shouldOpenIssue, setShouldOpenIssue] = useState(false);
   const { config: mvnoConfig } = useMVNOConfig();
+  const providerMapsRef = useRef<HTMLDivElement>(null);
 
   const handleResult = (data: any) => {
     setResult(data);
@@ -23,11 +33,38 @@ export default function Home() {
     setIsLoading(loading);
   };
 
+  const handleRequestCoverage = (location: LocationPreset) => {
+    setCoveragePreset(location);
+    setShouldOpenIssue(false);
+    // Scroll to coverage section
+    setTimeout(() => {
+      providerMapsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleRequestIssue = (location: LocationPreset) => {
+    setCoveragePreset(location);
+    setShouldOpenIssue(true);
+    // Scroll to coverage section
+    setTimeout(() => {
+      providerMapsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleIssueHandled = () => {
+    setShouldOpenIssue(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      <IMEIChecker onResult={handleResult} onLoading={handleLoading} />
+      <IMEIChecker 
+        onResult={handleResult} 
+        onLoading={handleLoading}
+        onRequestCoverage={handleRequestCoverage}
+        onRequestIssue={handleRequestIssue}
+      />
       
       {isLoading && (
         <section className="py-12">
@@ -58,7 +95,7 @@ export default function Home() {
       )}
       
       {/* Coverage Maps Section */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-gray-50" ref={providerMapsRef}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -68,7 +105,11 @@ export default function Home() {
               Analyze network coverage and performance in your area. Get real-time insights on provider reliability, recent issues, and coverage quality.
             </p>
           </div>
-          <ProviderCoverageMaps />
+          <ProviderCoverageMaps 
+            preset={coveragePreset}
+            openIssueRequest={shouldOpenIssue}
+            onIssueHandled={handleIssueHandled}
+          />
         </div>
       </section>
       
