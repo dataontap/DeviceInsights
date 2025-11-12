@@ -17,7 +17,7 @@ import { API_CONFIG, getAuthHeaders } from "@/config/api";
 // Declare global Google Maps types
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
   }
 }
 

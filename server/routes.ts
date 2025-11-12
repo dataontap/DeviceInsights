@@ -482,24 +482,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract country from location for caching
       const country = extractCountryFromLocation(location);
 
-      // Check cache first
-      const cachedData = await storage.getCachedCarriers(country);
-      if (cachedData) {
-        console.log(`Cache hit for country: ${country}`);
-        return res.json({
-          success: true,
-          ...cachedData,
-          cached: true
-        });
+      // Skip cache for Unknown locations - let AI detect the country from city names
+      if (country !== 'Unknown') {
+        const cachedData = await storage.getCachedCarriers(country);
+        if (cachedData) {
+          console.log(`Cache hit for country: ${country}`);
+          return res.json({
+            success: true,
+            ...cachedData,
+            cached: true
+          });
+        }
       }
 
-      // Cache miss - fetch from LLM
+      // Cache miss or Unknown location - fetch from LLM
       console.log(`Cache miss for country: ${country}, fetching from LLM`);
       const { getTopCarriers } = await import("./services/gemini.js");
       const carriersData = await getTopCarriers(location);
 
-      // Cache the result for 30 days (720 hours)
-      await storage.setCachedCarriers(country, carriersData, 720);
+      // Cache the result for 30 days (720 hours), but not for Unknown locations
+      if (country !== 'Unknown' && country !== 'GPS_COORDINATES') {
+        await storage.setCachedCarriers(country, carriersData, 720);
+      }
 
       res.json({
         success: true,
