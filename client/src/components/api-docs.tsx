@@ -194,6 +194,44 @@ export default function APIDocs() {
 }`
     },
     {
+      method: "POST",
+      path: "/api/v1/detect-device",
+      description: "Detect device from User-Agent header (no IMEI required)",
+      request: `curl -X POST https://deviceinsights.net/api/v1/detect-device \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -H "User-Agent: Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36" \\
+  -d '{}'`,
+      example: `{
+  "success": true,
+  "ipAddress": "8.8.8.8",
+  "userAgent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36",
+  "location": {
+    "city": "Mountain View",
+    "region": "California",
+    "country": "United States",
+    "latitude": 37.4224,
+    "longitude": -122.0856
+  },
+  "isp": "Google LLC",
+  "os": {
+    "name": "Android",
+    "version": "14"
+  },
+  "browser": {
+    "name": "Chrome",
+    "version": "120.0.6099.230"
+  },
+  "deviceDetected": true,
+  "device": {
+    "make": "Google",
+    "model": "Pixel 8 Pro",
+    "tac": "35503606",
+    "exampleImei": "355036061234567"
+  }
+}`
+    },
+    {
       method: "GET",
       path: "/api/v1/stats",
       description: "Get platform usage statistics",

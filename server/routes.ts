@@ -1334,6 +1334,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Device Detection API - Detect device from User-Agent and Client Hints
+  app.post("/api/v1/detect-device", validateApiKey, standardRateLimit, async (req, res) => {
+    try {
+      const { userAgent: bodyUserAgent, deviceModel } = req.body;
+      
+      // Get User-Agent from request headers or body
+      const userAgent = bodyUserAgent || req.get('User-Agent') || 'unknown';
+      
+      // Get real client IP - check proxy headers first for production environments
+      let ipAddress = 
+        req.get('CF-Connecting-IP') || // Cloudflare
+        req.get('X-Real-IP') || // Nginx proxy
+        req.get('X-Forwarded-For')?.split(',')[0]?.trim() || // Standard proxy header
+        req.ip || 
+        req.connection?.remoteAddress || 
+        'unknown';
+      
+      // Clean up IPv6-mapped IPv4 addresses
+      if (ipAddress.startsWith('::ffff:')) {
+        ipAddress = ipAddress.substring(7);
+      }
+      
+      console.log('[API v1/detect-device] IP:', ipAddress, 'User-Agent:', userAgent);
+      
+      // Get location from IP address
+      let locationData: any = null;
+      try {
+        locationData = await getLocationFromIp(ipAddress);
+      } catch (error) {
+        console.error('[API v1/detect-device] Geolocation failed:', error);
+      }
+      
+      // Parse OS information from User-Agent
+      let os = 'Unknown';
+      let osVersion = null;
+      const ua = userAgent.toLowerCase();
+      
+      if (ua.includes('android')) {
+        os = 'Android';
+        const androidMatch = userAgent.match(/Android\s+([\d.]+)/i);
+        osVersion = androidMatch ? androidMatch[1] : null;
+      } else if (ua.includes('iphone') || ua.includes('ipad')) {
+        os = ua.includes('ipad') ? 'iPadOS' : 'iOS';
+        const iosMatch = userAgent.match(/OS\s+([\d_]+)/i);
+        osVersion = iosMatch ? iosMatch[1].replace(/_/g, '.') : null;
+      } else if (ua.includes('windows')) {
+        os = 'Windows';
+        if (ua.includes('windows nt 10.0')) osVersion = '10/11';
+        else if (ua.includes('windows nt 6.3')) osVersion = '8.1';
+        else if (ua.includes('windows nt 6.2')) osVersion = '8';
+        else if (ua.includes('windows nt 6.1')) osVersion = '7';
+      } else if (ua.includes('mac os x')) {
+        os = 'macOS';
+        const macMatch = userAgent.match(/Mac OS X\s+([\d_]+)/i);
+        osVersion = macMatch ? macMatch[1].replace(/_/g, '.') : null;
+      } else if (ua.includes('linux')) {
+        os = 'Linux';
+      }
+      
+      // Parse browser information from User-Agent
+      // Note: Order matters! Check for more specific browsers first (Opera, Edge) before Chrome
+      let browser = 'Unknown';
+      let browserVersion = null;
+      
+      if (ua.includes('opr/') || ua.includes('opera/')) {
+        // Check Opera FIRST (before Chrome) since Opera UA contains "Chrome/"
+        browser = 'Opera';
+        const operaMatch = userAgent.match(/(?:OPR|Opera)\/([\d.]+)/i);
+        browserVersion = operaMatch ? operaMatch[1] : null;
+      } else if (ua.includes('edg/') || ua.includes('edge/')) {
+        // Check Edge SECOND (before Chrome) since Edge UA contains "Chrome/"
+        browser = 'Edge';
+        const edgeMatch = userAgent.match(/(?:Edg|Edge)\/([\d.]+)/i);
+        browserVersion = edgeMatch ? edgeMatch[1] : null;
+      } else if (ua.includes('chrome/')) {
+        // Check Chrome AFTER Opera and Edge
+        browser = 'Chrome';
+        const chromeMatch = userAgent.match(/Chrome\/([\d.]+)/i);
+        browserVersion = chromeMatch ? chromeMatch[1] : null;
+      } else if (ua.includes('safari/') && !ua.includes('chrome')) {
+        browser = 'Safari';
+        const safariMatch = userAgent.match(/Version\/([\d.]+)/i);
+        browserVersion = safariMatch ? safariMatch[1] : null;
+      } else if (ua.includes('firefox/')) {
+        browser = 'Firefox';
+        const firefoxMatch = userAgent.match(/Firefox\/([\d.]+)/i);
+        browserVersion = firefoxMatch ? firefoxMatch[1] : null;
+      }
+      
+      // Match device model to TAC (from provided deviceModel or parse from User-Agent)
+      const deviceToMatch = deviceModel || userAgent;
+      const deviceMatch = matchDeviceToTAC(deviceToMatch);
+      
+      // Build response
+      const response: any = {
+        success: true,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        location: locationData ? {
+          city: locationData.city,
+          region: locationData.region,
+          country: locationData.country,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude
+        } : null,
+        isp: locationData?.isp || null,
+        os: {
+          name: os,
+          version: osVersion
+        },
+        browser: {
+          name: browser,
+          version: browserVersion
+        },
+        deviceDetected: deviceMatch.found
+      };
+      
+      // Add device info if detected
+      if (deviceMatch.found && deviceMatch.deviceInfo) {
+        response.device = {
+          make: deviceMatch.deviceInfo.make,
+          model: deviceMatch.deviceInfo.model,
+          tac: deviceMatch.tac,
+          exampleImei: deviceMatch.tac ? getExampleIMEIFromTAC(deviceMatch.tac) : null
+        };
+      } else if (deviceToMatch) {
+        // Device detected but no TAC match - parse basic info from User-Agent
+        let make = 'Unknown';
+        let model = deviceToMatch;
+        
+        if (deviceToMatch.toLowerCase().includes('iphone') || deviceToMatch.toLowerCase().includes('ipad')) {
+          make = 'Apple';
+        } else if (deviceToMatch.toLowerCase().includes('samsung') || deviceToMatch.toLowerCase().includes('galaxy')) {
+          make = 'Samsung';
+        } else if (deviceToMatch.toLowerCase().includes('pixel')) {
+          make = 'Google';
+        } else if (deviceToMatch.toLowerCase().includes('oneplus')) {
+          make = 'OnePlus';
+        }
+        
+        response.device = {
+          make: make,
+          model: model,
+          tac: null,
+          exampleImei: null
+        };
+      }
+      
+      res.json(response);
+    } catch (error) {
+      console.error('[API v1/detect-device] Error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: "Failed to detect device",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get search statistics (API key specific for authenticated requests)
   app.get("/api/v1/stats", validateApiKey, async (req, res) => {
     try {
