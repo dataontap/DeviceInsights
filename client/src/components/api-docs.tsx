@@ -148,7 +148,7 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/v1/check",
       description: "Check device compatibility by IMEI number",
-      request: `curl -X POST https://your-domain.com/api/v1/check \\
+      request: `curl -X POST https://deviceinsights.net/api/v1/check \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -174,7 +174,7 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/v1/esim-check",
       description: "Check eSIM compatibility for a device (lightweight endpoint)",
-      request: `curl -X POST https://your-domain.com/api/v1/esim-check \\
+      request: `curl -X POST https://deviceinsights.net/api/v1/esim-check \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -197,7 +197,7 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/stats",
       description: "Get platform usage statistics",
-      request: `curl -X GET https://your-domain.com/api/v1/stats \\
+      request: `curl -X GET https://deviceinsights.net/api/v1/stats \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "totalSearches": 24567,
@@ -211,7 +211,7 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/export",
       description: "Export search data in CSV/JSON format",
-      request: `curl -X GET "https://your-domain.com/api/v1/export?format=json" \\
+      request: `curl -X GET "https://deviceinsights.net/api/v1/export?format=json" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "searches": [
@@ -228,7 +228,7 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/messaging/push",
       description: "Send push notification via Firebase Cloud Messaging",
-      request: `curl -X POST https://your-domain.com/api/messaging/push \\
+      request: `curl -X POST https://deviceinsights.net/api/messaging/push \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -246,7 +246,7 @@ export default function APIDocs() {
       method: "GET",
       path: "/api/v1/search/{id}",
       description: "Get individual search by ID",
-      request: `curl -X GET https://your-domain.com/api/v1/search/123 \\
+      request: `curl -X GET https://deviceinsights.net/api/v1/search/123 \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
       example: `{
   "id": 1,
@@ -260,7 +260,7 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/coverage/analyze",
       description: "Analyze network coverage for mobile carriers and broadband providers",
-      request: `curl -X POST https://your-domain.com/api/coverage/analyze \\
+      request: `curl -X POST https://deviceinsights.net/api/coverage/analyze \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -285,7 +285,7 @@ export default function APIDocs() {
       method: "POST",
       path: "/api/coverage/analyze-issue",
       description: "Report network issues with AI-powered pattern recognition",
-      request: `curl -X POST https://your-domain.com/api/coverage/analyze-issue \\
+      request: `curl -X POST https://deviceinsights.net/api/coverage/analyze-issue \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -307,8 +307,8 @@ export default function APIDocs() {
   ];
 
   const rateLimits = [
-    { tier: "Free Tier", requests: "1,000 requests/hour", status: "available", label: "Pro Tier for Testing" },
-    { tier: "Pro Tier", requests: "1,000 requests/hour", status: "available", label: "Pro Tier for Testing" },
+    { tier: "Free Tier", requests: "1,000 requests/hour", status: "available", label: "Available" },
+    { tier: "Pro Tier", requests: "1,000 requests/hour", status: "available", label: "Available" },
     { tier: "Enterprise", requests: "Unlimited", status: "coming-soon", label: "Coming Soon" }
   ];
 
