@@ -341,6 +341,131 @@ export default function APIDocs() {
     "confidence_score": 0.85
   }
 }`
+    },
+    {
+      method: "GET",
+      path: "/api/v1/blacklist",
+      description: "Get all IMEIs in your local blacklist (API key specific)",
+      request: `curl -X GET https://deviceinsights.net/api/v1/blacklist \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
+      example: `{
+  "success": true,
+  "scope": "local",
+  "apiKeyId": 123,
+  "count": 2,
+  "blacklist": [
+    {
+      "id": 1,
+      "imei": "123456789012345",
+      "reason": "Reported stolen device",
+      "blacklistedAt": "2025-01-15T10:30:00Z",
+      "addedBy": "admin@example.com"
+    }
+  ]
+}`
+    },
+    {
+      method: "POST",
+      path: "/api/v1/blacklist",
+      description: "Add an IMEI to your local blacklist (blocks API calls with that IMEI)",
+      request: `curl -X POST https://deviceinsights.net/api/v1/blacklist \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imei": "123456789012345",
+    "reason": "Reported stolen device",
+    "scope": "local"
+  }'`,
+      example: `{
+  "success": true,
+  "scope": "local",
+  "message": "IMEI added to your local blacklist",
+  "blacklist": {
+    "id": 1,
+    "imei": "123456789012345",
+    "reason": "Reported stolen device",
+    "apiKeyId": 123,
+    "blacklistedAt": "2025-01-15T10:30:00Z",
+    "addedBy": "admin@example.com"
+  }
+}`
+    },
+    {
+      method: "DELETE",
+      path: "/api/v1/blacklist/{imei}",
+      description: "Remove an IMEI from your local blacklist",
+      request: `curl -X DELETE https://deviceinsights.net/api/v1/blacklist/123456789012345 \\
+  -H "Authorization: Bearer YOUR_API_KEY"`,
+      example: `{
+  "success": true,
+  "scope": "local",
+  "message": "IMEI removed from your local blacklist",
+  "imei": "123456789012345"
+}`
+    },
+    {
+      method: "POST",
+      path: "/api/v1/blacklist/bulk",
+      description: "Add multiple IMEIs to your blacklist at once (max 100 per request)",
+      request: `curl -X POST https://deviceinsights.net/api/v1/blacklist/bulk \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imeis": [
+      {
+        "imei": "123456789012345",
+        "reason": "Reported stolen"
+      },
+      {
+        "imei": "987654321098765",
+        "reason": "Fraudulent activity"
+      }
+    ]
+  }'`,
+      example: `{
+  "success": true,
+  "processed": 2,
+  "added": 2,
+  "skipped": 0,
+  "results": [
+    {
+      "imei": "123456789012345",
+      "success": true,
+      "message": "Added to blacklist"
+    },
+    {
+      "imei": "987654321098765",
+      "success": true,
+      "message": "Added to blacklist"
+    }
+  ]
+}`
+    },
+    {
+      method: "GET",
+      path: "/api/v1/blacklist/export",
+      description: "Export your blacklist in JSON or CSV format",
+      request: `curl -X GET "https://deviceinsights.net/api/v1/blacklist/export?format=csv" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  > blacklist.csv`,
+      example: `CSV format:
+imei,reason,blacklistedAt,addedBy
+123456789012345,"Reported stolen","2025-01-15T10:30:00Z","admin@example.com"
+
+JSON format:
+{
+  "success": true,
+  "count": 1,
+  "exportedAt": "2025-01-15T12:00:00Z",
+  "data": [
+    {
+      "imei": "123456789012345",
+      "reason": "Reported stolen",
+      "blacklistedAt": "2025-01-15T10:30:00Z",
+      "addedBy": "admin@example.com"
+    }
+  ]
+}`
     }
   ];
 
@@ -356,7 +481,7 @@ export default function APIDocs() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">API Documentation</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Access our comprehensive APIs for IMEI checking and network coverage analysis
+            Access our comprehensive APIs for IMEI checking, blacklist management, and network coverage analysis
           </p>
           <div className="flex flex-wrap justify-center gap-4 mt-6">
             <Button 

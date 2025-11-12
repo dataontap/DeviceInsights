@@ -32,7 +32,7 @@ The application is a full-stack TypeScript monorepo with separate client, server
 -   **Authentication**: Magic link email authentication for admin dashboard via Resend; API key authentication for external API access. All attempts tracked with session metadata.
 -   **Messaging**: Web Push Notifications via Firebase Cloud Messaging. Internal SMS and email capabilities for system notifications via Resend.
 -   **Voice Synthesis**: ElevenLabs integration supporting 30+ languages with template-based caching.
--   **Blacklist Management**: Supports global and API-key specific blacklists with public API endpoints for management.
+-   **Blacklist Management**: Supports global and API-key specific blacklists with comprehensive public API endpoints (GET, POST, DELETE, bulk operations, export in JSON/CSV). Interactive demo available in Admin Dashboard and standalone at /blacklist-demo. Full documentation at /api-docs.
 -   **Network Policy CMS**: Allows dynamic editing of network policy content via an admin dashboard, stored in the database with versioning. Includes dynamic PDF generation.
 -   **Data Export**: Export endpoint supports both authenticated (real data) and unauthenticated (anonymized example data) access for demonstration purposes.
 -   **eSIM Analytics**: Comprehensive analytics tracking for eSIM compatibility with daily trend charts, summary metrics (compatibility rate, compatible/incompatible counts), and top eSIM-compatible devices. Supports 7d, 30d, and 90d time periods.
