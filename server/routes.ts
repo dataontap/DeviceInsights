@@ -30,7 +30,7 @@ import {
 } from './services/elevenlabs.js';
 import { analyzeIssueWithAI } from './services/issue-analyzer.js';
 import { standardRateLimit, mcpRateLimit, premiumRateLimit } from './middleware/enhanced-rate-limit';
-import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema, publicBlacklistCreateSchema } from "@shared/schema";
+import { insertImeiSearchSchema, insertPolicyAcceptanceSchema, generateApiKeySchema, magicLinkRequestSchema, userRegistrationSchema, connectivityMetricSchema, publicBlacklistCreateSchema, bulkBlacklistSchema } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -2113,6 +2113,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Blacklist remove error:", error);
       res.status(500).json({ error: "Failed to remove IMEI from blacklist" });
+    }
+  });
+
+  // Bulk blacklist operations (API key specific)
+  app.post("/api/v1/blacklist/bulk", validateApiKey, async (req, res) => {
+    try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+
+      const validated = bulkBlacklistSchema.parse(req.body);
+      const apiKey = await storage.getApiKeyById(apiKeyId);
+      const addedBy = apiKey?.email || "api_user";
+
+      const results = [];
+      let added = 0;
+      let skipped = 0;
+
+      for (const item of validated.imeis) {
+        try {
+          // Check if already blacklisted
+          const existing = await storage.isImeiBlacklisted(item.imei, apiKeyId);
+          if (existing && existing.apiKeyId === apiKeyId) {
+            results.push({
+              imei: item.imei,
+              success: false,
+              message: "Already in blacklist",
+              reason: "Duplicate entry"
+            });
+            skipped++;
+            continue;
+          }
+
+          // Add to blacklist
+          await storage.addBlacklistedImei({
+            imei: item.imei,
+            reason: item.reason,
+            apiKeyId: apiKeyId,
+            addedBy: addedBy,
+            isActive: true
+          });
+
+          results.push({
+            imei: item.imei,
+            success: true,
+            message: "Added to blacklist"
+          });
+          added++;
+        } catch (error) {
+          results.push({
+            imei: item.imei,
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to add",
+            reason: "Processing error"
+          });
+          skipped++;
+        }
+      }
+
+      res.json({
+        success: true,
+        processed: validated.imeis.length,
+        added,
+        skipped,
+        results
+      });
+    } catch (error) {
+      console.error("Bulk blacklist error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+        });
+      }
+      res.status(500).json({ error: "Failed to process bulk blacklist operation" });
+    }
+  });
+
+  // Export blacklist in JSON or CSV format (API key specific)
+  app.get("/api/v1/blacklist/export", validateApiKey, async (req, res) => {
+    try {
+      const apiKeyId = (req as AuthenticatedRequest).apiKeyId;
+      if (!apiKeyId) {
+        return res.status(401).json({ error: "API key ID not found" });
+      }
+
+      const format = req.query.format as string || "json";
+      if (!["json", "csv"].includes(format)) {
+        return res.status(400).json({ 
+          error: "Invalid format", 
+          message: "Format must be 'json' or 'csv'" 
+        });
+      }
+
+      const blacklistedImeis = await storage.getLocalBlacklistedImeis(apiKeyId);
+
+      if (format === "csv") {
+        // Generate CSV
+        const csv = [
+          ["imei", "reason", "blacklistedAt", "addedBy"].join(","),
+          ...blacklistedImeis.map(item => [
+            item.imei,
+            `"${item.reason.replace(/"/g, '""')}"`,
+            item.blacklistedAt,
+            item.addedBy
+          ].join(","))
+        ].join("\n");
+
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename=blacklist-${Date.now()}.csv`);
+        return res.send(csv);
+      } else {
+        // JSON format
+        res.json({
+          success: true,
+          count: blacklistedImeis.length,
+          exportedAt: new Date().toISOString(),
+          data: blacklistedImeis.map(item => ({
+            imei: item.imei,
+            reason: item.reason,
+            blacklistedAt: item.blacklistedAt,
+            addedBy: item.addedBy
+          }))
+        });
+      }
+    } catch (error) {
+      console.error("Blacklist export error:", error);
+      res.status(500).json({ error: "Failed to export blacklist" });
     }
   });
 

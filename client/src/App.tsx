@@ -11,6 +11,7 @@ import { CoverageMaps } from "@/pages/coverage-maps";
 import APIDocs from "@/components/api-docs";
 import IntegrationGuide from "@/pages/integration-guide";
 import NetworkPolicy from "@/pages/network-policy";
+import BlacklistDemo from "@/pages/blacklist-demo";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/api-docs" component={APIDocs} />
       <Route path="/integration-guide" component={IntegrationGuide} />
       <Route path="/network-policy" component={NetworkPolicy} />
+      <Route path="/blacklist-demo" component={BlacklistDemo} />
       <Route component={NotFound} />
     </Switch>
   );

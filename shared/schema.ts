@@ -505,6 +505,20 @@ export const publicBlacklistCreateSchema = z.object({
   scope: z.enum(["global", "local"]).default("local"), // global requires admin, local is API key specific
 });
 
+export const bulkBlacklistSchema = z.object({
+  imeis: z.array(z.object({
+    imei: z.string()
+      .min(15, "IMEI must be at least 15 digits")
+      .max(15, "IMEI must be exactly 15 digits")
+      .regex(/^\d+$/, "IMEI must contain only digits"),
+    reason: z.string()
+      .min(1, "Reason is required")
+      .max(500, "Reason must be less than 500 characters")
+  }))
+  .min(1, "At least one IMEI is required")
+  .max(100, "Maximum 100 IMEIs per request")
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,

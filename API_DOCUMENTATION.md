@@ -419,6 +419,303 @@ Reports a network issue and analyzes similar problems in the area using AI patte
 - **Rate Limiting**: 100 requests per hour per IP address
 - **Real-time Analysis**: Live network issue data processing
 
+## Blacklist Management
+
+The IMEI Device Checker API provides comprehensive blacklist management capabilities, allowing you to maintain a local blacklist of devices specific to your API key. This is useful for fraud prevention, device management, and access control.
+
+### 6. Get Blacklist
+**GET** `/api/v1/blacklist`
+
+Retrieve all IMEIs in your local blacklist (API key specific).
+
+#### Headers
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+#### Response
+```json
+{
+  "success": true,
+  "scope": "local",
+  "apiKeyId": 123,
+  "count": 2,
+  "blacklist": [
+    {
+      "id": 1,
+      "imei": "123456789012345",
+      "reason": "Reported stolen device",
+      "blacklistedAt": "2025-01-15T10:30:00Z",
+      "addedBy": "admin@example.com"
+    },
+    {
+      "id": 2,
+      "imei": "987654321098765",
+      "reason": "Fraudulent activity detected",
+      "blacklistedAt": "2025-01-16T14:20:00Z",
+      "addedBy": "security@example.com"
+    }
+  ]
+}
+```
+
+#### cURL Example
+```bash
+curl -X GET https://deviceinsights.net/api/v1/blacklist \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+#### JavaScript Example
+```javascript
+const response = await fetch('https://deviceinsights.net/api/v1/blacklist', {
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  }
+});
+
+const data = await response.json();
+console.log(`You have ${data.count} blacklisted IMEIs`);
+```
+
+### 7. Add IMEI to Blacklist
+**POST** `/api/v1/blacklist`
+
+Add an IMEI to your local blacklist. Once blacklisted, API calls using this IMEI will be rejected with a 403 status.
+
+#### Request Body
+```json
+{
+  "imei": "123456789012345",
+  "reason": "Reported stolen device",
+  "scope": "local"
+}
+```
+
+#### Parameters
+- `imei` (string, required): 15-digit IMEI number
+- `reason` (string, required): Reason for blacklisting (max 500 characters)
+- `scope` (string, required): Must be "local" (global blacklisting requires admin privileges)
+
+#### Response (201 Created)
+```json
+{
+  "success": true,
+  "scope": "local",
+  "message": "IMEI added to your local blacklist",
+  "blacklist": {
+    "id": 1,
+    "imei": "123456789012345",
+    "reason": "Reported stolen device",
+    "apiKeyId": 123,
+    "blacklistedAt": "2025-01-15T10:30:00Z",
+    "addedBy": "admin@example.com"
+  }
+}
+```
+
+#### Error Response (409 Conflict)
+```json
+{
+  "error": "IMEI already blacklisted",
+  "message": "This IMEI is already in your blacklist",
+  "blacklist": {
+    "id": 1,
+    "imei": "123456789012345",
+    "reason": "Previously reported",
+    "blacklistedAt": "2025-01-14T09:00:00Z"
+  }
+}
+```
+
+#### cURL Example
+```bash
+curl -X POST https://deviceinsights.net/api/v1/blacklist \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "imei": "123456789012345",
+    "reason": "Reported stolen device",
+    "scope": "local"
+  }'
+```
+
+#### JavaScript Example
+```javascript
+const response = await fetch('https://deviceinsights.net/api/v1/blacklist', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_API_KEY'
+  },
+  body: JSON.stringify({
+    imei: '123456789012345',
+    reason: 'Reported stolen device',
+    scope: 'local'
+  })
+});
+
+const data = await response.json();
+if (data.success) {
+  console.log('IMEI successfully blacklisted');
+}
+```
+
+#### Python Example
+```python
+import requests
+
+response = requests.post(
+    'https://deviceinsights.net/api/v1/blacklist',
+    headers={'Authorization': 'Bearer YOUR_API_KEY'},
+    json={
+        'imei': '123456789012345',
+        'reason': 'Reported stolen device',
+        'scope': 'local'
+    }
+)
+
+if response.status_code == 201:
+    print('IMEI successfully blacklisted')
+else:
+    print(f'Error: {response.json()["error"]}')
+```
+
+### 8. Remove IMEI from Blacklist
+**DELETE** `/api/v1/blacklist/{imei}`
+
+Remove an IMEI from your local blacklist.
+
+#### URL Parameters
+- `imei` (string, required): 15-digit IMEI number to remove
+
+#### Response
+```json
+{
+  "success": true,
+  "scope": "local",
+  "message": "IMEI removed from your local blacklist",
+  "imei": "123456789012345"
+}
+```
+
+#### Error Response (404 Not Found)
+```json
+{
+  "error": "IMEI not found in your blacklist",
+  "message": "This IMEI is not in your local blacklist"
+}
+```
+
+#### cURL Example
+```bash
+curl -X DELETE https://deviceinsights.net/api/v1/blacklist/123456789012345 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+#### JavaScript Example
+```javascript
+const imei = '123456789012345';
+const response = await fetch(`https://deviceinsights.net/api/v1/blacklist/${imei}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY'
+  }
+});
+
+const data = await response.json();
+if (data.success) {
+  console.log(`IMEI ${imei} removed from blacklist`);
+}
+```
+
+### 9. Bulk Blacklist Operations
+**POST** `/api/v1/blacklist/bulk`
+
+Add multiple IMEIs to your blacklist in a single request. Maximum 100 IMEIs per request.
+
+#### Request Body
+```json
+{
+  "imeis": [
+    {
+      "imei": "123456789012345",
+      "reason": "Reported stolen"
+    },
+    {
+      "imei": "987654321098765",
+      "reason": "Fraudulent activity"
+    },
+    {
+      "imei": "456789012345678",
+      "reason": "Lost device"
+    }
+  ]
+}
+```
+
+#### Response
+```json
+{
+  "success": true,
+  "processed": 3,
+  "added": 3,
+  "skipped": 0,
+  "results": [
+    {
+      "imei": "123456789012345",
+      "success": true,
+      "message": "Added to blacklist"
+    },
+    {
+      "imei": "987654321098765",
+      "success": true,
+      "message": "Added to blacklist"
+    },
+    {
+      "imei": "456789012345678",
+      "success": true,
+      "message": "Added to blacklist"
+    }
+  ]
+}
+```
+
+### 10. Export Blacklist
+**GET** `/api/v1/blacklist/export?format=csv`
+
+Export your blacklist in JSON or CSV format.
+
+#### Query Parameters
+- `format` (string): "json" or "csv" (default: "json")
+
+#### Response (CSV format)
+```csv
+imei,reason,blacklistedAt,addedBy
+123456789012345,"Reported stolen device","2025-01-15T10:30:00Z","admin@example.com"
+987654321098765,"Fraudulent activity","2025-01-16T14:20:00Z","security@example.com"
+```
+
+#### cURL Example
+```bash
+curl -X GET "https://deviceinsights.net/api/v1/blacklist/export?format=csv" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  > blacklist.csv
+```
+
+### Blacklist Behavior
+
+When an IMEI is blacklisted:
+- All `/api/v1/check` requests with that IMEI will return **403 Forbidden**
+- The response includes `blacklisted: true` and the reason
+- This applies only to your API key (local blacklist)
+- Global blacklists (managed by admins) affect all API keys
+
+**Important Notes:**
+- Each API key has its own separate local blacklist
+- You cannot access or modify other API keys' blacklists
+- Global blacklist management requires admin privileges
+- Blacklist changes take effect immediately
+
 ## Support
 
 For technical support or API questions:
