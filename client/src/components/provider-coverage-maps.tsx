@@ -294,7 +294,7 @@ export function ProviderCoverageMaps({
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-      <Card>
+      <Card className="hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
