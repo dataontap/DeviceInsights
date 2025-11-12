@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Smartphone, Search, Info, MapPin, AlertTriangle, Globe, Radio, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import NetworkPolicy from "./network-policy";
@@ -44,6 +45,8 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
   const [showBlacklistDrawer, setShowBlacklistDrawer] = useState(false);
   const [blacklistInfo, setBlacklistInfo] = useState<{imei?: string; reason?: string}>({});
   const [showVoiceHelper, setShowVoiceHelper] = useState(false);
+  const [deviceDetected, setDeviceDetected] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { toast } = useToast();
   const locationInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
@@ -345,6 +348,13 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
     }, 100);
   };
 
+  const handleDeviceDetected = (detected: boolean) => {
+    setDeviceDetected(detected);
+    if (!detected) {
+      setIsAdvancedOpen(false);
+    }
+  };
+
   return (
     <section className="bg-gradient-to-br from-primary to-secondary text-white py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -367,43 +377,104 @@ export default function IMEIChecker({ onResult, onLoading }: IMEICheckerProps) {
 
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
           {/* Auto-Detection Component */}
-          <DeviceAutoDetection onQuickCheck={handleQuickCheck} />
+          <DeviceAutoDetection onQuickCheck={handleQuickCheck} onDeviceDetected={handleDeviceDetected} />
           
           <form onSubmit={handleSubmit}>
-            <div className="text-left mb-6">
-              <Label htmlFor="imei" className="block text-sm font-medium text-gray-700 mb-2">
-                Device IMEI Number
-              </Label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  id="imei"
-                  value={imei}
-                  onChange={handleIMEIChange}
-                  placeholder="Enter 15-digit IMEI number"
-                  className={`w-full text-lg pr-10 ${
-                    imei.length === 15 ? 'border-success' : 'border-gray-300'
-                  }`}
-                  maxLength={15}
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <Smartphone className="text-gray-400 w-5 h-5" />
+            {deviceDetected ? (
+              <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} className="mb-6">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-between text-left text-gray-700 hover:bg-gray-50"
+                    data-testid="button-advanced-search"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4" />
+                      Advanced search
+                    </span>
+                    {isAdvancedOpen ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <div className="text-left">
+                    <Label htmlFor="imei" className="block text-sm font-medium text-gray-700 mb-2">
+                      Device IMEI Number
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        id="imei"
+                        value={imei}
+                        onChange={handleIMEIChange}
+                        placeholder="Enter 15-digit IMEI number"
+                        className={`w-full text-lg pr-10 ${
+                          imei.length === 15 ? 'border-success' : 'border-gray-300'
+                        }`}
+                        maxLength={15}
+                        data-testid="input-imei"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <Smartphone className="text-gray-400 w-5 h-5" />
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2 flex items-center">
+                      <Info className="w-4 h-4 mr-1 text-accent" />
+                      To find your IMEI, dial{" "}
+                      <code 
+                        className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1 cursor-pointer hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                        onClick={() => setShowVoiceHelper(true)}
+                        data-testid="code-imei-help"
+                      >
+                        *#06#
+                      </code>{" "}
+                      on your device
+                    </p>
+                    {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} deviceInfo={deviceResult?.device} />}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              <div className="text-left mb-6">
+                <Label htmlFor="imei" className="block text-sm font-medium text-gray-700 mb-2">
+                  Device IMEI Number
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    id="imei"
+                    value={imei}
+                    onChange={handleIMEIChange}
+                    placeholder="Enter 15-digit IMEI number"
+                    className={`w-full text-lg pr-10 ${
+                      imei.length === 15 ? 'border-success' : 'border-gray-300'
+                    }`}
+                    maxLength={15}
+                    data-testid="input-imei"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <Smartphone className="text-gray-400 w-5 h-5" />
+                  </div>
                 </div>
+                <p className="text-sm text-gray-500 mt-2 flex items-center">
+                  <Info className="w-4 h-4 mr-1 text-accent" />
+                  To find your IMEI, dial{" "}
+                  <code 
+                    className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1 cursor-pointer hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                    onClick={() => setShowVoiceHelper(true)}
+                    data-testid="code-imei-help"
+                  >
+                    *#06#
+                  </code>{" "}
+                  on your device
+                </p>
+                {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} deviceInfo={deviceResult?.device} />}
               </div>
-              <p className="text-sm text-gray-500 mt-2 flex items-center">
-                <Info className="w-4 h-4 mr-1 text-accent" />
-                To find your IMEI, dial{" "}
-                <code 
-                  className="bg-gray-100 px-2 py-1 rounded text-gray-800 mx-1 cursor-pointer hover:bg-blue-100 hover:text-blue-800 transition-colors"
-                  onClick={() => setShowVoiceHelper(true)}
-                  data-testid="code-imei-help"
-                >
-                  *#06#
-                </code>{" "}
-                on your device
-              </p>
-              {showVoiceHelper && <VoiceHelper trigger={null} autoOpen={true} deviceInfo={deviceResult?.device} />}
-            </div>
+            )}
 
             {/* Location Section */}
             <div className="text-left mb-6 space-y-4">

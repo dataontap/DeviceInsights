@@ -27,9 +27,10 @@ interface DetectionData {
 
 interface DeviceAutoDetectionProps {
   onQuickCheck?: (imei: string) => void;
+  onDeviceDetected?: (detected: boolean) => void;
 }
 
-export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) {
+export function DeviceAutoDetection({ onQuickCheck, onDeviceDetected }: DeviceAutoDetectionProps) {
   const [detectionData, setDetectionData] = useState<DetectionData | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +39,14 @@ export function DeviceAutoDetection({ onQuickCheck }: DeviceAutoDetectionProps) 
     // Auto-detect device on mount
     detectDevice();
   }, []);
+
+  useEffect(() => {
+    // Notify parent when device detection status changes
+    if (onDeviceDetected) {
+      const hasValidDevice = detectionData?.device?.exampleImei && !isDismissed;
+      onDeviceDetected(!!hasValidDevice);
+    }
+  }, [detectionData, isDismissed, onDeviceDetected]);
 
   const detectDevice = async () => {
     try {
