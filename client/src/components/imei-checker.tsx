@@ -520,8 +520,8 @@ export default function IMEIChecker({ onResult, onLoading, onRequestCoverage, on
                     type="button"
                     onClick={() => onRequestIssue?.(locationSnapshot!)}
                     disabled={!locationSnapshot || !locationSnapshot.lat || !locationSnapshot.lng}
-                    variant="outline"
-                    className="flex-1"
+                    variant="secondary"
+                    className="flex-1 bg-sky-400 hover:bg-sky-500 text-white"
                     data-testid="button-report-issue"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
