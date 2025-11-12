@@ -937,6 +937,279 @@ X-RateLimit-Reset: 1640995200`}
           </CardContent>
         </Card>
 
+        {/* API Integration Workflow Guide */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">API Integration Workflow</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-6">
+              Follow this recommended workflow for integrating our APIs into your application. Combine device compatibility checks with network coverage analysis for comprehensive insights:
+            </p>
+            
+            <div className="space-y-6">
+              {/* Step 1 */}
+              <div className="border-l-4 border-blue-500 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">1</div>
+                  <h3 className="text-lg font-semibold text-gray-900">Device Detection (Optional)</h3>
+                </div>
+                <p className="text-sm text-gray-700 mb-3">
+                  Start by automatically detecting the user's device without requiring manual IMEI entry. This provides a seamless user experience.
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <code className="text-xs font-medium text-blue-600">POST /api/v1/detect-device</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/detect-device \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -H "User-Agent: Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36" \\
+  -d '{}'`, 'workflow-step1')}
+                      className="h-6 w-6 p-0"
+                      data-testid="button-copy-workflow-step1"
+                    >
+                      {copiedCode === 'workflow-step1' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                  <pre className="text-xs text-gray-700 overflow-x-auto mt-2">
+{`// Response includes device info and location
+{
+  "deviceDetected": true,
+  "device": {
+    "make": "Google",
+    "model": "Pixel 8 Pro"
+  },
+  "location": {
+    "city": "New York",
+    "country": "United States"
+  }
+}`}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="border-l-4 border-green-500 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold">2</div>
+                  <h3 className="text-lg font-semibold text-gray-900">Choose Your Analysis Endpoint</h3>
+                </div>
+                <p className="text-sm text-gray-700 mb-3">
+                  Based on your requirements, choose one of the following endpoints:
+                </p>
+                
+                {/* Option A - eSIM Check */}
+                <div className="bg-blue-50 rounded-lg p-3 mb-3 border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-blue-600 text-white">Option A</Badge>
+                    <p className="text-sm font-semibold text-gray-900">Quick eSIM Compatibility Check</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    For lightweight eSIM-only queries (fastest response, minimal data)
+                  </p>
+                  <div className="bg-white rounded p-2 border border-blue-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <code className="text-xs font-medium text-blue-600">POST /api/v1/esim-check</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/esim-check \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"imei": "013266008012345"}'`, 'workflow-esim')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-workflow-esim"
+                      >
+                        {copiedCode === 'workflow-esim' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <pre className="text-xs text-gray-700 mt-1">
+{`{
+  "esimSupport": true,
+  "device": { "make": "Apple", "model": "iPhone 14 Pro" }
+}`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Option B - Full Check */}
+                <div className="bg-green-50 rounded-lg p-3 mb-3 border border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-green-600 text-white">Option B</Badge>
+                    <p className="text-sm font-semibold text-gray-900">Comprehensive Device Analysis</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    For complete network compatibility including 4G/5G, VoLTE, Wi-Fi calling, and eSIM support
+                  </p>
+                  <div className="bg-white rounded p-2 border border-green-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <code className="text-xs font-medium text-green-600">POST /api/v1/check</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/check \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imei": "013266008012345",
+    "location": "New York, NY",
+    "network": "AT&T"
+  }'`, 'workflow-check')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-workflow-check"
+                      >
+                        {copiedCode === 'workflow-check' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <pre className="text-xs text-gray-700 mt-1">
+{`{
+  "device": { "make": "Apple", "model": "iPhone 14 Pro" },
+  "capabilities": {
+    "fourG": true, "fiveG": true,
+    "volte": true, "wifiCalling": "limited",
+    "esim": true
+  }
+}`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Option C - Batch eSIM Check */}
+                <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-purple-600 text-white">Option C</Badge>
+                    <p className="text-sm font-semibold text-gray-900">Bulk eSIM Compatibility Check</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    For checking multiple devices at once (up to 100 IMEIs per request)
+                  </p>
+                  <div className="bg-white rounded p-2 border border-purple-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <code className="text-xs font-medium text-purple-600">POST /api/v1/esim-check/batch</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/v1/esim-check/batch \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "imeis": ["013266008012345", "987654321098765"]
+  }'`, 'workflow-batch')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-workflow-batch"
+                      >
+                        {copiedCode === 'workflow-batch' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <pre className="text-xs text-gray-700 mt-1">
+{`{
+  "totalProcessed": 2,
+  "compatibleCount": 2,
+  "results": [
+    { "imei": "013266008012345", "esimSupport": true },
+    { "imei": "987654321098765", "esimSupport": true }
+  ]
+}`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Option D - Coverage Analysis */}
+                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-orange-600 text-white">Option D</Badge>
+                    <p className="text-sm font-semibold text-gray-900">Network Coverage Analysis</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Get carrier network insights when location is available (coverage scores, reliability ratings, provider comparisons)
+                  </p>
+                  <div className="bg-white rounded p-2 border border-orange-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <code className="text-xs font-medium text-orange-600">POST /api/coverage/analyze</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/coverage/analyze \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "location": "Toronto, ON",
+    "latitude": 43.6532,
+    "longitude": -79.3832
+  }'`, 'workflow-coverage')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-workflow-option-d-coverage"
+                      >
+                        {copiedCode === 'workflow-coverage' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <pre className="text-xs text-gray-700 mt-1">
+{`{
+  "success": true,
+  "data": {
+    "location": { "lat": 43.6532, "lng": -79.3832 },
+    "mobile_providers": [{
+      "provider": "Rogers",
+      "coverage_score": 95,
+      "reliability_rating": 5,
+      "recommendation": "excellent"
+    }]
+  }
+}`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Example Integration */}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">💡 Example Integration Flow</h4>
+                <div className="bg-white rounded p-3 text-xs space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-blue-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Step 1:</strong> User visits your app → Automatically call <code className="bg-gray-100 px-1 rounded">/detect-device</code> to identify their device
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Step 2:</strong> If eSIM-only needed → Call <code className="bg-gray-100 px-1 rounded">/esim-check</code> with detected IMEI
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Step 2 (Alt):</strong> If full analysis needed → Call <code className="bg-gray-100 px-1 rounded">/check</code> with IMEI, location, and carrier
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-purple-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Step 2 (Bulk):</strong> For inventory management → Call <code className="bg-gray-100 px-1 rounded">/esim-check/batch</code> with array of IMEIs
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-orange-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Step 3 (Optional):</strong> If location available → Call <code className="bg-gray-100 px-1 rounded">/coverage/analyze</code> for carrier network insights and recommendations
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Result:</strong> Display device insights, compatibility status, network coverage scores, and carrier recommendations to your users
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Support */}
         <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
           <CardContent className="pt-6">
