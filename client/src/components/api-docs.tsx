@@ -726,7 +726,7 @@ Content-Type: application/json`}
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-6">
-              Follow this recommended workflow for integrating our APIs into your application:
+              Follow this recommended workflow for integrating our APIs into your application. Combine device compatibility checks with network coverage analysis for comprehensive insights:
             </p>
             
             <div className="space-y-6">
@@ -860,7 +860,7 @@ Content-Type: application/json`}
                 </div>
 
                 {/* Option C - Batch eSIM Check */}
-                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-purple-600 text-white">Option C</Badge>
                     <p className="text-sm font-semibold text-gray-900">Bulk eSIM Compatibility Check</p>
@@ -898,6 +898,52 @@ Content-Type: application/json`}
                     </pre>
                   </div>
                 </div>
+
+                {/* Option D - Coverage Analysis */}
+                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-orange-600 text-white">Option D</Badge>
+                    <p className="text-sm font-semibold text-gray-900">Network Coverage Analysis</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Get carrier network insights when location is available (coverage scores, reliability ratings, provider comparisons)
+                  </p>
+                  <div className="bg-white rounded p-2 border border-orange-300">
+                    <div className="flex items-center justify-between mb-1">
+                      <code className="text-xs font-medium text-orange-600">POST /api/coverage/analyze</code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(`curl -X POST https://deviceinsights.net/api/coverage/analyze \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "location": "Toronto, ON",
+    "latitude": 43.6532,
+    "longitude": -79.3832
+  }'`)}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-workflow-option-d-coverage"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <pre className="text-xs text-gray-700 mt-1">
+{`{
+  "success": true,
+  "data": {
+    "location": { "lat": 43.6532, "lng": -79.3832 },
+    "mobile_providers": [{
+      "provider": "Rogers",
+      "coverage_score": 95,
+      "reliability_rating": 5,
+      "recommendation": "excellent"
+    }]
+  }
+}`}
+                    </pre>
+                  </div>
+                </div>
               </div>
 
               {/* Example Integration */}
@@ -931,7 +977,13 @@ Content-Type: application/json`}
                   <div className="flex items-start gap-2">
                     <span className="text-orange-600 font-mono">→</span>
                     <p className="text-gray-700">
-                      <strong>Result:</strong> Display device insights, compatibility status, and network recommendations to your users
+                      <strong>Step 3 (Optional):</strong> If location available → Call <code className="bg-gray-100 px-1 rounded">/coverage/analyze</code> for carrier network insights and recommendations
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-600 font-mono">→</span>
+                    <p className="text-gray-700">
+                      <strong>Result:</strong> Display device insights, compatibility status, network coverage scores, and carrier recommendations to your users
                     </p>
                   </div>
                 </div>
