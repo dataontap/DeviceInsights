@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Smartphone, Code, CheckCircle, AlertTriangle, CreditCard } from "lucide-react";
+import { Search, Smartphone, Code, CheckCircle, AlertTriangle, CreditCard, Shield } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -13,6 +13,7 @@ import ApiKeyAnalytics from "@/components/api-key-analytics";
 import NetworkPolicyEditor from "@/components/network-policy-editor";
 import BatchEsimChecker from "@/components/batch-esim-checker";
 import EsimAnalytics from "@/components/esim-analytics";
+import BlacklistDemo from "@/pages/blacklist-demo";
 
 interface StatsData {
   totalSearches: number;
@@ -159,11 +160,15 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
         </div>
 
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-3 mb-8">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="batch-esim">
               <CreditCard className="w-4 h-4 mr-2" />
               Batch eSIM
+            </TabsTrigger>
+            <TabsTrigger value="blacklist-api">
+              <Shield className="w-4 h-4 mr-2" />
+              Blacklist API
             </TabsTrigger>
           </TabsList>
 
@@ -270,6 +275,10 @@ export default function AdminDashboard({ sessionToken, onSessionExpired }: Admin
             <div className="max-w-6xl mx-auto">
               <BatchEsimChecker sessionToken={sessionToken} />
             </div>
+          </TabsContent>
+
+          <TabsContent value="blacklist-api">
+            <BlacklistDemo />
           </TabsContent>
         </Tabs>
       </div>
