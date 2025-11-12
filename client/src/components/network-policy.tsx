@@ -40,10 +40,10 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
           <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
           <div>
             <p className="font-medium text-green-800 dark:text-green-200">
-              Device Compatible with DOTM Network
+              Device Compatible with Network
             </p>
             <p className="text-sm text-green-600 dark:text-green-300">
-              Your {deviceInfo.make} {deviceInfo.model} supports DOTM's network features
+              Your {deviceInfo.make} {deviceInfo.model} supports network features
             </p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               Limited Network Compatibility
             </p>
             <p className="text-sm text-yellow-600 dark:text-yellow-300">
-              Your device may have reduced functionality on DOTM network
+              Your device may have reduced functionality on this network
             </p>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
       <CardHeader>
         <div className="flex items-center gap-2">
           <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <CardTitle>DOTM Network Policy & Terms</CardTitle>
+          <CardTitle>Network Policy & Terms</CardTitle>
         </div>
         <CardDescription>
           Please review our network usage policy and device compatibility information
@@ -100,23 +100,6 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Alpha Service Warning */}
-        <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-            <div>
-              <p className="font-medium text-orange-800 dark:text-orange-200 text-sm">
-                ⚠️ ALPHA SERVICE NOTICE
-              </p>
-              <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
-                Results are tentative and experimental. Use with caution. These are service terms: use FREE under 100TPH. 
-                Copy with pride. Read collaboration guide. Improve this thing 10X. Thanks for any MVNO and connectivity use cases. 
-                Contact us at rbm@dotmobile.app anytime or use MCP server.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {getNetworkStatusMessage()}
         {getCapabilityBadges()}
         
@@ -150,7 +133,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               <p className="text-sm text-muted-foreground mt-1">
                 Device compatibility results are based on technical specifications. Actual network 
                 performance may vary depending on location, network traffic, and device condition. 
-                DOTM does not guarantee specific service levels for all devices.
+                We do not guarantee specific service levels for all devices.
               </p>
             </div>
           </div>
@@ -161,7 +144,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               <h4 className="font-semibold text-sm">Data Retention</h4>
               <p className="text-sm text-muted-foreground mt-1">
                 Device analysis data is retained for 12 months for service improvement purposes. 
-                You may request data deletion by contacting DOTM customer support at any time.
+                You may request data deletion by contacting customer support at any time.
               </p>
             </div>
           </div>
@@ -178,7 +161,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
               htmlFor="policy-accept" 
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              I acknowledge this is an Alpha service and agree to the DOTM Network Policy and Terms of Service
+              I agree to the Network Policy and Terms of Service
             </label>
           </div>
           
@@ -202,7 +185,7 @@ export default function NetworkPolicy({ onAccept, isSuccess, deviceInfo }: Netwo
 
         <div className="text-xs text-muted-foreground border-t pt-3">
           <p>
-            Last updated: January 2025. Alpha version - Use with caution. For questions about this policy, contact DOTM support at support@dotm.ca
+            Last updated: January 2025. For questions about this policy, contact customer support.
           </p>
         </div>
       </CardContent>
