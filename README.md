@@ -7,7 +7,7 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)
 
-**Last Updated:** January 2025
+**Last Updated:** November 11, 2025
 
 ---
 
